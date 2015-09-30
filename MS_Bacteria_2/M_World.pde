@@ -1,33 +1,77 @@
-int[][] gU; //Grid unit
-int[][] gM; //Grid Mini
-int[][] wU; //World Unit
-int gSize = 7;
-int gScale;
-int wSize = 100;
-float wPhase = 0;
-int gSelected = 1;
-ArrayList wL = new ArrayList<Wave>(); //Wave list
-
 void setupWorld(){
-  gScale = floor(float(sSize)/(gSize-1));
+  gScale = float(sSize)/(gSize-1);
   
   wU = new int[wSize][wSize];
-  gU = new int[gSize][gSize];
+  gU = new int[ceil(gSize)][ceil(gSize)];
   
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wU[i][j] = 0;
-      if(random(100)<40){
-        wU[i][j] = floor(random(7));
-      }
-    }
-  }
+  gBColor = new color[256];
+  gBIsSolid = new boolean[256];
+  sBHasImage = new boolean[256];
+  sBImage = new PImage[256];
+  sBImageDrawType = new int[256];
+  sBHasText = new boolean[256];
+  sBText = new String[256];
+  sBTextDrawType = new int[256];
   
   refreshWorld();
 }
 
+void moveToAnimate(PVector tV, float tTime){
+  moveToAnimateStart = new PVector(wViewCenter.x,wViewCenter.y,wViewCenter.z);
+  moveToAnimateEnd = new PVector(tV.x-wViewCenter.x,tV.y-wViewCenter.y);
+  moveToAnimateTime = new PVector(millis(), millis()+tTime);
+}
+
+void animate(){
+  if(millis() <= moveToAnimateTime.y){
+    float temp1 = (millis()-moveToAnimateTime.x)/(moveToAnimateTime.y-moveToAnimateTime.x);
+    float temp2 = sin(temp1*PI);
+    float temp3 = (-cos(temp1*PI)+1)/2;
+    centerView(moveToAnimateStart.x+temp3*moveToAnimateEnd.x,moveToAnimateStart.y+temp3*moveToAnimateEnd.y);
+    scaleView(moveToAnimateStart.z+temp2*10);
+  }
+}
+
+void scaleView(float tGSize){
+  gSize = tGSize;
+  gScale = float(sSize)/(gSize-1);
+  
+  gU = new int[ceil(gSize)][ceil(gSize)];
+  
+  refreshWorld();
+}
+
+void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid){
+  gBColor[tIndex] = tColor;
+  gBIsSolid[tIndex] = tIsSolid;
+}
+
+void addSpecialBlock(int tIndex, boolean tHasImage, PImage tImage, int tImageDrawType, boolean tHasText, String tText, int tTextDrawType){
+  sBHasImage[tIndex] = tHasImage;
+  sBImage[tIndex] = tImage;
+  sBImageDrawType[tIndex] = tImageDrawType;
+  sBHasText[tIndex] = tHasText;
+  sBText[tIndex] = tText;
+  sBTextDrawType[tIndex] = tTextDrawType;
+}
+
+void centerView(float ta, float tb){
+  wViewCenter = new PVector(ta,tb,gSize);
+  println(wViewCenter);
+  wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
+  if(floor(wViewLast.x) != floor(wView.x)){
+    refreshWorld();
+    wPhase -= PI;
+  }
+  if(floor(wViewLast.y) != floor(wView.y)){
+    refreshWorld();
+    wPhase -= PI;
+  }
+  wViewLast = new PVector(wView.x,wView.y);
+}
+
 void updateWorld(){
-  wPhase += .03;
+  wPhase += .09;
 }
 
 void drawWorld(){
@@ -37,8 +81,9 @@ void drawWorld(){
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       if(gU[i][j] != 0){
-        fill(blockColor(gU[i][j]));
-        rect(floor(i*gScale-pV.x*gScale),floor(j*gScale-pV.y*gScale),gScale,gScale);
+        fill(aGS(gBColor,gU[i][j]));
+        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+        rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
       }
     }
   }
@@ -51,14 +96,14 @@ void drawWorld(){
 void refreshWorld(){
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      gU[i][j] = wU[min(wSize-1,max(0,i+round(pG.x)))][min(wSize-1,max(0,j+round(pG.y)))];
+      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
     }
   }
   waveGrid();
 }
 
 void waveGrid(){
-  gM = new int[gSize*2+1][gSize*2+1];
+  gM = new int[ceil(gSize)*2+1][ceil(gSize)*2+1];
   wL = new ArrayList<Wave>();
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
@@ -68,11 +113,11 @@ void waveGrid(){
   for(int i = 0; i < gSize*2+1; i++){
     for(int j = 0; j < gSize*2+1; j++){
       if(i%2!=j%2){
-        if( (gM[min(i+1,gSize*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,gSize*2)][j] != gM[max(i-1,0)][j]){
+        if( (gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,ceil(gSize)*2)][j] != gM[max(i-1,0)][j]){
             //gM[i][j] = -1;
             wL.add(new Wave(i,j,0,1,(j+i)%4-2));
         }
-        if( (gM[i][min(j+1,gSize*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,gSize*2)] != gM[i][max(j-1,0)]){
+        if( (gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,ceil(gSize)*2)] != gM[i][max(j-1,0)]){
             //gM[i][j] = -1;
             wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
         }
@@ -84,6 +129,13 @@ void waveGrid(){
 }
 
 void arcHeightV(PVector v1,PVector v2,float h1, color c1, color c2){
+  if(h1 > 0){
+    stroke(c2);
+  } else {
+    stroke(c1);
+  }
+  strokeWeight(2);
+  line(v1.x,v1.y,v2.x,v2.y);
   if(h1 > 0){
     fill(c2);
   } else {
@@ -111,11 +163,11 @@ void arcHeightV(PVector v1,PVector v2,float h1, color c1, color c2){
   
   strokeWeight(5);
   stroke(255);
-  bezier(floor(v1.x-pV.x*gScale), floor(v1.y-pV.y*gScale), v1C.x-pV.x*gScale, v1C.y-pV.y*gScale, v2C.x-pV.x*gScale, v2C.y-pV.y*gScale, floor(v2.x-pV.x*gScale), floor(v2.y-pV.y*gScale));
+  bezier(v1.x, ceil(v1.y), v1C.x, v1C.y, v2C.x, v2C.y, v2.x, v2.y);
   noStroke();
   fill(255);
-  ellipse((.5-1/2)+v1.x-pV.x*gScale,(.5-1/2)+v1.y-pV.y*gScale,4,4);
-  ellipse((.5-1/2)+v2.x-pV.x*gScale,(.5-1/2)+v2.y-pV.y*gScale,4,4);
+  ellipse((.5-1/2)+v1.x,(.5-1/2)+v1.y,4,4);
+  ellipse((.5-1/2)+v2.x,(.5-1/2)+v2.y,4,4);
 }
 
 color blockColor(int intC){
@@ -146,21 +198,25 @@ class Wave {
   color c1;
   color c2;
   Wave(int tx, int ty, int ta, int tb, int tAmp) {
-    a = new PVector(floor((tx+1-ta)/2)*gScale,floor((ty+1-tb)/2)*gScale);
-    b = new PVector(floor((tx+1+ta)/2)*gScale,floor((ty+1+tb)/2)*gScale);
+    a = new PVector(floor((tx+1-ta)/2),floor((ty+1-tb)/2));
+    b = new PVector(floor((tx+1+ta)/2),floor((ty+1+tb)/2));
     amp = tAmp;
-    shift = (tx+ty+(pG.x+pG.y)*2)*PI/30;
-    c1 = blockColor(gM[max(tx-tb,0)][min(ty+ta,gSize*2)]);
-    c2 = blockColor(gM[min(tx+tb,gSize*2)][max(ty-ta,0)]);
+    shift = (tx+ty+(wView.x+wView.y)*2)*PI/30;
+    c1 = aGS(gBColor,aGS(gM,tx-tb,ty+ta));
+    c2 = aGS(gBColor,aGS(gM,tx+tb,ty-ta));
   }
   void display() {
-    arcHeightV(a,b,amp*(gScale/10)*sin(wPhase+shift),c1,c2);
+    PVector ta = pos2Screen(grid2Pos(new PVector(a.x,a.y)));
+    PVector tb = pos2Screen(grid2Pos(new PVector(b.x,b.y)));
+    arcHeightV(ta,tb,amp*(gScale/10)*sin(wPhase+shift),c1,c2);
   }
 }
 
-PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(pV);tA.add(pG); return tA;}
+PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
 
-PVector pos2Screen(PVector tA){tA.sub(pG); tA.sub(pV); tA.mult(gScale); return tA;}
+PVector pos2Screen(PVector tA){tA.sub(wView); tA.mult(gScale); return tA;}
+
+PVector grid2Pos(PVector tA){tA.add(new PVector(floor(wView.x),floor(wView.y))); return tA;}
 
 PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   PVector tV2 = new PVector(tV.x,tV.y);
@@ -201,119 +257,4 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   return tV2;
 }
 
-PVector moveInWorldBad(PVector tV, PVector tS, float tw, float th){
-  PVector tV2 = new PVector(tV.x,tV.y);
-  tV.add(tS);
-  if(aGS(wU,tV.x+tw/2,tV.y+th/2) != 0 || aGS(wU,tV.x+tw/2,tV.y-th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y-th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y+th/2) != 0){
-    //tS.div(3);
-  }
-  //tV2.add(tS);
-  tV2 = new PVector(tV2.x+tS.x,tV2.y);
-  
-  float tV3 = 0;
-  float tV3b = 0;
-  if(aGS(wU,tV.x+tw/2,tV.y+th/2) != 0 || aGS(wU,tV.x+tw/2,tV.y-th/2) != 0){
-    tV3 = forceOutAxis( tV2.x+tw/2, floor(tV2.x+tw/2)+.5,1);
-    if(abs(tS.x)*3<abs(tV3)){
-      tV3 = 0;
-    }
-  }
-  if(aGS(wU,tV.x-tw/2,tV.y+th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y-th/2) != 0){
-    tV3b = forceOutAxis( tV2.x-tw/2, floor(tV2.x-tw/2)+.5,1);
-    if(abs(tS.x)*3<abs(tV3b)){
-      tV3b = 0;
-    }
-  }
-  tV3 = maxAbs(tV3,tV3b);
-  //tV2 = new PVector(tV2.x+tV3,tV2.y);
-  
-  
-  tV2 = new PVector(tV2.x+tV3,tV2.y+tS.y);
-  
-  float tV4 = 0;
-  float tV4b = 0;
-  if(aGS(wU,tV.x+tw/2,tV.y+th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y+th/2) != 0){
-    tV4 = forceOutAxis( tV2.y+th/2, floor(tV2.y+th/2)+.5,1);
-    if(abs(tS.y)*3<abs(tV4)){
-      tV4 = 0;
-    }
-  }
-  if(aGS(wU,tV.x+tw/2,tV.y-th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y-th/2) != 0){
-    tV4b = forceOutAxis( tV2.y-th/2, floor(tV2.y-th/2)+.5,1);
-    if(abs(tS.y)*3<abs(tV4b)){
-      tV4b = 0;
-    }
-  }
-  tV4 = maxAbs(tV4,tV4b);
-  
-  
-  tV2 = new PVector(tV2.x,tV2.y+tV4);
-
-  return tV2;
-}
-
-PVector moveInWorldOld(PVector tV, PVector tS, float tw, float th){
-  PVector tV2 = new PVector(tV.x,tV.y);
-  tV.add(tS);
-  if(aGS(wU,tV.x+tw/2,tV.y+th/2) != 0 || aGS(wU,tV.x+tw/2,tV.y-th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y-th/2) != 0 || aGS(wU,tV.x-tw/2,tV.y+th/2) != 0){
-    tS.div(3);
-  }
-  tV2.add(tS);
-  PVector tV3 = new PVector(0,0);
-  if(aGS(wU,tV.x+tw/2,tV.y+th/2) != 0){
-    tV3 = forceOut(new PVector(tV2.x+tw/2,tV2.y+th/2), new PVector(floor(tV2.x+tw/2)+.5,floor(tV2.y+th/2)+.5),1,1,1,1);
-  }
-  if(aGS(wU,tV.x+tw/2,tV.y-th/2) != 0){
-    tS = forceOut(new PVector(tV.x+tw/2,tV.y-th/2), new PVector(floor(tV.x+tw/2)+.5,floor(tV.y-th/2)+.5),1,1,1,-1);
-    tV3 = new PVector(maxAbs(tS.x,tV3.x),maxAbs(tS.y,tV3.y));
-  }
-  if(aGS(wU,tV.x-tw/2,tV.y-th/2) != 0){
-    tS = forceOut(new PVector(tV.x-tw/2,tV.y-th/2), new PVector(floor(tV.x-tw/2)+.5,floor(tV.y-th/2)+.5),1,1,-1,-1);
-    tV3 = new PVector(maxAbs(tS.x,tV3.x),maxAbs(tS.y,tV3.y));
-  }
-  if(aGS(wU,tV.x-tw/2,tV.y+th/2) != 0){
-    forceOut(new PVector(tV.x-tw/2,tV.y+th/2), new PVector(floor(tV.x-tw/2)+.5,floor(tV.y+th/2)+.5),1,1,-1,1);
-    tV3 = new PVector(maxAbs(tS.x,tV3.x),maxAbs(tS.y,tV3.y));
-  }
-  tV2.add(tV3);
-  return tV2;
-}
-
-
-
-//PVector block2Pos(PVector tA){return new PVector(0,0);} //not needed
-
-PVector forceOut(PVector Vcurrent, PVector Vblock, float tw, float th, int tXDir, int tYDir){
-  if(abs(Vcurrent.x-Vblock.x)<abs(Vcurrent.y-Vblock.y)){
-    if(Vcurrent.y>Vblock.y){
-      Vcurrent = new PVector(0,Vblock.y+th/2-Vcurrent.y);
-    } else {
-      Vcurrent = new PVector(0,Vblock.y-th/2-Vcurrent.y);
-    }
-  } else {
-    if(Vcurrent.x>Vblock.x){
-      Vcurrent = new PVector(Vblock.x+tw/2-Vcurrent.x,0);
-    } else {
-      Vcurrent = new PVector(Vblock.x-tw/2-Vcurrent.x,0);
-    }
-  }
-  if(abs(Vcurrent.x)*tXDir == Vcurrent.x){
-    Vcurrent = new PVector(0,Vcurrent.y);
-  }
-  if(abs(Vcurrent.y)*tYDir == Vcurrent.y){
-    Vcurrent = new PVector(Vcurrent.x,0);
-  }
-  return Vcurrent;
-}
-
-float forceOutAxis(float Vcurrent, float Vblock, float tsize){
-  
-  if(Vcurrent>Vblock){
-    Vcurrent = Vblock+tsize/2-Vcurrent;
-  } else {
-    Vcurrent = Vblock-tsize/2-Vcurrent;
-  }
-  
-  return Vcurrent;
-}
 

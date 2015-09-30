@@ -134,8 +134,6 @@ void linkSmooth(float tx, float ty, float tw, float th, int tU, int[] tC, color 
     if(tC[4]==tU && tC[7]==tU){pass = true;}
     if(tC[5]==tU && tC[7]==tU){pass = true;}
     
-    
-    
     if(pass){
       pg1.beginDraw();
       pg1.background(0,1);
