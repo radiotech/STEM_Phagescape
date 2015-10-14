@@ -1,25 +1,25 @@
 void setupWorld(){
   gScale = float(sSize)/(gSize-1);
-  
   wU = new int[wSize][wSize];
+  wUText = new boolean[wSize][wSize];
   gU = new int[ceil(gSize)][ceil(gSize)];
-  
-  gBColor = new color[256];
-  gBIsSolid = new boolean[256];
-  sBHasImage = new boolean[256];
-  sBImage = new PImage[256];
-  sBImageDrawType = new int[256];
-  sBHasText = new boolean[256];
-  sBText = new String[256];
-  sBTextDrawType = new int[256];
-  
-  refreshWorld();
+}
+void refreshWorld(){
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
+    }
+  }
+  waveGrid();
 }
 
+
 void moveToAnimate(PVector tV, float tTime){
-  moveToAnimateStart = new PVector(wViewCenter.x,wViewCenter.y,wViewCenter.z);
-  moveToAnimateEnd = new PVector(tV.x-wViewCenter.x,tV.y-wViewCenter.y);
-  moveToAnimateTime = new PVector(millis(), millis()+tTime);
+  if(millis() > moveToAnimateTime.y){
+    moveToAnimateStart = new PVector(wViewCenter.x,wViewCenter.y,wViewCenter.z);
+    moveToAnimateEnd = new PVector(tV.x-wViewCenter.x,tV.y-wViewCenter.y);
+    moveToAnimateTime = new PVector(millis(), millis()+tTime);
+  }
 }
 
 void animate(){
@@ -46,18 +46,27 @@ void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid){
   gBIsSolid[tIndex] = tIsSolid;
 }
 
-void addSpecialBlock(int tIndex, boolean tHasImage, PImage tImage, int tImageDrawType, boolean tHasText, String tText, int tTextDrawType){
-  sBHasImage[tIndex] = tHasImage;
+void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
+  sBHasImage[tIndex] = true;
+  if(tImageDrawType == 0){
+    tImage.resize(ceil(gScale), ceil(gScale));
+  } else if(tImageDrawType == 1){
+    tImage.resize(ceil(gScale), ceil(gScale));
+  } else {
+    tImage.resize(width+ceil(gScale*2), height+ceil(gScale*2));
+  }
   sBImage[tIndex] = tImage;
   sBImageDrawType[tIndex] = tImageDrawType;
-  sBHasText[tIndex] = tHasText;
+}
+
+void addTextSpecialBlock(int tIndex, String tText, int tTextDrawType){
+  sBHasText[tIndex] = true;
   sBText[tIndex] = tText;
   sBTextDrawType[tIndex] = tTextDrawType;
 }
 
 void centerView(float ta, float tb){
   wViewCenter = new PVector(ta,tb,gSize);
-  println(wViewCenter);
   wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
   if(floor(wViewLast.x) != floor(wView.x)){
     refreshWorld();
@@ -80,10 +89,21 @@ void drawWorld(){
   noStroke();
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      if(gU[i][j] != 0){
-        fill(aGS(gBColor,gU[i][j]));
-        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-        rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+      int thisBlock = gU[i][j];
+      fill(aGSB(gBColor,thisBlock));
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+      
+      if(sBHasImage[thisBlock]){
+        float tScale;
+        if(sBImageDrawType[thisBlock] == 0){
+          image(sBImage[thisBlock],tempV.x,tempV.y);
+        } else if(sBImageDrawType[thisBlock] == 1) {
+          image(sBImage[thisBlock],tempV.x,tempV.y);
+        } else {
+          tScale = width/sBImage[thisBlock].width;
+          image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),tempV.x,tempV.y);
+        }
       }
     }
   }
@@ -91,84 +111,36 @@ void drawWorld(){
   for (Wave w : (ArrayList<Wave>) wL) {
     w.display();
   }
-}
+  
 
-void refreshWorld(){
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
-    }
-  }
-  waveGrid();
-}
-
-void waveGrid(){
-  gM = new int[ceil(gSize)*2+1][ceil(gSize)*2+1];
-  wL = new ArrayList<Wave>();
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      gM[i*2+1][j*2+1] = gU[i][j];
-    }
-  }
-  for(int i = 0; i < gSize*2+1; i++){
-    for(int j = 0; j < gSize*2+1; j++){
-      if(i%2!=j%2){
-        if( (gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,ceil(gSize)*2)][j] != gM[max(i-1,0)][j]){
-            //gM[i][j] = -1;
-            wL.add(new Wave(i,j,0,1,(j+i)%4-2));
+      int thisBlock = gU[i][j];
+      if(sBHasText[thisBlock]){
+        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+        if(sBTextDrawType[thisBlock] == 0){
+          drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock]);
+        } else if(sBTextDrawType[thisBlock] <= 10) {
+          if(pointDistance(new PVector(width/2-gScale/2,height/2-gScale/2),tempV) < sBTextDrawType[thisBlock]*gScale){
+            drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock]);
+          }
+        } else if(sBTextDrawType[thisBlock] <= 20) {
+          PVector tempV2 = grid2Pos(new PVector(i,j));
+          if(pointDistance(new PVector(width/2-gScale/2,height/2-gScale/2),tempV) < (sBTextDrawType[thisBlock]-10)*gScale){
+            if(aGS2DB(wUText,tempV2.x,tempV2.y) == false){
+              cL.add(new Chat(sBText[thisBlock]));
+              aSS2DB(wUText,tempV2.x,tempV2.y,true);
+            }
+          } else {
+            aSS2DB(wUText,tempV2.x,tempV2.y,false);
+          }
         }
-        if( (gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,ceil(gSize)*2)] != gM[i][max(j-1,0)]){
-            //gM[i][j] = -1;
-            wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
-        }
-      } //else if(i%2==0) {
-        //gM[i][j] = -2;
-      //}
+      }
     }
   }
 }
 
-void arcHeightV(PVector v1,PVector v2,float h1, color c1, color c2){
-  if(h1 > 0){
-    stroke(c2);
-  } else {
-    stroke(c1);
-  }
-  strokeWeight(2);
-  line(v1.x,v1.y,v2.x,v2.y);
-  if(h1 > 0){
-    fill(c2);
-  } else {
-    fill(c1);
-  }
-  
-  PVector v4 = PVector.sub(v2,v1); //vector between points
-  PVector v3 = PVector.add(v2,v1); //find midpoint
-  v3.div(2);
-  float d1 = v4.mag(); //dis
-  
-  float h2 = (sq(h1)+sq(d1/2))/(2*h1)-h1;
-  
-  v4.div(v4.mag()/h2); //unit vector between points
-  v3 = PVector.add(v3,new PVector(v4.y,-v4.x));
-  float d2 = v3.dist(v1); //radius
-  
-  PVector v11 = PVector.sub(v1,v3);
-  v11.div(d2/(h1*d2*2.5/gScale));
-  PVector v1C = PVector.add(v1,new PVector(v11.y,-v11.x));
-  
-  PVector v12 = PVector.sub(v2,v3);
-  v12.div(d2/(h1*d2*2.5/gScale));
-  PVector v2C = PVector.add(v2,new PVector(-v12.y,v12.x));
-  
-  strokeWeight(5);
-  stroke(255);
-  bezier(v1.x, ceil(v1.y), v1C.x, v1C.y, v2C.x, v2C.y, v2.x, v2.y);
-  noStroke();
-  fill(255);
-  ellipse((.5-1/2)+v1.x,(.5-1/2)+v1.y,4,4);
-  ellipse((.5-1/2)+v2.x,(.5-1/2)+v2.y,4,4);
-}
+
 
 color blockColor(int intC){
   switch(intC){
@@ -190,27 +162,8 @@ color blockColor(int intC){
       return color(0);
   }
 }
-class Wave {
-  PVector a;
-  PVector b;
-  int amp;
-  float shift;
-  color c1;
-  color c2;
-  Wave(int tx, int ty, int ta, int tb, int tAmp) {
-    a = new PVector(floor((tx+1-ta)/2),floor((ty+1-tb)/2));
-    b = new PVector(floor((tx+1+ta)/2),floor((ty+1+tb)/2));
-    amp = tAmp;
-    shift = (tx+ty+(wView.x+wView.y)*2)*PI/30;
-    c1 = aGS(gBColor,aGS(gM,tx-tb,ty+ta));
-    c2 = aGS(gBColor,aGS(gM,tx+tb,ty-ta));
-  }
-  void display() {
-    PVector ta = pos2Screen(grid2Pos(new PVector(a.x,a.y)));
-    PVector tb = pos2Screen(grid2Pos(new PVector(b.x,b.y)));
-    arcHeightV(ta,tb,amp*(gScale/10)*sin(wPhase+shift),c1,c2);
-  }
-}
+
+
 
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
 
@@ -218,18 +171,20 @@ PVector pos2Screen(PVector tA){tA.sub(wView); tA.mult(gScale); return tA;}
 
 PVector grid2Pos(PVector tA){tA.add(new PVector(floor(wView.x),floor(wView.y))); return tA;}
 
+//PVector pos2Grid(PVector tA){tA.sub(new PVector(floor(wView.x),floor(wView.y))); return tA;}
+
 PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   PVector tV2 = new PVector(tV.x,tV.y);
   if(tS.x > 0){
     if(floor(tV.x+tw/2) != floor(tV.x+tw/2+tS.x)){
-      if(aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2) != 0 || aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2))){
         tS = new PVector(0,tS.y);
         tV2 = new PVector(floor(tV.x+tw/2+tS.x)+.999-tw/2,tV2.y);
       }
     }
   } else {
     if(floor(tV.x-tw/2) != floor(tV.x-tw/2+tS.x)){
-      if(aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2) != 0 || aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2))){
         tS = new PVector(0,tS.y);
         tV2 = new PVector(floor(tV.x-tw/2+tS.x)+tw/2,tV2.y);
       }
@@ -239,14 +194,14 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   
   if(tS.y > 0){
     if(floor(tV.y+th/2) != floor(tV.y+th/2+tS.y)){
-      if(aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y) != 0 || aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y))){
         tS = new PVector(tS.x,0);
         tV2 = new PVector(tV2.x,floor(tV.y+th/2+tS.y)+.999-th/2);
       }
     }
   } else {
     if(floor(tV.y-th/2) != floor(tV.y-th/2+tS.y)){
-      if(aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y) != 0 || aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y))){
         tS = new PVector(tS.x,0);
         tV2 = new PVector(tV2.x,floor(tV.y-th/2+tS.y)+th/2);
       }
@@ -257,4 +212,54 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   return tV2;
 }
 
+PVector blockNear(PVector eV,int tBlock, float tChance){
+  float minDis = wSize*wSize;
+  PVector tRV = new PVector(eV.x,eV.y);
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      if(wU[i][j] == tBlock){
+        if(random(100)<tChance){
+          if(pointDistance(eV, new PVector(i,j)) < minDis){
+            tRV = new PVector(i,j);
+            minDis = mDis(eV.x,eV.y, i,j);
+          }
+        }
+      }
+    }
+  }
+  return tRV;
+}
+
+PVector blockNearCasting(PVector eV,int tBlock){
+  float minDis = 25;
+  PVector tRV = new PVector(eV.x,eV.y);
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      if(wU[i][j] == tBlock){
+        if(pointDistance(eV, new PVector(i,j)) < minDis){
+          if(rayCast(i,j,(int) eV.x,(int) eV.y)){
+            tRV = new PVector(i,j);
+            minDis = mDis(eV.x,eV.y, i,j);
+          }
+        }
+      }
+    }
+  }
+  return tRV;
+}
+
+boolean rayCast(int x0, int y0, int x1, int y1){
+  boolean tClear = true;
+  float tempDispX = float(x1-x0)/100;
+  float tempDispY = float(y1-y0)/100;
+  for(int i = 0; i < 100; i++){
+    if((round(x0+tempDispX*i) != round(x0) || round(y0+tempDispY*i+.105) != round(y0)) && (round(x0+tempDispX*i) != round(x1) || round(y0+tempDispY*i+.105) != round(y1))){
+      if(gBIsSolid[aGS(wU,round(x0+tempDispX*i),round(y0+tempDispY*i+.105))]){
+        tClear = false;
+      }
+    }
+  }
+  //println(tClear);
+  return tClear;
+}
 

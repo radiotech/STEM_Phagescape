@@ -1,8 +1,36 @@
+/* @pjs preload="block.png"; */
+
 int gSelected = 1; //current selected 
+
+int wavePixels = 100;
+int waveFrames = 60;
+int waveHeight = 25;
+int waveOffset = 13;
+int waveStroke = 6;
+PGraphics[] waveGraphics;
+PImage[] waveImages;
+int adder;
+
+PImage blockImg;
+
+void setup(){
+  size(700,700); //must be same as sSize above (square) //YOU MUST CHANGE THIS LINE IF YOU CHANGE THE SIZE ABOVE
+  M_Setup();
+  
+  chats.add("11111111111111122222222222233333333ss3333");
+  chats.add("1111111111111112222222222223333333");
+  chats.add("111111111111111222222222222333333333333");
+  chats.add("11111111111111122222222233333");
+  chats.add("1111111111111112222222222223333333333");
+  chats.add("1111111111111112222222222223333333333");
+  
+  
+}
+
 
 void safeSetup(){ 
   /* recommended order of events: add required world blocks, generate the world */
-  
+  blockImg = loadImage("block.png");
   addGeneralBlock(0,color(0,0,0),false);
   addGeneralBlock(1,color(255,0,0),true);
   addGeneralBlock(2,color(0,255,0),true);
@@ -13,6 +41,8 @@ void safeSetup(){
   addGeneralBlock(7,color(255,255,255),true);
   addGeneralBlock(8,color(100,100,100),true);
   addGeneralBlock(9,color(200,200,200),true);
+  addImageSpecialBlock(3,loadImage("block.png"),2);
+  addImageSpecialBlock(4,loadImage("block.png"),1);
   
   for(int i = 0; i < wSize; i++){
     for(int j = 0; j < wSize; j++){
@@ -22,14 +52,19 @@ void safeSetup(){
       }
     }
   }
+  
+  centerView(10,10);
+  
+  //***WAVE***//updateWaveImages();
 }
 
 float tempZooms = 0;
 void safeUpdate(){
-  /* recommended order of events: make changes to the world and entities, change the view */
+  /* recommended order of events: make chan2es to the world and entities, change the view */
   //scaleWorld(float(mouseX)/50);
   
-  //println(frameRate);
+  println(frameRate);
+  
   /*
   //tempZooms+=99;
   if(tempZooms < 100){
@@ -64,6 +99,13 @@ void safeDraw(){
 }
 
 void mousePressed(){
+  
+  if(mouseButton == RIGHT){
+    //moveToAnimate(new PVector(10,10), 4000);
+  } else {
+    //moveToAnimate(new PVector(90,90), 4000);
+  }
+  
   if(!menu){
     if(mouseButton == RIGHT){
       PVector tempPosS = screen2Pos(new PVector(mouseX,mouseY));
@@ -84,27 +126,27 @@ void keyPressed(){
 void keyReleased(){
   player.moveEvent(1);
 }
-//THIS IS THE ONLY PLACE IN THE M_FILES THAT YOU SHOULD EVER CHANGE (WITH ONE EXCEPTION), IF YOU NEED TO MAKE A CHANGE ELSEWARE IN THE M_FILES, CONTACT AJ FIRST - lavabirdaj@gmail.com
+//THIS IS THE ONLY PLACE IN THE M_FILES THAT YOU SHOULD EVER CHANGE (WITH NO EXCEPTIONS), IF YOU NEED TO MAKE A CHANGE ELSEWARE IN THE M_FILES, CONTACT AJ FIRST - lavabirdaj@gmail.com
 int sSize = 700; //Must be same as the numbers in the size() function on the first line of your draw() loop
 int wSize = 100; //blocks in the world (square)
 float gSize = 8; //grid units displayed on the screen (blocks in view) (square)
-//END OF CONFIGURATION, DO NOT CHANGE BELOW THIS LINE - ONE EXCEPTION ON THE FIRST LINE OF THE SETUP FUCTION
+//END OF CONFIGURATION, DO NOT CHANGE BELOW THIS LINE - NO EXCEPTIONS
 /*
 ********** Important Function and Variable Outline **********
 //for each item please replace the '_VARIABLE_' including the _ characters with your function values
 ***** View Changes *****
 centerView(_X_,_Y_) //set the center of the screen view to a world coordinate position, such as the player position
 scaleView(_SIZE_)
-moveToAnimate(new PVector(_X_,_Y_), int t) //moves to a position over time (t) in milliseconds
+moveToAnimate(new PVector(_X_,_Y_),_T_) //moves to a position over time in milliseconds
 ***** World Changes *****
 setupWorld() //apply changes to world size (wSize) and clear the world
 refreshWorld() //redraw the world after block changes have been made
 aGS(wU,_X_,_Y_) //access a block at a position in the world - each block is represented by a general block ID
 aSS(wU,_X_,_Y_,_BLOCK_ID_) //change a block at a position in the world
 addGeneralBlock(_BLOCK_ID_,color(_R_,_G_,_B_),_IS_SOLID?_) //make this block ID represent a block with a certain color that is either solid (true) or not solid (false)
-addSpecialBlock(_BLOCK_ID_,_HAS_IMAGE?_,_IMAGE_,_IMAGE_MODE_,_HAS_TEXT?_,_TEXT_,_TEXT_MODE_) //make this block ID represent a block that has (true) or does not have (false) an image and has or does not have text
-//_BLOCK_ID_ is the block that is being updated, _HAS_IMAGE?_ is a boolean (true/false) statement, _IMAGE_ is a PImage (you may look this up), _IMAGE_MODE_ is an integer representing the drawing method (0 = no squish, 1 = squish, 2 = absolute position (like the cartoon Chowder))
-//_HAS_TEXT?_ is a boolean (true/false) statement, _TEXT_ is a string of characters, like 'hello there!', _TEXT_MODE_ is an integer representing the drawing method (0 = always display text bubble, 1-10 = display buble at distances 1-10, 11-20 = send chat message at distances 1-10)
+addImageSpecialBlock(_BLOCK_ID_,_IMAGE_,_IMAGE_MODE_) //make this block ID represent a block with an image (PImage) and an integer representing the drawing method (0 = no squish, 1 = squish, 2 = absolute position (like the cartoon Chowder))
+addTextSpecialBlock(_BLOCK_ID_,_TEXT_,_TEXT_MODE_) //make this block ID represent a block with a text (String ex. 'hello there!') and an integer representing the drawing method (0 = always display text bubble, 1-10 = display buble at distances 1-10, 11-20 = send chat message at distances 1-10)
+
 ***** General Functions *****
 pointDir(_POS1_,_POS2_)
 turnWithSpeed(_FROM_,_TO_,_SPEED_)
@@ -130,29 +172,31 @@ int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
 ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
-color[] gBColor;
-boolean[] gBIsSolid;
-boolean[] sBHasImage;
-PImage[] sBImage;
-int[] sBImageDrawType;
-boolean[] sBHasText;
-String[] sBText;
-int[] sBTextDrawType;
+color[] gBColor = new color[256];
+boolean[] gBIsSolid = new boolean[256];
+boolean[] sBHasImage = new boolean[256];
+PImage[] sBImage = new PImage[256];
+int[] sBImageDrawType = new int[256];
+boolean[] sBHasText = new boolean[256];
+String[] sBText = new String[256];
+int[] sBTextDrawType = new int[256];
 PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter;
 
-void setup(){
-  size(700,700); //Must be same as sSize above (square) //YOU MUST CHANGE THIS LINE IF YOU CHANGE THE SIZE ABOVE
-  frameRate(25);
+
+void M_Setup(){
+  frameRate(60);
   smooth(1);
   strokeCap(SQUARE);
+  //textureMode(NORMAL);
   setupWorld();
   setupEntities();
   safeSetup();
   refreshWorld();
 }
+
 
 void draw(){
   animate();
@@ -173,6 +217,8 @@ void draw(){
   if(bEdit){
     drawBEdit();
   }
+  
+  drawChat();
 }
 
 float pointDir(PVector v1,PVector v2){
@@ -230,7 +276,7 @@ int aGS(int[][] tMat, float tA, float tB){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
 }
 
-int aGS(int[] tMat, float tA){ //array get safe
+int aGSB(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
@@ -252,6 +298,76 @@ float minAbs(float tA, float tB){
   } else {
     return tA;
   }
+}
+
+PImage resizeImage(PImage tImg, int tw, int th){
+  PImage tImgNew = createImage(tw,th,ARGB);
+  //tImgNew.loadPixels();
+  //tImg.loadPixels();
+  for(int i = 0; i < tw; i++){
+    for(int j = 0; j < th; j++){
+      //tImgNew.pixels[j*tw+i] = tImg.pixels[floor(float(j)/th*tImg.height)*tImg.width+floor(float(i)/tw*tImg.width)];
+      tImgNew.set(i,j,tImg.get(5,5));
+    }
+  }
+  //tImgNew.updatePixels();
+  //tImg.updatePixels();
+  return tImgNew;
+}
+
+float chatHeight = 40;
+float chatPush = 0;
+float chatPushSpeed = .07;
+boolean chatPushing = false;
+ArrayList chats = new ArrayList<String>();
+
+void drawChat(){
+  
+  if(chatPushing){
+    if(chatPush < 1){
+      chatPush+=chatPushSpeed;
+    } else {
+      chatPush = 1;
+    }
+  } else {
+    if(chatPush > 0){
+      chatPush-=chatPushSpeed;
+    } else {
+      chatPush = 0;
+    }
+  }
+  
+  textAlign(LEFT,CENTER);
+  textSize(20);
+  noStroke();
+  for(int i = 0; i < chats.size(); i++){
+    String c = (String)chats.get(i);
+    fill(0,100+100*chatPush);
+    rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,textWidth(c)+chatHeight,chatHeight,0,100,100,0);
+    fill(255,170+50*chatPush);
+    text(c,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush);
+  }
+  
+  if(chatPush > 0){
+    textAlign(LEFT,CENTER);
+    textSize(20);
+    stroke(255,220*chatPush);
+    fill(0,200*chatPush);
+    rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
+    fill(255,220*chatPush);
+    text("ASDdsghgsdfhgjfgds dsfsgxfdfgdtrfh asdddaasdd",chatHeight/5,height-chatHeight/2);
+  }
+  
+  
+  
+  if(mouseX > width/2){
+    chatPushing = true;
+  } else {
+    chatPushing = false;
+  }
+  
+  
+  
 }
 
 void setupEntities(){
@@ -400,113 +516,10 @@ class Entity {
     popMatrix();
   }
 }
-void setupWorld(){
-  gScale = float(sSize)/(gSize-1);
-  
-  wU = new int[wSize][wSize];
-  gU = new int[ceil(gSize)][ceil(gSize)];
-  
-  gBColor = new color[256];
-  gBIsSolid = new boolean[256];
-  sBHasImage = new boolean[256];
-  sBImage = new PImage[256];
-  sBImageDrawType = new int[256];
-  sBHasText = new boolean[256];
-  sBText = new String[256];
-  sBTextDrawType = new int[256];
-  
-  refreshWorld();
-}
-
-void moveToAnimate(PVector tV, float tTime){
-  moveToAnimateStart = new PVector(wViewCenter.x,wViewCenter.y,wViewCenter.z);
-  moveToAnimateEnd = new PVector(tV.x-wViewCenter.x,tV.y-wViewCenter.y);
-  moveToAnimateTime = new PVector(millis(), millis()+tTime);
-}
-
-void animate(){
-  if(millis() <= moveToAnimateTime.y){
-    float temp1 = (millis()-moveToAnimateTime.x)/(moveToAnimateTime.y-moveToAnimateTime.x);
-    float temp2 = sin(temp1*PI);
-    float temp3 = (-cos(temp1*PI)+1)/2;
-    centerView(moveToAnimateStart.x+temp3*moveToAnimateEnd.x,moveToAnimateStart.y+temp3*moveToAnimateEnd.y);
-    scaleView(moveToAnimateStart.z+temp2*10);
-  }
-}
-
-void scaleView(float tGSize){
-  gSize = tGSize;
-  gScale = float(sSize)/(gSize-1);
-  
-  gU = new int[ceil(gSize)][ceil(gSize)];
-  
-  refreshWorld();
-}
-
-void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid){
-  gBColor[tIndex] = tColor;
-  gBIsSolid[tIndex] = tIsSolid;
-}
-
-void addSpecialBlock(int tIndex, boolean tHasImage, PImage tImage, int tImageDrawType, boolean tHasText, String tText, int tTextDrawType){
-  sBHasImage[tIndex] = tHasImage;
-  sBImage[tIndex] = tImage;
-  sBImageDrawType[tIndex] = tImageDrawType;
-  sBHasText[tIndex] = tHasText;
-  sBText[tIndex] = tText;
-  sBTextDrawType[tIndex] = tTextDrawType;
-}
-
-void centerView(float ta, float tb){
-  wViewCenter = new PVector(ta,tb,gSize);
-  println(wViewCenter);
-  wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
-  if(floor(wViewLast.x) != floor(wView.x)){
-    refreshWorld();
-    wPhase -= PI;
-  }
-  if(floor(wViewLast.y) != floor(wView.y)){
-    refreshWorld();
-    wPhase -= PI;
-  }
-  wViewLast = new PVector(wView.x,wView.y);
-}
-
-void updateWorld(){
-  wPhase += .09;
-}
-
-void drawWorld(){
-  background(0);
-  
-  noStroke();
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      if(gU[i][j] != 0){
-        fill(aGS(gBColor,gU[i][j]));
-        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-        rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
-      }
-    }
-  }
-  
-  for (Wave w : (ArrayList<Wave>) wL) {
-    w.display();
-  }
-}
-
-void refreshWorld(){
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
-    }
-  }
-  waveGrid();
-}
 
 void waveGrid(){
   gM = new int[ceil(gSize)*2+1][ceil(gSize)*2+1];
-  wL = new ArrayList<Wave>();
+  wL.clear();
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       gM[i*2+1][j*2+1] = gU[i][j];
@@ -515,17 +528,13 @@ void waveGrid(){
   for(int i = 0; i < gSize*2+1; i++){
     for(int j = 0; j < gSize*2+1; j++){
       if(i%2!=j%2){
-        if( (gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,ceil(gSize)*2)][j] != gM[max(i-1,0)][j]){
-            //gM[i][j] = -1;
-            wL.add(new Wave(i,j,0,1,(j+i)%4-2));
+        if((gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,ceil(gSize)*2)][j] != gM[max(i-1,0)][j]){
+          wL.add(new Wave(i,j,0,1,(j+i)%4-2));
         }
-        if( (gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,ceil(gSize)*2)] != gM[i][max(j-1,0)]){
-            //gM[i][j] = -1;
-            wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
+        if((gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,ceil(gSize)*2)] != gM[i][max(j-1,0)]){
+          wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
         }
-      } //else if(i%2==0) {
-        //gM[i][j] = -2;
-      //}
+      }
     }
   }
 }
@@ -572,6 +581,295 @@ void arcHeightV(PVector v1,PVector v2,float h1, color c1, color c2){
   ellipse((.5-1/2)+v2.x,(.5-1/2)+v2.y,4,4);
 }
 
+void arcHeightV2(int tI){
+  PVector v1 = new PVector(0,waveOffset-1);
+  PVector v2 = new PVector(wavePixels,waveOffset-1);
+  float h1 = -1*(wavePixels/10)*sin(float(tI)/(waveFrames-1)*PI/2);
+  
+  PVector v4 = PVector.sub(v2,v1); //vector between points
+  PVector v3 = PVector.add(v2,v1); //find midpoint
+  v3.div(2);
+  float d1 = v4.mag(); //dis
+  
+  float h2 = (sq(h1)+sq(d1/2))/(2*h1)-h1;
+  
+  v4.div(v4.mag()/h2); //unit vector between points
+  v3 = PVector.add(v3,new PVector(v4.y,-v4.x));
+  float d2 = v3.dist(v1); //radius
+  
+  PVector v11 = PVector.sub(v1,v3);
+  v11.div(d2/(h1*d2*2.5/wavePixels));
+  PVector v1C = PVector.add(v1,new PVector(v11.y,-v11.x));
+  
+  PVector v12 = PVector.sub(v2,v3);
+  v12.div(d2/(h1*d2*2.5/wavePixels));
+  PVector v2C = PVector.add(v2,new PVector(-v12.y,v12.x));
+  
+  waveGraphics[tI].strokeWeight(waveStroke);
+  waveGraphics[tI].noFill();
+  waveGraphics[tI].stroke(255);
+  waveGraphics[tI].bezier(v1.x, ceil(v1.y), v1C.x, v1C.y, v2C.x, v2C.y, v2.x, v2.y);
+}
+
+class Wave {
+  PVector a;
+  PVector b;
+  int amp;
+  float shift;
+  color c1;
+  color c2;
+  
+  boolean wDir;
+  Wave(int tx, int ty, int ta, int tb, int tAmp) {
+    wDir = boolean(ta);
+    a = new PVector(floor((tx+1-ta)/2),floor((ty+1-tb)/2));
+    b = new PVector(floor((tx+1+ta)/2),floor((ty+1+tb)/2));
+    amp = tAmp;
+    shift = (tx+ty+(wView.x+wView.y)*2)*PI/30;
+    c1 = aGSB(gBColor,aGS(gM,tx-tb,ty+ta));
+    c2 = aGSB(gBColor,aGS(gM,tx+tb,ty-ta));
+  }
+  void display() {
+    PVector ta = pos2Screen(grid2Pos(new PVector(a.x,a.y)));
+    PVector tb = pos2Screen(grid2Pos(new PVector(b.x,b.y)));
+    
+    //float tH = -1*(wavePixels/10)*sin(posMod(amp*floor((wPhase+shift)*10),waveFrames*4)/(waveFrames-1)*PI/2);
+    
+    //strokeWeight(1);
+    
+    
+    /*
+    if(wDir){
+      if(tH > 0){
+        stroke(c2);
+        fill(c2);
+      } else {
+        stroke(c1);
+        fill(c1);
+      }
+      triangle(ta.x,ta.y,tb.x,tb.y,(ta.x+tb.x)/2,ta.y+tH);
+    } else {
+      if(tH > 0){
+        stroke(c1);
+        fill(c1);
+      } else {
+        stroke(c2);
+        fill(c2);
+      }
+      triangle(ta.x,ta.y,tb.x,tb.y,ta.x+tH,(ta.y+tb.y)/2);
+    }
+    */
+    
+    strokeWeight(7);
+    stroke(255);
+    line(ta.x,ta.y,tb.x,tb.y);
+    //waveFromImage(ta.x,ta.y,amp*floor((wPhase+shift)*10),wDir);
+  }
+}
+
+void updateWaveImages(){
+  waveGraphics = new PGraphics[waveFrames*4];
+  waveImages = new PImage[waveFrames*4];
+  for(int i = 0; i < waveFrames; i++){
+    waveGraphics[i] = createGraphics(wavePixels,waveHeight);
+    waveGraphics[i].beginDraw();
+    arcHeightV2(i);
+    waveGraphics[i].endDraw();
+    waveImages[i] = waveGraphics[i].get();
+  }
+  for(int i = waveFrames; i < waveFrames*2; i++){
+    waveGraphics[i] = createGraphics(waveHeight,wavePixels);
+    waveGraphics[i].beginDraw();
+    waveGraphics[i].rotate(-PI/2);
+    waveGraphics[i].translate(-wavePixels,0);
+    
+    waveGraphics[i].image(waveImages[i-waveFrames],0,0);
+    waveGraphics[i].endDraw();
+    waveImages[i] = waveGraphics[i].get();
+  }
+  for(int i = waveFrames*2; i < waveFrames*3; i++){
+    waveGraphics[i] = createGraphics(wavePixels,waveHeight);
+    waveGraphics[i].beginDraw();
+    waveGraphics[i].scale(1,-1);
+    waveGraphics[i].translate(0,-waveHeight);
+    
+    waveGraphics[i].image(waveImages[i-waveFrames*2],0,0);
+    waveGraphics[i].endDraw();
+    waveImages[i] = waveGraphics[i].get();
+  }
+  for(int i = waveFrames*3; i < waveFrames*4; i++){
+    waveGraphics[i] = createGraphics(waveHeight,wavePixels);
+    waveGraphics[i].beginDraw();
+    waveGraphics[i].scale(-1,1);
+    waveGraphics[i].translate(-waveHeight,0);
+    
+    waveGraphics[i].image(waveImages[i-waveFrames*2],0,0);
+    waveGraphics[i].endDraw();
+    waveImages[i] = waveGraphics[i].get();
+  }
+}
+
+
+void waveFromImage(float tx, float ty, int tI, boolean tDir){
+  int tNewIndex = floor(posMod(tI,waveFrames));
+  int tActualPhase = floor(posMod(tI,waveFrames*4)/waveFrames);
+  noStroke();
+  fill(255);
+  ellipse(tx,ty,waveStroke-.5,waveStroke-.5);
+  if(tDir){
+    ellipse(tx+wavePixels,ty,waveStroke-.5,waveStroke-.5);
+    switch(tActualPhase){
+      case 0:
+        image(waveImages[tNewIndex], tx, ty-waveOffset);
+        break;
+      case 1:
+        image(waveImages[waveFrames-tNewIndex-1], tx, ty-waveOffset);
+        break;
+      case 2:
+        image(waveImages[tNewIndex+waveFrames*2], tx,ty-waveOffset);
+        break;
+      case 3:
+        image(waveImages[waveFrames-tNewIndex-1+waveFrames*2], tx,ty-waveOffset);
+        break;
+    }
+  } else {
+    ellipse(tx,ty+wavePixels,waveStroke-.5,waveStroke-.5);
+    switch(tActualPhase){
+      case 0:
+        image(waveImages[tNewIndex+waveFrames], tx-waveOffset, ty);
+        break;
+      case 1:
+        image(waveImages[waveFrames-tNewIndex-1+waveFrames], tx-waveOffset, ty);
+        break;
+      case 2:
+        image(waveImages[tNewIndex+waveFrames+waveFrames*2], tx-waveOffset, ty);
+        break;
+      case 3:
+        image(waveImages[waveFrames-tNewIndex-1+waveFrames+waveFrames*2], tx-waveOffset, ty);
+        break;
+    }
+  }
+}
+
+
+void setupWorld(){
+  gScale = float(sSize)/(gSize-1);
+  wU = new int[wSize][wSize];
+  gU = new int[ceil(gSize)][ceil(gSize)];
+}
+void refreshWorld(){
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
+    }
+  }
+  waveGrid();
+}
+
+
+void moveToAnimate(PVector tV, float tTime){
+  if(millis() > moveToAnimateTime.y){
+    moveToAnimateStart = new PVector(wViewCenter.x,wViewCenter.y,wViewCenter.z);
+    moveToAnimateEnd = new PVector(tV.x-wViewCenter.x,tV.y-wViewCenter.y);
+    moveToAnimateTime = new PVector(millis(), millis()+tTime);
+  }
+}
+
+void animate(){
+  if(millis() <= moveToAnimateTime.y){
+    float temp1 = (millis()-moveToAnimateTime.x)/(moveToAnimateTime.y-moveToAnimateTime.x);
+    float temp2 = sin(temp1*PI);
+    float temp3 = (-cos(temp1*PI)+1)/2;
+    centerView(moveToAnimateStart.x+temp3*moveToAnimateEnd.x,moveToAnimateStart.y+temp3*moveToAnimateEnd.y);
+    scaleView(moveToAnimateStart.z+temp2*10);
+  }
+}
+
+void scaleView(float tGSize){
+  gSize = tGSize;
+  gScale = float(sSize)/(gSize-1);
+  
+  gU = new int[ceil(gSize)][ceil(gSize)];
+  
+  refreshWorld();
+}
+
+void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid){
+  gBColor[tIndex] = tColor;
+  gBIsSolid[tIndex] = tIsSolid;
+}
+
+void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
+  sBHasImage[tIndex] = true;
+  if(tImageDrawType == 0){
+    tImage.resize(ceil(gScale), ceil(gScale));
+  } else if(tImageDrawType == 1){
+    tImage.resize(ceil(gScale), ceil(gScale));
+  } else {
+    tImage.resize(width+ceil(gScale*2), height+ceil(gScale*2));
+  }
+  sBImage[tIndex] = tImage;
+  sBImageDrawType[tIndex] = tImageDrawType;
+}
+
+void addTextSpecialBlock(int tIndex, String tText, int tTextDrawType){
+  sBHasText[tIndex] = true;
+  sBText[tIndex] = tText;
+  sBTextDrawType[tIndex] = tTextDrawType;
+}
+
+void centerView(float ta, float tb){
+  wViewCenter = new PVector(ta,tb,gSize);
+  wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
+  if(floor(wViewLast.x) != floor(wView.x)){
+    refreshWorld();
+    wPhase -= PI;
+  }
+  if(floor(wViewLast.y) != floor(wView.y)){
+    refreshWorld();
+    wPhase -= PI;
+  }
+  wViewLast = new PVector(wView.x,wView.y);
+}
+
+void updateWorld(){
+  wPhase += .09;
+}
+
+void drawWorld(){
+  background(0);
+  
+  noStroke();
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      if(gU[i][j] != 0){
+        int thisBlock = gU[i][j];
+        fill(aGSB(gBColor,thisBlock));
+        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+        rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+        
+        if(sBHasImage[thisBlock]){
+          float tScale;
+          if(sBImageDrawType[thisBlock] == 0){
+            image(sBImage[thisBlock],tempV.x,tempV.y);
+          } else if(sBImageDrawType[thisBlock] == 1) {
+            image(sBImage[thisBlock],tempV.x,tempV.y);
+          } else {
+            tScale = width/sBImage[thisBlock].width;
+            image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),tempV.x,tempV.y);
+          }
+        }
+      }
+    }
+  }
+  
+  for (Wave w : (ArrayList<Wave>) wL) {
+    w.display();
+  }
+}
+
+
+
 color blockColor(int intC){
   switch(intC){
     case 0:
@@ -592,33 +890,16 @@ color blockColor(int intC){
       return color(0);
   }
 }
-class Wave {
-  PVector a;
-  PVector b;
-  int amp;
-  float shift;
-  color c1;
-  color c2;
-  Wave(int tx, int ty, int ta, int tb, int tAmp) {
-    a = new PVector(floor((tx+1-ta)/2),floor((ty+1-tb)/2));
-    b = new PVector(floor((tx+1+ta)/2),floor((ty+1+tb)/2));
-    amp = tAmp;
-    shift = (tx+ty+(wView.x+wView.y)*2)*PI/30;
-    c1 = aGS(gBColor,aGS(gM,tx-tb,ty+ta));
-    c2 = aGS(gBColor,aGS(gM,tx+tb,ty-ta));
-  }
-  void display() {
-    PVector ta = pos2Screen(grid2Pos(new PVector(a.x,a.y)));
-    PVector tb = pos2Screen(grid2Pos(new PVector(b.x,b.y)));
-    arcHeightV(ta,tb,amp*(gScale/10)*sin(wPhase+shift),c1,c2);
-  }
-}
+
+
 
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
 
 PVector pos2Screen(PVector tA){tA.sub(wView); tA.mult(gScale); return tA;}
 
 PVector grid2Pos(PVector tA){tA.add(new PVector(floor(wView.x),floor(wView.y))); return tA;}
+
+//PVector pos2Grid(PVector tA){tA.sub(new PVector(floor(wView.x),floor(wView.y))); return tA;}
 
 PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   PVector tV2 = new PVector(tV.x,tV.y);
