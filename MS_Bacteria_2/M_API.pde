@@ -61,12 +61,9 @@ PVector wViewCenter;
 
 void M_Setup(){
   frameRate(60);
-  smooth(1);
   strokeCap(SQUARE);
-  
   textAlign(LEFT,CENTER);
   textSize(20);
-  
   setupWorld();
   setupEntities();
   safeSetup();
@@ -75,14 +72,16 @@ void M_Setup(){
 
 
 void draw(){
-  manageAsync();
+  
   animate();
   
   drawWorld();//out of place
   if(!menu){
     updateWorld();
-    updateEntities();
+    
   }
+  
+  manageAsync();
   
   safeUpdate();
   
@@ -210,14 +209,13 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
-
-
 int asyncC = 0;
-int asyncT = 0;
+int asyncT = 1000;
 void manageAsync(){
-  if(millis()-100>asyncT){
-    asyncT += 100;
+  while(millis()-40>asyncT){
+    asyncT += 40;
     asyncC++;
     safeAsync(asyncC);
+    updateEntities();
   }
 }

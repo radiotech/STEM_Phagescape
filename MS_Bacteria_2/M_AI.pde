@@ -4,7 +4,7 @@ void nodeWorld(PVector startV, int targetBlock){
   for ( int ix = 0; ix < wSize; ix+=1 ) {
     for ( int iy = 0; iy < wSize; iy+=1) {
 
-        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<28) || (ix == startV.x && iy == startV.y) || wU[ix][iy] == targetBlock) {
+        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<28) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
           nodes.add(new Node(ix,iy));
           nmap[iy][ix] = nodes.size()-1;
           if (ix>0) {

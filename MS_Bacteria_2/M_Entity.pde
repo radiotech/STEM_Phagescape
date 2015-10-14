@@ -1,4 +1,3 @@
-
 void setupEntities(){
   player = new Entity(50,50,new EConfig(),0);
   player.EC.Genre = 1;
@@ -225,11 +224,11 @@ class EConfig {
   float Size = 1;
   float SMax = .10;
   
-  float Accel = .010;
-  float Drag = .002;
-  float TAccel = .010;
-  float TSMax = .10;
-  float TDrag = .008;
+  float Accel = .040;
+  float Drag = .008;
+  float TAccel = .040;
+  float TSMax = .40;
+  float TDrag = .032;
   PImage Img;
   int Type = 0;
   

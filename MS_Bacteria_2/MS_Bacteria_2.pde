@@ -5,15 +5,6 @@
 
 int gSelected = 1; //current selected 
 
-int wavePixels = 100;
-int waveFrames = 60;
-int waveHeight = 25;
-int waveOffset = 13;
-int waveStroke = 6;
-PGraphics[] waveGraphics;
-PImage[] waveImages;
-int adder;
-
 PImage blockImg;
 
 EConfig bulletEntity = new EConfig();
@@ -69,6 +60,7 @@ void safeSetup(){
   }
   
   centerView(10,10);
+  scaleView(100);
   
   //***WAVE***//updateWaveImages();
 }
@@ -85,31 +77,6 @@ void safeAsync(int n){
 float tempZooms = 0;
 void safeUpdate(){
   /* recommended order of events: make chan2es to the world and entities, change the view */
-  //scaleWorld(float(mouseX)/50);
-  
-  //println(frameRate);
-  
-  /*
-  //tempZooms+=99;
-  if(tempZooms < 100){
-    centerView(10,10);
-    scaleView(7);
-  } else {
-    if(tempZooms < 1100){
-      
-      
-    } else {
-      //centerView(90,90);
-      //float temp2 = 1/(1+pow(9000,(-(tempZooms-100)/1000+.5)));
-      //centerView(10+temp2*80,10+temp2*80);
-      //scaleWorld(7);
-    }
-  }
-  */
-  
-  
-  
-  
   
   centerView(player.x,player.y);
   //PVector tempV2 = new PVector(mouseX,mouseY); tempV2 = screen2Pos(tempV2); centerView((player.x*5+tempV2.x)/6,(player.y*5+tempV2.y)/6);
@@ -119,55 +86,15 @@ void safeUpdate(){
 
 void safeDraw(){
   /* recommended order of events: draw things over the world (if needed) */
-}
-/*
-int spread(int x, int y, int energy){
   
-  int myReturn = 999;
-  if(wUSpread[x][y] < energy){
-  
-    wUSpread[x][y] = energy;
-    if(energy > 1){
-      if(gBIsSolid[aGS(wU,x,y)]==false){
-        myReturn = min(myReturn,spread(x+1,y,energy-1));
-        myReturn = min(myReturn,spread(x-1,y,energy-1));
-        myReturn = min(myReturn,spread(x,y+1,energy-1));
-        myReturn = min(myReturn,spread(x,y-1,energy-1));
-      }
-    }
-    if(aGS(wU,x,y) == 0){
-      myReturn = 0;
-    }
-    PVector tempVs = pos2Screen(new PVector(x+.5,y+.5));
-    fill(0,energy*70,0,100);
-    ellipse(tempVs.x,tempVs.y,20,20);
-    fill(0);
-    text(myReturn,tempVs.x,tempVs.y);
-  }
-  return myReturn+1;
+  //genRing(mouseX,mouseY,float(mouseX)/2,mouseY/2,10,0);
+  //genCircle(mouseX,mouseY,float(mouseX)/5,0);
+  //genLine(60,60,mouseX,mouseY,10,0);
+  //genRect(60,60,mouseX,mouseY,0);
+  //genBox(60,60,mouseX,mouseY,10,0);
+  genRoundRect(30,30,50,50,5,0);
 }
 
-
-
-void plotLine(int x0, int y0, int x1, int y1){
-  int dx=x1-x0;
-  int dy=y1-y0;
-
-  int D = 2*dy - dx;
-  ellipse(x0,y0,2,2);
-  int y=y0;
-
-  for(int x = x0+1; x < x1+1; x++){
-    D = D + (2*dy);
-    if(D > 0){
-      y = y+1;
-      D = D - (2*dx);
-    }
-    ellipse(x,y,2,2);
-  }
-    
-}
-*/
 void mousePressed(){
   
   if(mouseButton == RIGHT){

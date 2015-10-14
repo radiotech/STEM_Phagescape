@@ -1,3 +1,13 @@
+/*
+int wavePixels = 100;
+int waveFrames = 60;
+int waveHeight = 25;
+int waveOffset = 13;
+int waveStroke = 6;
+PGraphics[] waveGraphics;
+PImage[] waveImages;
+int adder;
+*/
 
 void waveGrid(){
   gM = new int[ceil(gSize)*2+1][ceil(gSize)*2+1];
@@ -63,6 +73,7 @@ void arcHeightV(PVector v1,PVector v2,float h1, color c1, color c2){
   ellipse((.5-1/2)+v2.x,(.5-1/2)+v2.y,4,4);
 }
 
+/*
 void arcHeightV2(int tI){
   PVector v1 = new PVector(0,waveOffset-1);
   PVector v2 = new PVector(wavePixels,waveOffset-1);
@@ -92,7 +103,7 @@ void arcHeightV2(int tI){
   waveGraphics[tI].stroke(255);
   waveGraphics[tI].bezier(v1.x, ceil(v1.y), v1C.x, v1C.y, v2C.x, v2C.y, v2.x, v2.y);
 }
-
+*/
 class Wave {
   PVector a;
   PVector b;
@@ -120,39 +131,18 @@ class Wave {
     //strokeWeight(1);
     
     
-    /*
-    if(wDir){
-      if(tH > 0){
-        stroke(c2);
-        fill(c2);
-      } else {
-        stroke(c1);
-        fill(c1);
-      }
-      triangle(ta.x,ta.y,tb.x,tb.y,(ta.x+tb.x)/2,ta.y+tH);
-    } else {
-      if(tH > 0){
-        stroke(c1);
-        fill(c1);
-      } else {
-        stroke(c2);
-        fill(c2);
-      }
-      triangle(ta.x,ta.y,tb.x,tb.y,ta.x+tH,(ta.y+tb.y)/2);
-    }
-    */
     
-    strokeWeight(7);
+    strokeWeight(gScale/15);
     stroke(255);
     line(ta.x,ta.y,tb.x,tb.y);
     noStroke();
     fill(255);
-    ellipse(ta.x,ta.y,6,6);
-    ellipse(tb.x,tb.y,6,6);
+    ellipse(ta.x,ta.y,gScale/15-1,gScale/15-1);
+    ellipse(tb.x,tb.y,gScale/15-1,gScale/15-1);
     //waveFromImage(ta.x,ta.y,amp*floor((wPhase+shift)*10),wDir);
   }
 }
-
+/*
 void updateWaveImages(){
   waveGraphics = new PGraphics[waveFrames*4];
   waveImages = new PImage[waveFrames*4];
@@ -236,5 +226,5 @@ void waveFromImage(float tx, float ty, int tI, boolean tDir){
     }
   }
 }
-
+*/
 
