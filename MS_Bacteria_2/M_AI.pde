@@ -1,10 +1,10 @@
-void nodeWorld(PVector startV, int targetBlock){
+void nodeWorld(PVector startV, int targetBlock, int vision){
   int q;
   Node n2;
   for ( int ix = 0; ix < wSize; ix+=1 ) {
     for ( int iy = 0; iy < wSize; iy+=1) {
 
-        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<28) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
+        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
           nodes.add(new Node(ix,iy));
           nmap[iy][ix] = nodes.size()-1;
           if (ix>0) {
@@ -28,10 +28,6 @@ void nodeWorld(PVector startV, int targetBlock){
         }
     }
   }
-}
-
-float mDis(float x1,float y1,float x2,float y2) {
-  return abs(y2-y1)+abs(x2-x1);
 }
  
 boolean astar(int iStart, int targetBlock) {
@@ -101,7 +97,6 @@ boolean astar(int iStart, int targetBlock) {
   return false;
 }
 
-
 class Node {
   float x,y;
   float g,h;
@@ -119,21 +114,19 @@ class Node {
   }
   void addNbor(Node _node,float cm) {
     nbors.add(_node);
-    nCost.add(new Float(cm));
+    nCost.add(cm);
   }
 }
-
-
 
 int[][] nmap;
 int start = -1;
  
 ArrayList openSet;
 ArrayList closedSet;
-ArrayList nodes;
-ArrayList path;
+ArrayList nodes = new ArrayList();
+ArrayList path = new ArrayList();
  
-ArrayList searchWorld(PVector startV, int targetBlock) {
+ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
   //size(480,320); //can be any dimensions as long as divisible by 16
   nmap = new int[wSize][wSize];
   openSet = new ArrayList();
@@ -144,15 +137,22 @@ ArrayList searchWorld(PVector startV, int targetBlock) {
   //generateMap(targetBlock);
   
 
-  nodeWorld(startV, targetBlock);
+  nodeWorld(startV, targetBlock, vision);
   
   
-  int start = nmap[floor(startV.y)][floor(startV.x)];
-  astar(start,targetBlock);
+  int start = aGS(nmap,startV.y,startV.x);
+  boolean tempB = false;
+  if(start > -1){
+    tempB = astar(start,targetBlock);
+  }
+  
+  if(tempB == false){
+    path = new ArrayList();
+  }
   
   return path;
 }
- 
+
 void nodeDraw() {
   Node t1;
   for ( int i = 0; i < nodes.size(); i++ ) {

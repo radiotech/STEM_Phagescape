@@ -1,91 +1,92 @@
 /* @pjs preload="block.png"; */
+/* @pjs preload="block2.png"; */
+/* @pjs preload="block3.png"; */
+/* @pjs preload="block4.png"; */
+/* @pjs preload="face.png"; */
 
 int gSelected = 1; //current selected 
 
-int wavePixels = 100;
-int waveFrames = 60;
-int waveHeight = 25;
-int waveOffset = 13;
-int waveStroke = 6;
-PGraphics[] waveGraphics;
-PImage[] waveImages;
-int adder;
-
 PImage blockImg;
 
+EConfig bulletEntity = new EConfig();
+Entity testEntity;
+
 void setup(){
-  size(700,700); //must be same as sSize above (square) //YOU MUST CHANGE THIS LINE IF YOU CHANGE THE SIZE ABOVE
+  size(700,700); //Well, I guess you can change this line if you like
   M_Setup();
-  
-  chats.add("11111111111111122222222222233333333ss3333");
-  chats.add("1111111111111112222222222223333333");
-  chats.add("111111111111111222222222222333333333333");
-  chats.add("11111111111111122222222233333");
-  chats.add("1111111111111112222222222223333333333");
-  chats.add("1111111111111112222222222223333333333");
-  
-  
 }
 
+void safePresetup(){
+  //wSize = 50;
+}
 
 void safeSetup(){ 
-  /* recommended order of events: add required world blocks, generate the world */
-  blockImg = loadImage("block.png");
-  addGeneralBlock(0,color(0,0,0),false);
-  addGeneralBlock(1,color(255,0,0),true);
-  addGeneralBlock(2,color(0,255,0),true);
-  addGeneralBlock(3,color(0,0,255),true);
-  addGeneralBlock(4,color(0,255,255),true);
-  addGeneralBlock(5,color(255,0,255),true);
-  addGeneralBlock(6,color(255,255,0),true);
-  addGeneralBlock(7,color(255,255,255),true);
-  addGeneralBlock(8,color(100,100,100),true);
-  addGeneralBlock(9,color(200,200,200),true);
-  addImageSpecialBlock(3,loadImage("block.png"),2);
-  addImageSpecialBlock(4,loadImage("block.png"),1);
+  //blockImg = loadImage("block.png");
+  addGeneralBlock(0,color(0,0,0),true,1);
+  addGeneralBlock(1,color(255,0,0),false,0);
+  addGeneralBlock(2,color(0,255,0),true,1);
+  addGeneralBlock(3,color(0,0,255),true,1);
+  addGeneralBlock(4,color(0,255,255),true,1);
+  addGeneralBlock(5,color(255,0,255),false,0);
+  addGeneralBlock(6,color(255,255,0),true,1);
+  addGeneralBlock(7,color(255,255,255),true,1);
+  addGeneralBlock(8,color(100,100,100),true,1);
+  addGeneralBlock(9,color(200,200,200),true,1);
+//  addImageSpecialBlock(3,loadImage("block2.png"),2);
+//  addImageSpecialBlock(4,loadImage("block.png"),1);
+//  addImageSpecialBlock(5,loadImage("block.png"),1);
+  //addImageSpecialBlock(0,loadImage("block4.png"),2);
+//  addTextSpecialBlock(0,"Hello World",11);
+  bulletEntity.Size = .1;
   
+  testEntity = new Entity(51,51,new EConfig(),0);
+  testEntity.EC.Genre = 1;
+  testEntity.EC.Img = loadImage("face.png");
+  testEntity.EC.AISearchMode = 1;
+  testEntity.EC.AITarget = -1;
+  testEntity.EC.AITargetID = player.EC.ID;
+  testEntity.EC.SMax = .05;
+  testEntity.EC.Type = 1;
+  entities.add(testEntity);
+  
+  /*
   for(int i = 0; i < wSize; i++){
     for(int j = 0; j < wSize; j++){
-      wU[i][j] = 0;
+      wU[i][j] = 5;
       if(random(100)<40){
-        wU[i][j] = floor(random(7));
+        wU[i][j] = floor(random(7))+1;
       }
     }
   }
+  */
+  /*
+  for(int i = 0; i < 10; i++){
+    wU[floor(random(wSize))][floor(random(wSize))] = 0;
+  }
+  */
   
-  centerView(10,10);
+  genRect(0,0,100,100,1);
+  int[] arg1 = { 1, 2, 3 };
+  float[] arg2 = { 100, 10, 10 };
+  genRandomProb(1,arg1,arg2);
+  
+  scaleView(10);
   
   //***WAVE***//updateWaveImages();
+}
+
+void safeAsync(int n){
+  if(n%25 == 0){ //every second
+    println(frameRate);
+  }
+  if(n%250 == 0){ //every ten seconds
+    
+  }
 }
 
 float tempZooms = 0;
 void safeUpdate(){
   /* recommended order of events: make chan2es to the world and entities, change the view */
-  //scaleWorld(float(mouseX)/50);
-  
-  println(frameRate);
-  
-  /*
-  //tempZooms+=99;
-  if(tempZooms < 100){
-    centerView(10,10);
-    scaleView(7);
-  } else {
-    if(tempZooms < 1100){
-      
-      
-    } else {
-      //centerView(90,90);
-      //float temp2 = 1/(1+pow(9000,(-(tempZooms-100)/1000+.5)));
-      //centerView(10+temp2*80,10+temp2*80);
-      //scaleWorld(7);
-    }
-  }
-  */
-  
-  
-  
-  
   
   centerView(player.x,player.y);
   //PVector tempV2 = new PVector(mouseX,mouseY); tempV2 = screen2Pos(tempV2); centerView((player.x*5+tempV2.x)/6,(player.y*5+tempV2.y)/6);
@@ -96,6 +97,12 @@ void safeUpdate(){
 void safeDraw(){
   /* recommended order of events: draw things over the world (if needed) */
   
+  //genRing(mouseX,mouseY,float(mouseX)/2,mouseY/2,10,0);
+  //genCircle(mouseX,mouseY,float(mouseX)/5,0);
+  //genLine(60,60,mouseX,mouseY,10,0);
+  //genRect(60,60,mouseX,mouseY,0);
+  //genBox(60,60,mouseX,mouseY,10,0);
+  //genRoundRect(30,30,50,50,5,0);
 }
 
 void mousePressed(){
@@ -109,27 +116,249 @@ void mousePressed(){
   if(!menu){
     if(mouseButton == RIGHT){
       PVector tempPosS = screen2Pos(new PVector(mouseX,mouseY));
-      aSS(wU,tempPosS.x,tempPosS.y,gSelected);
+      
+      if(aGS(wU,tempPosS.x,tempPosS.y) == 0){
+        aSS(wU,tempPosS.x,tempPosS.y,gSelected);
+      } else {
+        aSS(wU,tempPosS.x,tempPosS.y,0);
+      }
       //wU[min(wSize-1,max(0,(int)tempPosS.x))][min(wSize-1,max(0,floor(float(mouseY)/gScale+pV.y)+round(pG.y)))] = gSelected;
     }
     refreshWorld();
+  }
+  
+  PVector tempV = screen2Pos(new PVector(mouseX,mouseY));
+  player.fire(tempV);
+  genFlood(tempV.x,tempV.y,4);
+  refreshWorld();
+}
+
+void keyPressed(){
+  if(chatPushing){
+    if(key != CODED){
+      if(keyCode == BACKSPACE){
+        if(chatKBS.length() > 0){
+          chatKBS = chatKBS.substring(0,chatKBS.length()-1);
+        }
+      } else if(key == ESC) {
+        chatPushing = false;
+        chatKBS = "";
+      } else if(keyCode == ENTER) {
+        if(chatKBS.length() > 0){
+          cL.add(new Chat(chatKBS));
+          chatKBS = "";
+          chatPushing = false;
+          chatPush = 0;
+        }
+      } else {
+        chatKBS = chatKBS+key;
+      }
+    }
   } else {
-    if(bEdit){
-      mousePressedBEdit();
+    if(key == 't' || key == 'T' || key == 'c' || key == 'C' || key == ENTER){
+      chatPushing = true;
+    }
+    
+    player.moveEvent(0);
+  }
+  
+  if(key == ESC) {
+    key = 0;
+  }
+}
+
+void keyReleased(){
+  player.moveEvent(1);
+}
+void nodeWorld(PVector startV, int targetBlock, int vision){
+  int q;
+  Node n2;
+  for ( int ix = 0; ix < wSize; ix+=1 ) {
+    for ( int iy = 0; iy < wSize; iy+=1) {
+
+        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
+          nodes.add(new Node(ix,iy));
+          nmap[iy][ix] = nodes.size()-1;
+          if (ix>0) {
+            if (nmap[iy][ix-1]!=-1) {
+              n2 = (Node)nodes.get(nodes.size()-1);
+              float cost = random(0.25,2);
+              n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
+              ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
+            }
+          }
+          if (iy>0) {
+            if (nmap[iy-1][ix]!=-1) {
+              n2 = (Node)nodes.get(nodes.size()-1);
+              float cost = random(0.25,2);
+              n2.addNbor((Node)nodes.get(nmap[iy-1][ix]),cost);
+              ((Node)nodes.get(nmap[iy-1][ix])).addNbor(n2,cost);
+            }
+          }
+        } else {
+          nmap[iy][ix] = -1;
+        }
     }
   }
 }
 
-void keyPressed(){
-  player.moveEvent(0);
+float mDis(float x1,float y1,float x2,float y2) {
+  return abs(y2-y1)+abs(x2-x1);
 }
-void keyReleased(){
-  player.moveEvent(1);
+ 
+boolean astar(int iStart, int targetBlock) {
+  float endX,endY;
+   
+  openSet.clear();
+  closedSet.clear();
+  path.clear();
+   
+  //add initial node to openSet
+  openSet.add( ((Node)nodes.get(iStart)) );
+  ((Node)openSet.get(0)).p = -1;
+  ((Node)openSet.get(0)).g = 0;
+  PVector tVec = blockNear(new PVector(((Node)openSet.get(0)).x,((Node)openSet.get(0)).y), targetBlock, 100);
+  ((Node)openSet.get(0)).h = mDis( ((Node)openSet.get(0)).x, ((Node)openSet.get(0)).y, tVec.x, tVec.y );
+   
+  Node current;
+  float tentativeGScore;
+  boolean tentativeIsBetter;
+  float lowest = 999999999;
+  int lowId = -1;
+  while( openSet.size()>0 ) {
+    lowest = 999999999;
+    for ( int a = 0; a < openSet.size(); a++ ) {
+      if ( ( ((Node)openSet.get(a)).g+((Node)openSet.get(a)).h ) <= lowest ) {
+        lowest = ( ((Node)openSet.get(a)).g+((Node)openSet.get(a)).h );
+        lowId = a;
+      }
+    }
+    current = (Node)openSet.get(lowId);
+    if ( aGS(wU,current.x,current.y) == targetBlock) { //path found
+      //follow parents backward from goal
+      Node d = (Node)openSet.get(lowId);
+      while( d.p != -1 ) {
+        path.add( d );
+        d = (Node)nodes.get(d.p);
+      }
+      return true;
+    }
+    closedSet.add( (Node)openSet.get(lowId) );
+    openSet.remove( lowId );
+    for ( int n = 0; n < current.nbors.size(); n++ ) {
+      if ( closedSet.contains( (Node)current.nbors.get(n) ) ) {
+        continue;
+      }
+      tentativeGScore = current.g + mDis( current.x, current.y, ((Node)current.nbors.get(n)).x, ((Node)current.nbors.get(n)).y )*((Float)current.nCost.get(n));
+      if ( !openSet.contains( (Node)current.nbors.get(n) ) ) {
+        openSet.add( (Node)current.nbors.get(n) );
+        tentativeIsBetter = true;
+      }
+      else if ( tentativeGScore < ((Node)current.nbors.get(n)).g ) {
+        tentativeIsBetter = true;
+      }
+      else {
+        tentativeIsBetter = false;
+      }
+       
+      if ( tentativeIsBetter ) {
+        ((Node)current.nbors.get(n)).p = nodes.indexOf( (Node)closedSet.get(closedSet.size()-1) ); //!!!!
+        ((Node)current.nbors.get(n)).g = tentativeGScore;
+        tVec = blockNear(new PVector(((Node)current.nbors.get(n)).x,((Node)current.nbors.get(n)).y), targetBlock, 100);
+        ((Node)current.nbors.get(n)).h = mDis( ((Node)current.nbors.get(n)).x, ((Node)current.nbors.get(n)).y, tVec.x, tVec.y );
+      }
+    }
+  }
+  //no path found
+  return false;
 }
-//THIS IS THE ONLY PLACE IN THE M_FILES THAT YOU SHOULD EVER CHANGE (WITH NO EXCEPTIONS), IF YOU NEED TO MAKE A CHANGE ELSEWARE IN THE M_FILES, CONTACT AJ FIRST - lavabirdaj@gmail.com
-int sSize = 700; //Must be same as the numbers in the size() function on the first line of your draw() loop
+
+
+class Node {
+  float x,y;
+  float g,h;
+  int p;
+  ArrayList nbors; //array of node objects, not indecies
+  ArrayList nCost; //cost multiplier for each corresponding
+  Node(float _x,float _y) {
+    x = _x;
+    y = _y;
+    g = 0;
+    h = 0;
+    p = -1;
+    nbors = new ArrayList();
+    nCost = new ArrayList();
+  }
+  void addNbor(Node _node,float cm) {
+    nbors.add(_node);
+    nCost.add(cm);
+  }
+}
+
+
+
+int[][] nmap;
+int start = -1;
+ 
+ArrayList openSet;
+ArrayList closedSet;
+ArrayList nodes = new ArrayList();
+ArrayList path = new ArrayList();
+ 
+ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
+  //size(480,320); //can be any dimensions as long as divisible by 16
+  nmap = new int[wSize][wSize];
+  openSet = new ArrayList();
+  closedSet = new ArrayList();
+  nodes = new ArrayList();
+  path = new ArrayList();
+  
+  //generateMap(targetBlock);
+  
+
+  nodeWorld(startV, targetBlock, vision);
+  
+  
+  int start = aGS(nmap,startV.y,startV.x);
+  boolean tempB = false;
+  if(start > -1){
+    tempB = astar(start,targetBlock);
+  }
+  
+  if(tempB == false){
+    path = new ArrayList();
+  }
+  
+  return path;
+}
+ 
+void nodeDraw() {
+  Node t1;
+  for ( int i = 0; i < nodes.size(); i++ ) {
+    t1 = (Node)nodes.get(i);
+    if (i==start) {
+      fill(0,255,0);
+    }
+    else {
+      if (path.contains(t1)) {
+        fill(255);
+        if(((Node)path.get(path.size()-1)).x == t1.x && ((Node)path.get(path.size()-1)).y == t1.y){
+          fill(0,0,255);
+        }
+      }
+      else {
+        fill(150,150,150);
+      }
+    }
+    noStroke();
+    PVector tVec = pos2Screen(new PVector(t1.x,t1.y));
+    rect(tVec.x+gScale/4,tVec.y+gScale/4,+gScale/2,+gScale/2);
+  }
+}
+//STEM Phagescape API v1.0
+//DO NOT MAKE ANY CHANGES TO THIS DOCUMENT. IF YOU NEED TO MAKE A CHANGE, CONTACT ME (AJ) - lavabirdaj@gmail.com
 int wSize = 100; //blocks in the world (square)
-float gSize = 8; //grid units displayed on the screen (blocks in view) (square)
+float gSize = 10; //grid units displayed on the screen (blocks in view) (square)
 //END OF CONFIGURATION, DO NOT CHANGE BELOW THIS LINE - NO EXCEPTIONS
 /*
 ********** Important Function and Variable Outline **********
@@ -145,7 +374,7 @@ aGS(wU,_X_,_Y_) //access a block at a position in the world - each block is repr
 aSS(wU,_X_,_Y_,_BLOCK_ID_) //change a block at a position in the world
 addGeneralBlock(_BLOCK_ID_,color(_R_,_G_,_B_),_IS_SOLID?_) //make this block ID represent a block with a certain color that is either solid (true) or not solid (false)
 addImageSpecialBlock(_BLOCK_ID_,_IMAGE_,_IMAGE_MODE_) //make this block ID represent a block with an image (PImage) and an integer representing the drawing method (0 = no squish, 1 = squish, 2 = absolute position (like the cartoon Chowder))
-addTextSpecialBlock(_BLOCK_ID_,_TEXT_,_TEXT_MODE_) //make this block ID represent a block with a text (String ex. 'hello there!') and an integer representing the drawing method (0 = always display text bubble, 1-10 = display buble at distances 1-10, 11-20 = send chat message at distances 1-10)
+addTextSpecialBlock(_BLOCK_ID_,_TEXT_,_TEXT_MODE_) //make this block ID represent a block with text (A string, ex. "hello there!") and an integer representing the drawing method (0 = always display text bubble, 1-10 = display buble at distances, 11-20 = send chat message at distances)
 
 ***** General Functions *****
 pointDir(_POS1_,_POS2_)
@@ -163,6 +392,8 @@ minAbs(_NUM_1_,_NUM_2_)
 int[][] gU; //Grid unit - contains all blocks being drawn to the screen
 int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
 int[][] wU; //World Unit - contains all blocks in the world
+int[][] wUDamage;
+boolean[][] wUText; //World Unit - contains all blocks in the world
 float gScale; //the width and height of blocks being drawn to the screen in pixels
 float wPhase = 0; //the current phase of all waves in the world (where they are in their animation)
 ArrayList wL = new ArrayList<Wave>(); //Wave list - list of all waves in the world
@@ -174,6 +405,7 @@ boolean menu = false;
 ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
+int[] gBStrength = new int[256];
 boolean[] sBHasImage = new boolean[256];
 PImage[] sBImage = new PImage[256];
 int[] sBImageDrawType = new int[256];
@@ -185,38 +417,40 @@ PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter;
 
-
 void M_Setup(){
+  safePresetup();
   frameRate(60);
-  smooth(1);
   strokeCap(SQUARE);
-  //textureMode(NORMAL);
+  textAlign(LEFT,CENTER);
+  textSize(20);
   setupWorld();
   setupEntities();
+  centerView(wSize/2,wSize/2);
   safeSetup();
   refreshWorld();
 }
 
 
 void draw(){
-  animate();
   
+  animate();
+  drawWorld();//
+  nodeDraw();
   if(!menu){
     updateWorld();
-    updateEntities();
+    
   }
+  
+  manageAsync();
   
   safeUpdate();
   
   
-  drawWorld();
+  //drawWorld();
+  
   drawEntities();
   
   safeDraw();
-  
-  if(bEdit){
-    drawBEdit();
-  }
   
   drawChat();
 }
@@ -228,6 +462,11 @@ float pointDir(PVector v1,PVector v2){
   }
   return tDir;
 }
+
+float pointDistance(PVector v1,PVector v2){
+  return sqrt(sq(v1.x-v2.x)+sq(v1.y-v2.y));
+}
+
 
 float turnWithSpeed(float tA, float tB, float tSpeed){
   if(tSpeed == 0){
@@ -272,12 +511,28 @@ void aSS(int[][] tMat, float tA, float tB, int tValue){ //array set safe
   tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))] = tValue;
 }
 
+void aSS2DB(boolean[][] tMat, float tA, float tB, boolean tValue){ //array set safe
+  tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))] = tValue;
+}
+
 int aGS(int[][] tMat, float tA, float tB){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
 }
 
-int aGSB(int[] tMat, float tA){ //array get safe
+int aGS1D(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
+}
+
+boolean aGS1DB(boolean[] tMat, float tA){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))];
+}
+
+color aGS1DC(color[] tMat, float tA){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))];
+}
+
+boolean aGS2DB(boolean[][] tMat, float tA, float tB){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
 }
 
 int[] aGAS(int[][] tMat, float tA, float tB){ //array get around safe
@@ -315,11 +570,24 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
+int asyncC = 0;
+int asyncT = 1000;
+void manageAsync(){
+  while(millis()-40>asyncT){
+    asyncT += 40;
+    asyncC++;
+    safeAsync(asyncC);
+    updateEntities(asyncC);
+  }
+}
+
 float chatHeight = 40;
 float chatPush = 0;
 float chatPushSpeed = .07;
 boolean chatPushing = false;
-ArrayList chats = new ArrayList<String>();
+String chatKBS = "";
+ArrayList cL = new ArrayList<Chat>();
+
 
 void drawChat(){
   
@@ -337,15 +605,10 @@ void drawChat(){
     }
   }
   
-  textAlign(LEFT,CENTER);
-  textSize(20);
-  noStroke();
-  for(int i = 0; i < chats.size(); i++){
-    String c = (String)chats.get(i);
-    fill(0,100+100*chatPush);
-    rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,textWidth(c)+chatHeight,chatHeight,0,100,100,0);
-    fill(255,170+50*chatPush);
-    text(c,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush);
+  Chat tempChat;
+  for(int i = 0; i < cL.size(); i++){
+    tempChat = (Chat) cL.get(i);
+    tempChat.display(cL.size()-i-1);
   }
   
   if(chatPush > 0){
@@ -355,67 +618,126 @@ void drawChat(){
     fill(0,200*chatPush);
     rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
     fill(255,220*chatPush);
-    text("ASDdsghgsdfhgjfgds dsfsgxfdfgdtrfh asdddaasdd",chatHeight/5,height-chatHeight/2);
+    text(chatKBS,chatHeight/5,height-chatHeight/2);
+    
+    
+    
   }
   
   
   
-  if(mouseX > width/2){
-    chatPushing = true;
-  } else {
-    chatPushing = false;
-  }
+  
   
   
   
 }
 
+
+class Chat{
+  String content;
+  int time;
+  
+  Chat(String tContent) {
+    content = tContent;
+    time = millis();
+  }
+  
+  void display(int i){
+    if(i < height/chatHeight+2){
+      if(time+5000>millis() || chatPush > 0){
+        float fadeOut = float(millis()-(time+4000))/1000;
+        fadeOut = min(max(fadeOut,0),1);
+        if(chatPush > 0){
+          fadeOut -= chatPush;
+        }
+        fadeOut = min(max(fadeOut,0),1);
+        
+        
+        noStroke();
+      
+        fill(0,100+100*chatPush-255*fadeOut);
+        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,textWidth(content)+chatHeight,chatHeight,0,100,100,0);
+        fill(255,170+50*chatPush-255*fadeOut);
+        text(content,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush);
+      }
+    }
+  }
+  
+}
+
+void drawTextBubble(float tx, float ty, String tText){
+  float tw = textWidth(tText)+chatHeight;
+  float td = chatHeight;
+  
+  float tx2 = tx-(tx-width/2)/(width/2)*tw/2*1.5;
+  float ty2 = -abs(ty-(td+chatHeight/2))/(ty-(td+chatHeight/2))*td+ty;
+  
+  stroke(255,100);
+  strokeWeight(7);
+  fill(255);
+  triangle(tx,ty,tx2-chatHeight/2+(tx-width/2)/(width/2)*tw/4,ty2,tx2+chatHeight/2+(tx-width/2)/(width/2)*tw/4,ty2);
+  rect(tx2-tw/2,ty2-chatHeight/2,tw,chatHeight,chatHeight/10);
+  fill(0);
+  text(tText,tx2-tw/2+chatHeight/2,ty2);
+  
+  
+}
+
+
+
+
 void setupEntities(){
-  player = new Entity(50,50,1,0);
+  player = new Entity(50,50,new EConfig(),0);
+  player.EC.Genre = 1;
+  player.EC.Img = loadImage("player.png");
   entities.add(player);
 }
 
-void updateEntities(){
-  for (Entity e : (ArrayList<Entity>) entities) {
-    e.moveAI();
+void updateEntities(int cycle){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    tempE.moveAI(cycle);
   }
 }
 
 void drawEntities(){
-  for (Entity e : (ArrayList<Entity>) entities) {
-    e.display();
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    tempE.display();
   }
 }
 
 class Entity {
+  float ID = random(1000);
+    
+  int thisI;
+  EConfig EC;
   float x;
   float y;
   PVector eV;
   float eDir = 0;
-  float eSize;
   PVector eD;
-  
-  float eAccel = .010;
-  float eTAccel = .010;
-  float eSMax = .10;
-  float eTSMax = .10;
-  float eTDrag = .008;
-  float eDrag = .002;
   float eSpeed = 0; //Player speed
   float eTSpeed = 0; //Player turn speed
-  
-  PImage eImg;
-  
   boolean eMove = false;
-  int eType;
   
-  Entity(float tx, float ty, float tSize, int tType) {
+  PVector eVLast;
+  
+  float eFade = 0; //Particle fade
+  
+  int eID;
+  
+  PVector AITargetPos = new PVector(-1,-1);
+  
+  Entity(float tx, float ty, EConfig tEC, float tDir) {
     x = tx;
     y = ty;
-    eD = new PVector(tx,ty-1);
-    eImg = loadImage("player.png");
-    eSize = tSize;
-    eType = tType;
+    eDir = tDir;
+    eD = new PVector(tx+cos(tDir),ty+sin(tDir));
+    EC = tEC;
+    eVLast = new PVector(x,y);
+    eV = new PVector(x,y);
+    eID = floor(random(2147483.647))*1000;
   }
   
   void moveEvent(int eventID){
@@ -463,59 +785,391 @@ class Entity {
     }
   }
   
-  void moveAI(){
+  void moveAI(int cycle){
     eV = new PVector(x,y);
-    eMove = false;
-    if(eType == 0){
-      if(mousePressed || max(pKeys) == 1){
-        if(!mousePressed){
-          eD = new PVector(eV.x+(-pKeys[2]+pKeys[3]),eV.y+(-pKeys[0]+pKeys[1]));
-        } else {
-          eD = screen2Pos(new PVector(mouseX,mouseY));
+    if(EC.Genre == 0){
+      if(x>wSize || x<0 || y>wSize || y<0 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
+        if(aGS1DB(gBIsSolid,aGS(wU,x,y))){
+          EConfig tempConfig;
+          for(int i = 0; i <100; i++){
+            if(random(100)<30){
+              tempConfig = new EConfig();
+              tempConfig.Genre = 2;
+              tempConfig.Size = .1;
+              tempConfig.FadeRate = random(.1)+.05;
+              tempConfig.Type = floor(random(3));
+              tempConfig.SMax = random(EC.SMax/5);
+              if(random(100)<50){
+                tempConfig.Color = aGS1DC(gBColor,aGS(wU,x,y));
+              } else {
+                tempConfig.Color = EC.Color;
+              }
+              entities.add(new Entity(x,y,tempConfig,random(TWO_PI)));
+            }
+          }
+          aSS(wUDamage,x,y,aGS(wUDamage,x,y)+1);
         }
-        eMove = true;
-      }
-    }
-    if(eMove){
-      if(eSpeed+eAccel < eSMax){
-        eSpeed += eAccel;
+        destroy();
       } else {
-        eSpeed = eSMax;
+        x += EC.SMax*cos(eDir);
+        y += EC.SMax*sin(eDir);
+        eV = new PVector(x,y);
+      }
+    } else if(EC.Genre == 1){
+      eMove = false;
+      if(EC.Type == 0){
+        if(mousePressed || max(pKeys) == 1){
+          if(!mousePressed){
+            eD = new PVector(eV.x+(-pKeys[2]+pKeys[3]),eV.y+(-pKeys[0]+pKeys[1]));
+          } else {
+            eD = screen2Pos(new PVector(mouseX,mouseY));
+          }
+          eMove = true;
+        }
+      }
+      if(EC.Type == 1){
+        if(EC.AISearchMode > -1){
+          if(cycle % 25 == 0){
+            if(pointDistance(eV,AITargetPos)<EC.ActDist){
+              if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))){
+                fire(AITargetPos);
+              }
+            }
+          }
+          if(EC.AITarget > -1){
+            if(cycle % 125 == 0){
+            
+              if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
+                setAITarget();
+              }
+            }
+          } else {
+            if(cycle % 10 == 0){ 
+              if(pointDistance(entityNear(AITargetPos,EC.AITargetID,100),AITargetPos)>.2){
+                println("HEY, YOU MOVED!");
+                setAITarget();
+              }
+            }
+          }
+          if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
+            if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
+              if(cycle % 25 == 0){
+                if(pointDistance(eVLast,eV)<EC.Drag){
+                  setAITarget();
+                }
+              }
+              
+            }
+            eMove = true;
+            
+            if(EC.AISearchMode == 3){
+              if(cycle % 125 == 0){
+                setAITarget();
+              }
+              if(floor(eVLast.x) != floor(eV.x) || floor(eVLast.y) != floor(eV.y)){
+                setAITarget();
+              }
+              if(path.size()>0){
+                eD = new PVector(((Node)path.get(path.size()-1)).x+.5,((Node)path.get(path.size()-1)).y+.5);
+              } else {
+                if(cycle % 25 == 0){
+                  if(pointDistance(eVLast,eV)<EC.Drag){
+                    AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+                  }
+                }
+              }
+            }
+          }
+          
+        }
+      }
+      //PVector tVecss = pos2Screen(new PVector(eD.x,eD.y));
+      //ellipse(tVecss.x,tVecss.y,30,30);
+      
+      eVLast = new PVector(eV.x,eV.y);
+      if(eMove){
+        if(eSpeed+EC.Accel < EC.SMax){
+          eSpeed += EC.Accel;
+        } else {
+          eSpeed = EC.SMax;
+        }
+      }
+      if(eSpeed-EC.Drag > 0){
+        eSpeed -= EC.Drag;
+      } else {
+        eSpeed = 0;
+      }
+      if(abs(eTSpeed)+EC.TAccel < EC.TSMax){
+        eTSpeed += angleDir(eDir,pointDir(eV, eD))*EC.TAccel;
+      }
+      eDir += eTSpeed*eSpeed/EC.SMax; //pTSpeed*pSpeed/pSMax
+      if(abs(eTSpeed)-EC.TDrag > 0){
+        eTSpeed = (abs(eTSpeed)-EC.TDrag)*abs(eTSpeed)/eTSpeed;
+      } else {
+        eTSpeed = 0;
+      }
+      eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EC.Size-.5,EC.Size-.5);
+    } else if(EC.Genre == 2){
+      x += EC.SMax*cos(eDir);
+      y += EC.SMax*sin(eDir);
+      eV = new PVector(x,y);
+      eFade += EC.FadeRate;
+      if(eFade>1){
+        destroy();
       }
     }
-    if(eSpeed-eDrag > 0){
-      eSpeed -= eDrag;
-    } else {
-      eSpeed = 0;
-    }
-    if(abs(eTSpeed)+eTAccel < eTSMax){
-      eTSpeed += angleDir(eDir,pointDir(eV, eD))*eTAccel;
-    }
-    eDir += eTSpeed*eSpeed/eSMax; //pTSpeed*pSpeed/pSMax
-    if(abs(eTSpeed)-eTDrag > 0){
-      eTSpeed = (abs(eTSpeed)-eTDrag)*abs(eTSpeed)/eTSpeed;
-    } else {
-      eTSpeed = 0;
-    }
-    eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),eSize-.5,eSize-.5);
     x = eV.x;
     y = eV.y;
   }
   
+  void setAITarget(){
+    if(EC.AISearchMode == 0){
+      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,100);} else {AITargetPos = entityNear(eV,EC.AITargetID,100);}
+    } else if(EC.AISearchMode == 1){
+      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);} else {AITargetPos = entityNear(eV,EC.AITargetID,random(90)+10);}
+    } else if(EC.AISearchMode == 2){
+      AITargetPos = blockNearCasting(eV,EC.AITarget);
+      if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
+        AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+      }
+    } else if(EC.AISearchMode == 3){
+      
+      if(aGS(wU,eV.x,eV.y) != EC.AITarget){
+        searchWorld(eV,EC.AITarget,(int)EC.Vision/10);
+        
+        if(path.size()>0){
+          AITargetPos = new PVector(((Node)path.get(0)).x,((Node)path.get(0)).y);
+        }
+      }
+      
+    }
+    if(EC.AITarget > -1){
+      AITargetPos = new PVector(AITargetPos.x+.5,AITargetPos.y+.5);
+    }
+    eD = new PVector(AITargetPos.x,AITargetPos.y);
+  }
+  
+  void fire(PVector tempV){
+    float tempDir = pointDir(eV,tempV);
+    entities.add(new Entity(x+EC.Size/2*cos(tempDir),y+EC.Size/2*sin(tempDir),bulletEntity,tempDir));
+  }
+  
   void display() {
-    stroke(255);
-    strokeWeight(4);
-    fill(0,255,0);
-    pushMatrix();
-    PVector tempV = new PVector(eV.x,eV.y);
-    tempV = pos2Screen(tempV);
-    translate(tempV.x,tempV.y);
-    rotate(eDir+PI/2);
-    image(eImg,-gScale/2*eSize,-gScale/2*eSize,gScale*eSize,gScale*eSize);
-    //rect(-gScale/2*eSize,-gScale/2*eSize,gScale*eSize,gScale*eSize);
-    popMatrix();
+    PVector tempV = pos2Screen(new PVector(x,y));
+    if(EC.Genre == 0){
+      stroke(255);
+      strokeWeight(4);
+      fill(EC.Color);
+      ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
+    } else if(EC.Genre == 1) {
+      pushMatrix();
+      translate(tempV.x,tempV.y);
+      rotate(eDir+PI/2);
+      image(EC.Img,-gScale/2*EC.Size,-gScale/2*EC.Size,gScale*EC.Size,gScale*EC.Size);
+      popMatrix();
+    } else if(EC.Genre == 2){
+      stroke(255,255-eFade*255);
+      strokeWeight(2);
+      fill(EC.Color,255-eFade*255);
+      if(EC.Type == 0){
+        ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
+      } else if(EC.Type == 1) {
+        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+      } else {
+        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+      }
+    }
+  }
+  
+  void destroy(){
+    for (int i = 0; i < entities.size(); i++) {
+      Entity tempE = (Entity) entities.get(i);
+      if(tempE.ID == ID){
+        entities.remove(i);
+      }
+    }
   }
 }
+
+class EConfig {
+  float ID = random(1000);
+  int Genre = 0;
+  
+  color Color = color(0);
+  
+  float Size = 1;
+  float SMax = .15;
+  
+  float Accel = .040;
+  float Drag = .008;
+  float TAccel = .030;
+  float TSMax = .20;
+  float TDrag = .016;
+  PImage Img;
+  int Type = 0;
+  
+  int AISearchMode = -1;
+  int AITarget = -1;
+  float AITargetID = -1;
+  float AIActionMode = -1;
+  
+  float FadeRate = .1;
+  float Vision = 100; //100 is generaly a good number... be careful with this and AI mode 3+... if > 140 and no target is near lag is created
+  float GoalDist = 3; //Want to get this close
+  float ActDist = 10; //Will start acting at this dis
+  
+  EConfig() {}
+}
+
+PVector entityNear(PVector eV,float tEID, float tChance){
+  float minDis = wSize*wSize;
+  PVector tRV = new PVector(random(wSize),random(wSize));
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.ID == tEID){
+      if(random(100)<tChance){
+        if(pointDistance(eV, tempE.eV) < minDis){
+          tRV = new PVector(tempE.x,tempE.y);
+          minDis = pointDistance(eV, tRV);
+        }
+      }
+    }
+  }
+  return tRV;
+}
+
+/*
+Ring
+Circle
+Round Rect
+Rect
+Line
+RandomProb
+fill
+replace
+testOpen
+spread
+*/
+
+void genRing(int x, int y, float w, float h, float weight, int b){
+  float c = TWO_PI/floor(PI*max(w,h)*10);
+  float r = 0;
+  for(float i = 0; i < TWO_PI; i+=c){
+    r = (w*h)/sqrt(sq(w*cos(i))+sq(h*sin(i)))-weight/2;
+    for(float j = 0; j <= weight; j+=.2){
+      aSS(wU,x+floor((r+j)*cos(i)),y+floor((r+j)*sin(i)),b);
+    }
+  }
+}
+
+void genCircle(float x, float y, float r, int b){
+  PVector centerV = new PVector(x,y);
+  for(int i = 0; i < width; i++){
+    for(int j = 0; j < height; j++){
+      if(pointDistance(new PVector(i,j), centerV) < r){
+        aSS(wU,i,j,b);
+      }
+    }
+  }
+}
+
+void genLine(int x1, int y1, int x2, int y2, float weight, int b){
+  int itt = ceil(10*pointDistance(new PVector(x1,y1), new PVector(x2,y2)));
+  float rise = float(y2-y1)/itt;
+  float run = float(x2-x1)/itt;
+  float xOff = 0;
+  float yOff = 0;
+  for(float i = 0; i < itt; i+=1){
+    for(float j = 0; j <= weight*10; j+=2){
+      xOff = (j-weight*5)*rise;
+      yOff = (j-weight*5)*-run;
+      aSS(wU,floor(x1+xOff+i*run),floor(y1+yOff+i*rise),b);
+    }
+  }
+}
+
+void genRect(float x, float y, float w, float h, int b){
+  w = round(w);
+  h = round(h);
+  x = round(x);
+  y = round(y);
+  for(int i = 0; i < w; i++){
+    for(int j = 0; j < h; j++){
+      aSS(wU,(int)x+i,(int)y+j,b);
+    }
+  }
+}
+
+void genBox(float x, float y, float w, float h, float weight, int b){
+  x = round(x); y = round(y); w = round(w); h = round(h); weight = round(weight);
+  int hweight = round(weight/2);
+  for(int j = 0; j <= weight; j++){
+    for(int i = -hweight; i <= w+hweight; i++){
+      aSS(wU,(int)x+i,(int)y-hweight+j,b);
+      aSS(wU,(int)x+i,(int)(y+h)-hweight+j,b);
+    }
+    for(int i = -hweight; i <= h+hweight; i++){
+      aSS(wU,(int)x-hweight+j,(int)y+i,b);
+      aSS(wU,(int)(x+w)-hweight+j,(int)y+i,b);
+    }
+  }
+}
+
+void genRoundRect(float x, float y, float w, float h, float rounding, int b){
+  x = round(x); y = round(y); w = round(w); h = round(h); rounding = round(rounding);
+  genRect(x+rounding,y,w-rounding*2,h,b);
+  genRect(x,y+rounding,w,h-rounding*2,b);
+  genCircle(x+rounding,y+rounding,rounding,b);
+  genCircle(x+w-rounding,y+rounding,rounding,b);
+  genCircle(x+rounding,y+h-rounding,rounding,b);
+  genCircle(x+w-rounding,y+h-rounding,rounding,b);
+}
+
+void genRandomProb(int from, int[] to, float[] prob){
+  float totProb = 0;
+  float tRand;
+  int k;
+  for(int i=0; i<prob.length; i++) {
+    totProb += prob[i];
+  }
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      if(wU[i][j] == from){
+        tRand = random(totProb);
+        k = 0;
+        while(tRand > 0){
+          tRand -= prob[k];
+          k++;
+        }
+        wU[i][j] = to[k-1];
+      }
+    }
+  }
+}
+
+void genFlood(float x, float y, int b){
+  if(x >= 0 && y >= 0 && x < wSize && y < wSize){
+    int tB = aGS(wU,x,y);
+    if(tB != b){
+      aSS(wU,x,y,b);  
+      if(aGS(wU,x+1,y) == tB){genFlood(x+1,y,b);}
+      if(aGS(wU,x-1,y) == tB){genFlood(x-1,y,b);}
+      if(aGS(wU,x,y+1) == tB){genFlood(x,y+1,b);}
+      if(aGS(wU,x,y-1) == tB){genFlood(x,y-1,b);}
+    }
+  }
+}
+
+/*
+int wavePixels = 100;
+int waveFrames = 60;
+int waveHeight = 25;
+int waveOffset = 13;
+int waveStroke = 6;
+PGraphics[] waveGraphics;
+PImage[] waveImages;
+int adder;
+*/
 
 void waveGrid(){
   gM = new int[ceil(gSize)*2+1][ceil(gSize)*2+1];
@@ -581,6 +1235,7 @@ void arcHeightV(PVector v1,PVector v2,float h1, color c1, color c2){
   ellipse((.5-1/2)+v2.x,(.5-1/2)+v2.y,4,4);
 }
 
+/*
 void arcHeightV2(int tI){
   PVector v1 = new PVector(0,waveOffset-1);
   PVector v2 = new PVector(wavePixels,waveOffset-1);
@@ -610,7 +1265,7 @@ void arcHeightV2(int tI){
   waveGraphics[tI].stroke(255);
   waveGraphics[tI].bezier(v1.x, ceil(v1.y), v1C.x, v1C.y, v2C.x, v2C.y, v2.x, v2.y);
 }
-
+*/
 class Wave {
   PVector a;
   PVector b;
@@ -626,8 +1281,8 @@ class Wave {
     b = new PVector(floor((tx+1+ta)/2),floor((ty+1+tb)/2));
     amp = tAmp;
     shift = (tx+ty+(wView.x+wView.y)*2)*PI/30;
-    c1 = aGSB(gBColor,aGS(gM,tx-tb,ty+ta));
-    c2 = aGSB(gBColor,aGS(gM,tx+tb,ty-ta));
+    c1 = aGS1D(gBColor,aGS(gM,tx-tb,ty+ta));
+    c2 = aGS1D(gBColor,aGS(gM,tx+tb,ty-ta));
   }
   void display() {
     PVector ta = pos2Screen(grid2Pos(new PVector(a.x,a.y)));
@@ -638,35 +1293,18 @@ class Wave {
     //strokeWeight(1);
     
     
-    /*
-    if(wDir){
-      if(tH > 0){
-        stroke(c2);
-        fill(c2);
-      } else {
-        stroke(c1);
-        fill(c1);
-      }
-      triangle(ta.x,ta.y,tb.x,tb.y,(ta.x+tb.x)/2,ta.y+tH);
-    } else {
-      if(tH > 0){
-        stroke(c1);
-        fill(c1);
-      } else {
-        stroke(c2);
-        fill(c2);
-      }
-      triangle(ta.x,ta.y,tb.x,tb.y,ta.x+tH,(ta.y+tb.y)/2);
-    }
-    */
     
-    strokeWeight(7);
+    strokeWeight(gScale/15);
     stroke(255);
     line(ta.x,ta.y,tb.x,tb.y);
+    noStroke();
+    fill(255);
+    ellipse(ta.x,ta.y,gScale/15-1,gScale/15-1);
+    ellipse(tb.x,tb.y,gScale/15-1,gScale/15-1);
     //waveFromImage(ta.x,ta.y,amp*floor((wPhase+shift)*10),wDir);
   }
 }
-
+/*
 void updateWaveImages(){
   waveGraphics = new PGraphics[waveFrames*4];
   waveImages = new PImage[waveFrames*4];
@@ -750,13 +1388,16 @@ void waveFromImage(float tx, float ty, int tI, boolean tDir){
     }
   }
 }
-
+*/
 
 void setupWorld(){
-  gScale = float(sSize)/(gSize-1);
+  gScale = float(width)/(gSize-1);
   wU = new int[wSize][wSize];
+  wUText = new boolean[wSize][wSize];
+  wUDamage = new int[wSize][wSize];
   gU = new int[ceil(gSize)][ceil(gSize)];
 }
+
 void refreshWorld(){
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
@@ -765,7 +1406,6 @@ void refreshWorld(){
   }
   waveGrid();
 }
-
 
 void moveToAnimate(PVector tV, float tTime){
   if(millis() > moveToAnimateTime.y){
@@ -787,16 +1427,15 @@ void animate(){
 
 void scaleView(float tGSize){
   gSize = tGSize;
-  gScale = float(sSize)/(gSize-1);
-  
+  gScale = float(width)/(gSize-1);
   gU = new int[ceil(gSize)][ceil(gSize)];
-  
   refreshWorld();
 }
 
-void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid){
+void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid, int tStrength){
   gBColor[tIndex] = tColor;
   gBIsSolid[tIndex] = tIsSolid;
+  gBStrength[tIndex] = tStrength;
 }
 
 void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
@@ -839,32 +1478,75 @@ void updateWorld(){
 void drawWorld(){
   background(0);
   
-  noStroke();
+  
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      if(gU[i][j] != 0){
-        int thisBlock = gU[i][j];
-        fill(aGSB(gBColor,thisBlock));
-        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-        rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
-        
-        if(sBHasImage[thisBlock]){
-          float tScale;
-          if(sBImageDrawType[thisBlock] == 0){
-            image(sBImage[thisBlock],tempV.x,tempV.y);
-          } else if(sBImageDrawType[thisBlock] == 1) {
-            image(sBImage[thisBlock],tempV.x,tempV.y);
+      noStroke();
+      int thisBlock = gU[i][j];
+      fill(aGS1D(gBColor,thisBlock));
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+      
+      if(sBHasImage[thisBlock]){
+        float tScale;
+        if(sBImageDrawType[thisBlock] == 0){
+          image(sBImage[thisBlock],tempV.x,tempV.y);
+        } else if(sBImageDrawType[thisBlock] == 1) {
+          image(sBImage[thisBlock],tempV.x,tempV.y);
+        } else {
+          tScale = width/sBImage[thisBlock].width;
+          image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),tempV.x,tempV.y);
+        }
+      }
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        PVector tempV2 = grid2Pos(new PVector(i,j));
+        if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
+          if(aGS(wUDamage,tempV2.x,tempV2.y) > aGS1D(gBStrength,thisBlock)){
+            aSS(wU,tempV2.x,tempV2.y,1);
+            refreshWorld();
           } else {
-            tScale = width/sBImage[thisBlock].width;
-            image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),tempV.x,tempV.y);
+            stroke(255);
+            strokeWeight(gScale/15);
+            float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y)-1)/(aGS1D(gBStrength,thisBlock)-1+.0001)*gScale/2;
+            line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
+            line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
           }
         }
       }
     }
   }
   
-  for (Wave w : (ArrayList<Wave>) wL) {
-    w.display();
+  if(gSize < 30){
+    for (Wave w : (ArrayList<Wave>) wL) {
+      w.display();
+    }
+  }
+  
+
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      int thisBlock = gU[i][j];
+      if(sBHasText[thisBlock]){
+        PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+        if(sBTextDrawType[thisBlock] == 0){
+          drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock]);
+        } else if(sBTextDrawType[thisBlock] <= 10) {
+          if(pointDistance(new PVector(width/2-gScale/2,height/2-gScale/2),tempV) < sBTextDrawType[thisBlock]*gScale){
+            drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock]);
+          }
+        } else if(sBTextDrawType[thisBlock] <= 20) {
+          PVector tempV2 = grid2Pos(new PVector(i,j));
+          if(pointDistance(new PVector(width/2-gScale/2,height/2-gScale/2),tempV) < (sBTextDrawType[thisBlock]-10)*gScale){
+            if(aGS2DB(wUText,tempV2.x,tempV2.y) == false){
+              cL.add(new Chat(sBText[thisBlock]));
+              aSS2DB(wUText,tempV2.x,tempV2.y,true);
+            }
+          } else {
+            aSS2DB(wUText,tempV2.x,tempV2.y,false);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -905,14 +1587,14 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   PVector tV2 = new PVector(tV.x,tV.y);
   if(tS.x > 0){
     if(floor(tV.x+tw/2) != floor(tV.x+tw/2+tS.x)){
-      if(aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2) != 0 || aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2))){
         tS = new PVector(0,tS.y);
         tV2 = new PVector(floor(tV.x+tw/2+tS.x)+.999-tw/2,tV2.y);
       }
     }
   } else {
     if(floor(tV.x-tw/2) != floor(tV.x-tw/2+tS.x)){
-      if(aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2) != 0 || aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2))){
         tS = new PVector(0,tS.y);
         tV2 = new PVector(floor(tV.x-tw/2+tS.x)+tw/2,tV2.y);
       }
@@ -922,14 +1604,14 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   
   if(tS.y > 0){
     if(floor(tV.y+th/2) != floor(tV.y+th/2+tS.y)){
-      if(aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y) != 0 || aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y))){
         tS = new PVector(tS.x,0);
         tV2 = new PVector(tV2.x,floor(tV.y+th/2+tS.y)+.999-th/2);
       }
     }
   } else {
     if(floor(tV.y-th/2) != floor(tV.y-th/2+tS.y)){
-      if(aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y) != 0 || aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y) != 0){
+      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y))){
         tS = new PVector(tS.x,0);
         tV2 = new PVector(tV2.x,floor(tV.y-th/2+tS.y)+th/2);
       }
@@ -940,6 +1622,59 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   return tV2;
 }
 
+PVector blockNear(PVector eV,int tBlock, float tChance){
+  float minDis = wSize*wSize;
+  PVector tRV = new PVector(random(wSize),random(wSize));
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      if(wU[i][j] == tBlock){
+        if(random(100)<tChance){
+          if(pointDistance(eV, new PVector(i,j)) < minDis){
+            tRV = new PVector(i,j);
+            minDis = pointDistance(eV,tRV);
+          }
+        }
+      }
+    }
+  }
+  return tRV;
+}
+
+PVector blockNearCasting(PVector eV,int tBlock){
+  float minDis = 25;
+  PVector tRV = new PVector(eV.x,eV.y);
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      if(wU[i][j] == tBlock){
+        if(pointDistance(eV, new PVector(i,j)) < minDis){
+          if(rayCast(i,j,(int) eV.x,(int) eV.y)){
+            tRV = new PVector(i,j);
+            minDis = mDis(eV.x,eV.y, i,j);
+          }
+        }
+      }
+    }
+  }
+  return tRV;
+}
+
+boolean rayCast(int x0, int y0, int x1, int y1){
+  boolean tClear = true;
+  int itts = ceil(mDis(x0,y0,x1,y1)*5);
+  float tempDispX = float(x1-x0)/itts;
+  float tempDispY = float(y1-y0)/itts;
+  for(int i = 0; i < itts; i++){
+    if((round(x0+tempDispX*i) != round(x0) || round(y0+tempDispY*i+.105) != round(y0)) && (round(x0+tempDispX*i) != round(x1) || round(y0+tempDispY*i+.105) != round(y1))){
+      if(gBIsSolid[aGS(wU,round(x0+tempDispX*i),round(y0+tempDispY*i+.105))]){
+        tClear = false;
+      }
+    }
+  }
+  //println(tClear);
+  return tClear;
+}
+
+/*
 
 boolean bEdit = false;
 int[][] bU;
@@ -1187,5 +1922,7 @@ class Membrane {
     arcHeightV(a,b,amp*(gScale/10)*sin(wPhase+shift),c1,c2);
   }
 }
+*//*
+
 */
 

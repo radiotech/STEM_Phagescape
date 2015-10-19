@@ -37,17 +37,7 @@ void drawChat(){
     rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
     fill(255,220*chatPush);
     text(chatKBS,chatHeight/5,height-chatHeight/2);
-    
-    
-    
   }
-  
-  
-  
-  
-  
-  
-  
 }
 
 
@@ -97,10 +87,4 @@ void drawTextBubble(float tx, float ty, String tText){
   rect(tx2-tw/2,ty2-chatHeight/2,tw,chatHeight,chatHeight/10);
   fill(0);
   text(tText,tx2-tw/2+chatHeight/2,ty2);
-  
-  
 }
-
-
-
-

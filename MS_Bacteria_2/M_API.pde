@@ -1,8 +1,8 @@
-//THIS IS THE ONLY PLACE IN THE M_FILES THAT YOU SHOULD EVER CHANGE (WITH NO EXCEPTIONS), IF YOU NEED TO MAKE A CHANGE ELSEWARE IN THE M_FILES, CONTACT AJ FIRST - lavabirdaj@gmail.com
-int sSize = 700; //Must be same as the numbers in the size() function on the first line of your draw() loop
+//STEM Phagescape API v1.0
+//DO NOT MAKE ANY CHANGES TO THIS DOCUMENT. IF YOU NEED TO MAKE A CHANGE, CONTACT ME (AJ) - lavabirdaj@gmail.com
 int wSize = 100; //blocks in the world (square)
-float gSize = 8; //grid units displayed on the screen (blocks in view) (square)
-//END OF CONFIGURATION, DO NOT CHANGE BELOW THIS LINE - NO EXCEPTIONS
+float gSize = 10; //grid units displayed on the screen (blocks in view) (square)
+//END OF CONFIGURATION, DO NOT CHANGE BELOW THIS LINE - WITH NO EXCEPTIONS
 /*
 ********** Important Function and Variable Outline **********
 //for each item please replace the '_VARIABLE_' including the _ characters with your function values
@@ -35,6 +35,7 @@ minAbs(_NUM_1_,_NUM_2_)
 int[][] gU; //Grid unit - contains all blocks being drawn to the screen
 int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
 int[][] wU; //World Unit - contains all blocks in the world
+int[][] wUDamage;
 boolean[][] wUText; //World Unit - contains all blocks in the world
 float gScale; //the width and height of blocks being drawn to the screen in pixels
 float wPhase = 0; //the current phase of all waves in the world (where they are in their animation)
@@ -47,6 +48,7 @@ boolean menu = false;
 ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
+int[] gBStrength = new int[256];
 boolean[] sBHasImage = new boolean[256];
 PImage[] sBImage = new PImage[256];
 int[] sBImageDrawType = new int[256];
@@ -58,14 +60,15 @@ PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter;
 
-
 void M_Setup(){
+  safePresetup();
   frameRate(60);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
   setupWorld();
   setupEntities();
+  centerView(wSize/2,wSize/2);
   safeSetup();
   refreshWorld();
 }
@@ -74,8 +77,8 @@ void M_Setup(){
 void draw(){
   
   animate();
-  
-  drawWorld();//out of place
+  drawWorld();//
+  nodeDraw();
   if(!menu){
     updateWorld();
     
@@ -87,13 +90,10 @@ void draw(){
   
   
   //drawWorld();
+  
   drawEntities();
   
   safeDraw();
-  
-  if(bEdit){
-    drawBEdit();
-  }
   
   drawChat();
 }
@@ -162,11 +162,15 @@ int aGS(int[][] tMat, float tA, float tB){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
 }
 
-int aGSB(int[] tMat, float tA){ //array get safe
+int aGS1D(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
 boolean aGS1DB(boolean[] tMat, float tA){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))];
+}
+
+color aGS1DC(color[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
@@ -216,6 +220,10 @@ void manageAsync(){
     asyncT += 40;
     asyncC++;
     safeAsync(asyncC);
-    updateEntities();
+    updateEntities(asyncC);
   }
+}
+
+float mDis(float x1,float y1,float x2,float y2) {
+  return abs(y2-y1)+abs(x2-x1);
 }

@@ -1,3 +1,5 @@
+/*
+
 boolean bEdit = false;
 int[][] bU;
 int bW = 18;
@@ -244,4 +246,6 @@ class Membrane {
     arcHeightV(a,b,amp*(gScale/10)*sin(wPhase+shift),c1,c2);
   }
 }
+*//*
+
 */

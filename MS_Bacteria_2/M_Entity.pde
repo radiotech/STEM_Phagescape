@@ -5,10 +5,10 @@ void setupEntities(){
   entities.add(player);
 }
 
-void updateEntities(){
+void updateEntities(int cycle){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    tempE.moveAI();
+    tempE.moveAI(cycle);
   }
 }
 
@@ -20,6 +20,8 @@ void drawEntities(){
 }
 
 class Entity {
+  float ID = random(1000);
+    
   int thisI;
   EConfig EC;
   float x;
@@ -32,7 +34,8 @@ class Entity {
   boolean eMove = false;
   
   PVector eVLast;
-  int AITargetSetTime = 0;
+  
+  float eFade = 0; //Particle fade
   
   int eID;
   
@@ -94,14 +97,35 @@ class Entity {
     }
   }
   
-  void moveAI(){
+  void moveAI(int cycle){
     eV = new PVector(x,y);
     if(EC.Genre == 0){
-      x += EC.SMax*cos(eDir);
-      y += EC.SMax*sin(eDir);
-      eV = new PVector(x,y);
       if(x>wSize || x<0 || y>wSize || y<0 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
+        if(aGS1DB(gBIsSolid,aGS(wU,x,y))){
+          EConfig tempConfig;
+          for(int i = 0; i <100; i++){
+            if(random(100)<30){
+              tempConfig = new EConfig();
+              tempConfig.Genre = 2;
+              tempConfig.Size = .1;
+              tempConfig.FadeRate = random(.1)+.05;
+              tempConfig.Type = floor(random(3));
+              tempConfig.SMax = random(EC.SMax/5);
+              if(random(100)<50){
+                tempConfig.Color = aGS1DC(gBColor,aGS(wU,x,y));
+              } else {
+                tempConfig.Color = EC.Color;
+              }
+              entities.add(new Entity(x,y,tempConfig,random(TWO_PI)));
+            }
+          }
+          aSS(wUDamage,x,y,aGS(wUDamage,x,y)+1);
+        }
         destroy();
+      } else {
+        x += EC.SMax*cos(eDir);
+        y += EC.SMax*sin(eDir);
+        eV = new PVector(x,y);
       }
     } else if(EC.Genre == 1){
       eMove = false;
@@ -116,30 +140,63 @@ class Entity {
         }
       }
       if(EC.Type == 1){
-        if(EC.AISearchMode == 0 || EC.AISearchMode == 1 || EC.AISearchMode == 2 || EC.AISearchMode == 3){
-          if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
-            setAITarget();
+        if(EC.AISearchMode > -1){
+          if(cycle % 25 == 0){
+            if(pointDistance(eV,AITargetPos)<EC.ActDist){
+              if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))){
+                fire(AITargetPos);
+              }
+            }
           }
-          if(pointDistance(eV,AITargetPos)>1){
-            if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
-              if(AITargetSetTime+1000 < millis() && pointDistance(eVLast,eV)<EC.Drag){
+          if(EC.AITarget > -1){
+            if(cycle % 125 == 0){
+            
+              if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
                 setAITarget();
               }
             }
-            eMove = true;
-          }
-          
-          if(EC.AISearchMode == 3){
-            setAITarget();
-            if(path.size()>0){
-              eD = new PVector(((Node)path.get(path.size()-1)).x+.5,((Node)path.get(path.size()-1)).y+.5);
+          } else {
+            if(cycle % 10 == 0){ 
+              if(pointDistance(entityNear(AITargetPos,EC.AITargetID,100),AITargetPos)>.2){
+                //println("HEY, YOU MOVED!");
+                setAITarget();
+              }
             }
           }
+          if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
+            if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
+              if(cycle % 25 == 0){
+                if(pointDistance(eVLast,eV)<EC.Drag){
+                  setAITarget();
+                }
+              }
+              
+            }
+            eMove = true;
+            
+            if(EC.AISearchMode == 3){
+              if(cycle % 125 == 0){
+                setAITarget();
+              }
+              if(floor(eVLast.x) != floor(eV.x) || floor(eVLast.y) != floor(eV.y)){
+                setAITarget();
+              }
+              if(path.size()>0){
+                eD = new PVector(((Node)path.get(path.size()-1)).x+.5,((Node)path.get(path.size()-1)).y+.5);
+              } else {
+                if(cycle % 25 == 0){
+                  if(pointDistance(eVLast,eV)<EC.Drag){
+                    AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+                  }
+                }
+              }
+            }
+          }
+          
         }
-        
       }
-      PVector tVecss = pos2Screen(new PVector(eD.x,eD.y));
-      ellipse(tVecss.x,tVecss.y,30,30);
+      //PVector tVecss = pos2Screen(new PVector(eD.x,eD.y));
+      //ellipse(tVecss.x,tVecss.y,30,30);
       
       eVLast = new PVector(eV.x,eV.y);
       if(eMove){
@@ -164,6 +221,14 @@ class Entity {
         eTSpeed = 0;
       }
       eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EC.Size-.5,EC.Size-.5);
+    } else if(EC.Genre == 2){
+      x += EC.SMax*cos(eDir);
+      y += EC.SMax*sin(eDir);
+      eV = new PVector(x,y);
+      eFade += EC.FadeRate;
+      if(eFade>1){
+        destroy();
+      }
     }
     x = eV.x;
     y = eV.y;
@@ -171,25 +236,34 @@ class Entity {
   
   void setAITarget(){
     if(EC.AISearchMode == 0){
-      AITargetPos = blockNear(eV,EC.AITarget,100);
+      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,100);} else {AITargetPos = entityNear(eV,EC.AITargetID,100);}
     } else if(EC.AISearchMode == 1){
-      AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);} else {AITargetPos = entityNear(eV,EC.AITargetID,random(90)+10);}
     } else if(EC.AISearchMode == 2){
       AITargetPos = blockNearCasting(eV,EC.AITarget);
       if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
         AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
       }
     } else if(EC.AISearchMode == 3){
-      searchWorld(eV,0);
-      nodeDraw();
-      if(path.size()>0){
-        AITargetPos = new PVector(((Node)path.get(0)).x,((Node)path.get(0)).y);
+      
+      if(aGS(wU,eV.x,eV.y) != EC.AITarget){
+        searchWorld(eV,EC.AITarget,(int)EC.Vision/10);
+        
+        if(path.size()>0){
+          AITargetPos = new PVector(((Node)path.get(0)).x,((Node)path.get(0)).y);
+        }
       }
       
     }
-    AITargetPos = new PVector(AITargetPos.x+.5,AITargetPos.y+.5);
+    if(EC.AITarget > -1){
+      AITargetPos = new PVector(AITargetPos.x+.5,AITargetPos.y+.5);
+    }
     eD = new PVector(AITargetPos.x,AITargetPos.y);
-    AITargetSetTime = millis();
+  }
+  
+  void fire(PVector tempV){
+    float tempDir = pointDir(eV,tempV);
+    entities.add(new Entity(x+EC.Size/2*cos(tempDir),y+EC.Size/2*sin(tempDir),bulletEntity,tempDir));
   }
   
   void display() {
@@ -197,7 +271,7 @@ class Entity {
     if(EC.Genre == 0){
       stroke(255);
       strokeWeight(4);
-      fill(0,255,0);
+      fill(EC.Color);
       ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
     } else if(EC.Genre == 1) {
       pushMatrix();
@@ -205,13 +279,24 @@ class Entity {
       rotate(eDir+PI/2);
       image(EC.Img,-gScale/2*EC.Size,-gScale/2*EC.Size,gScale*EC.Size,gScale*EC.Size);
       popMatrix();
+    } else if(EC.Genre == 2){
+      stroke(255,255-eFade*255);
+      strokeWeight(2);
+      fill(EC.Color,255-eFade*255);
+      if(EC.Type == 0){
+        ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
+      } else if(EC.Type == 1) {
+        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+      } else {
+        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+      }
     }
   }
   
   void destroy(){
     for (int i = 0; i < entities.size(); i++) {
       Entity tempE = (Entity) entities.get(i);
-      if(tempE.x == x){
+      if(tempE.ID == ID){
         entities.remove(i);
       }
     }
@@ -219,22 +304,49 @@ class Entity {
 }
 
 class EConfig {
+  float ID = random(1000);
   int Genre = 0;
   
+  color Color = color(0);
+  
   float Size = 1;
-  float SMax = .10;
+  float SMax = .15;
   
   float Accel = .040;
   float Drag = .008;
-  float TAccel = .040;
-  float TSMax = .40;
-  float TDrag = .032;
+  float TAccel = .030;
+  float TSMax = .20;
+  float TDrag = .016;
   PImage Img;
   int Type = 0;
   
   int AISearchMode = -1;
   int AITarget = -1;
+  float AITargetID = -1;
   float AIActionMode = -1;
+  
+  float FadeRate = .1;
+  float Vision = 100; //100 is generaly a good number... be careful with this and AI mode 3+... if > 140 and no target is near lag is created
+  float GoalDist = 3; //Want to get this close
+  float ActDist = 10; //Will start acting at this dis
   
   EConfig() {}
 }
+
+PVector entityNear(PVector eV,float tEID, float tChance){
+  float minDis = wSize*wSize;
+  PVector tRV = new PVector(random(wSize),random(wSize));
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.ID == tEID){
+      if(random(100)<tChance){
+        if(pointDistance(eV, tempE.eV) < minDis){
+          tRV = new PVector(tempE.x,tempE.y);
+          minDis = pointDistance(eV, tRV);
+        }
+      }
+    }
+  }
+  return tRV;
+}
+

@@ -1,9 +1,11 @@
 void setupWorld(){
-  gScale = float(sSize)/(gSize-1);
+  gScale = float(width)/(gSize-1);
   wU = new int[wSize][wSize];
   wUText = new boolean[wSize][wSize];
+  wUDamage = new int[wSize][wSize];
   gU = new int[ceil(gSize)][ceil(gSize)];
 }
+
 void refreshWorld(){
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
@@ -12,7 +14,6 @@ void refreshWorld(){
   }
   waveGrid();
 }
-
 
 void moveToAnimate(PVector tV, float tTime){
   if(millis() > moveToAnimateTime.y){
@@ -34,16 +35,15 @@ void animate(){
 
 void scaleView(float tGSize){
   gSize = tGSize;
-  gScale = float(sSize)/(gSize-1);
-  
+  gScale = float(width)/(gSize-1);
   gU = new int[ceil(gSize)][ceil(gSize)];
-  
   refreshWorld();
 }
 
-void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid){
+void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid, int tStrength){
   gBColor[tIndex] = tColor;
   gBIsSolid[tIndex] = tIsSolid;
+  gBStrength[tIndex] = tStrength;
 }
 
 void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
@@ -86,11 +86,12 @@ void updateWorld(){
 void drawWorld(){
   background(0);
   
-  noStroke();
+  
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
+      noStroke();
       int thisBlock = gU[i][j];
-      fill(aGSB(gBColor,thisBlock));
+      fill(aGS1D(gBColor,thisBlock));
       PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
       rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
       
@@ -105,11 +106,28 @@ void drawWorld(){
           image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),tempV.x,tempV.y);
         }
       }
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        PVector tempV2 = grid2Pos(new PVector(i,j));
+        if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
+          if(aGS(wUDamage,tempV2.x,tempV2.y) > aGS1D(gBStrength,thisBlock)){
+            aSS(wU,tempV2.x,tempV2.y,1);
+            refreshWorld();
+          } else {
+            stroke(255);
+            strokeWeight(gScale/15);
+            float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y)-1)/(aGS1D(gBStrength,thisBlock)-1+.0001)*gScale/2;
+            line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
+            line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
+          }
+        }
+      }
     }
   }
   
-  for (Wave w : (ArrayList<Wave>) wL) {
-    w.display();
+  if(gSize < 30){
+    for (Wave w : (ArrayList<Wave>) wL) {
+      w.display();
+    }
   }
   
 
@@ -214,14 +232,14 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
 
 PVector blockNear(PVector eV,int tBlock, float tChance){
   float minDis = wSize*wSize;
-  PVector tRV = new PVector(eV.x,eV.y);
+  PVector tRV = new PVector(random(wSize),random(wSize));
   for(int i = 0; i < wSize; i++){
     for(int j = 0; j < wSize; j++){
       if(wU[i][j] == tBlock){
         if(random(100)<tChance){
           if(pointDistance(eV, new PVector(i,j)) < minDis){
             tRV = new PVector(i,j);
-            minDis = mDis(eV.x,eV.y, i,j);
+            minDis = pointDistance(eV,tRV);
           }
         }
       }
@@ -250,9 +268,10 @@ PVector blockNearCasting(PVector eV,int tBlock){
 
 boolean rayCast(int x0, int y0, int x1, int y1){
   boolean tClear = true;
-  float tempDispX = float(x1-x0)/100;
-  float tempDispY = float(y1-y0)/100;
-  for(int i = 0; i < 100; i++){
+  int itts = ceil(mDis(x0,y0,x1,y1)*5);
+  float tempDispX = float(x1-x0)/itts;
+  float tempDispY = float(y1-y0)/itts;
+  for(int i = 0; i < itts; i++){
     if((round(x0+tempDispX*i) != round(x0) || round(y0+tempDispY*i+.105) != round(y0)) && (round(x0+tempDispX*i) != round(x1) || round(y0+tempDispY*i+.105) != round(y1))){
       if(gBIsSolid[aGS(wU,round(x0+tempDispX*i),round(y0+tempDispY*i+.105))]){
         tClear = false;

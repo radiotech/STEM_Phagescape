@@ -20,14 +20,16 @@ void nodeWorld(){
   Node n2;
   for ( int ix = 0; ix < width/16.0; ix+=1 ) {
     for ( int iy = 0; iy < height/16.0; iy+=1) {
-
         if ((world[iy][ix] == 1 && distance(ix,iy,5,5)<28) || (ix == startV.x && iy == startV.y) || (ix == endV.x && iy == endV.y)) {
+          
           nodes.add(new Node(ix,iy));
           nmap[iy][ix] = nodes.size()-1;
+          
           if (ix>0) {
             if (nmap[iy][ix-1]!=-1) {
               n2 = (Node)nodes.get(nodes.size()-1);
               float cost = random(0.25,2);
+              
               n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
               ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
             }
@@ -141,7 +143,7 @@ class Node {
   }
   void addNbor(Node _node,float cm) {
     nbors.add(_node);
-    nCost.add(new Float(cm));
+    nCost.add(cm);
   }
 }
 
@@ -189,6 +191,7 @@ void setup() {
 }
  
 void draw() {
+  background(0,255,0);
   Node t1,t2;
   for ( int i = 0; i < nodes.size(); i++ ) {
     t1 = (Node)nodes.get(i);

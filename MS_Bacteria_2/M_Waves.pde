@@ -119,8 +119,8 @@ class Wave {
     b = new PVector(floor((tx+1+ta)/2),floor((ty+1+tb)/2));
     amp = tAmp;
     shift = (tx+ty+(wView.x+wView.y)*2)*PI/30;
-    c1 = aGSB(gBColor,aGS(gM,tx-tb,ty+ta));
-    c2 = aGSB(gBColor,aGS(gM,tx+tb,ty-ta));
+    c1 = aGS1D(gBColor,aGS(gM,tx-tb,ty+ta));
+    c2 = aGS1D(gBColor,aGS(gM,tx+tb,ty-ta));
   }
   void display() {
     PVector ta = pos2Screen(grid2Pos(new PVector(a.x,a.y)));
