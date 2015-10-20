@@ -1,10 +1,16 @@
 //STEM Phagescape API v(see above)
 
 void genRing(int x, int y, float w, float h, float weight, int b){
-  float c = TWO_PI/floor(PI*max(w,h)*10);
-  float r = 0;
-  for(float i = 0; i < TWO_PI; i+=c){
-    r = (w*h)/sqrt(sq(w*cos(i))+sq(h*sin(i)))-weight/2;
+  genArc(0,TWO_PI,x,y,w,h,weight,b);
+}
+
+void genArc(float rStart, float rEnd, int x, int y, float w, float h, float weight, int b){
+  if(rStart > rEnd){float rTemp = rStart; rStart = rEnd; rEnd = rTemp;}
+  float dR = rEnd-rStart;
+  float c = dR/floor(dR*max(w,h)*10); //dR is range -> range/(circumfrence of arc(radians * 2*max_radius *5 -> 20*radius -> 20 points per block)) -> gives increment value
+  float r;
+  for(float i = rStart; i < rEnd; i+=c){
+    r = (w*h/2)/sqrt(sq(w*cos(i))+sq(h*sin(i)))-weight/2;
     for(float j = 0; j <= weight; j+=.2){
       aSS(wU,x+floor((r+j)*cos(i)),y+floor((r+j)*sin(i)),b);
     }

@@ -160,31 +160,6 @@ void drawWorld(){
   }
 }
 
-
-
-color blockColor(int intC){
-  switch(intC){
-    case 0:
-      return color(0);
-    case 1:
-      return color(255,255,0);
-    case 2:
-      return color(0,255,0);
-    case 3:
-      return color(0,255,255);
-    case 4:
-      return color(0,0,255);
-    case 5:
-      return color(255,0,255);
-    case 6:
-      return color(255,0,0);
-    default:
-      return color(0);
-  }
-}
-
-
-
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
 
 PVector pos2Screen(PVector tA){tA.sub(wView); tA.mult(gScale); return tA;}

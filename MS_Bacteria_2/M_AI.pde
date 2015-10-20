@@ -5,29 +5,28 @@ void nodeWorld(PVector startV, int targetBlock, int vision){
   Node n2;
   for ( int ix = 0; ix < wSize; ix+=1 ) {
     for ( int iy = 0; iy < wSize; iy+=1) {
-
-        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
-          nodes.add(new Node(ix,iy));
-          nmap[iy][ix] = nodes.size()-1;
-          if (ix>0) {
-            if (nmap[iy][ix-1]!=-1) {
-              n2 = (Node)nodes.get(nodes.size()-1);
-              float cost = random(0.25,2);
-              n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
-              ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
-            }
+      if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
+        nodes.add(new Node(ix,iy));
+        nmap[iy][ix] = nodes.size()-1;
+        if (ix>0) {
+          if (nmap[iy][ix-1]!=-1) {
+            n2 = (Node)nodes.get(nodes.size()-1);
+            float cost = random(0.25,2);
+            n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
+            ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
           }
-          if (iy>0) {
-            if (nmap[iy-1][ix]!=-1) {
-              n2 = (Node)nodes.get(nodes.size()-1);
-              float cost = random(0.25,2);
-              n2.addNbor((Node)nodes.get(nmap[iy-1][ix]),cost);
-              ((Node)nodes.get(nmap[iy-1][ix])).addNbor(n2,cost);
-            }
-          }
-        } else {
-          nmap[iy][ix] = -1;
         }
+        if (iy>0) {
+          if (nmap[iy-1][ix]!=-1) {
+            n2 = (Node)nodes.get(nodes.size()-1);
+            float cost = random(0.25,2);
+            n2.addNbor((Node)nodes.get(nmap[iy-1][ix]),cost);
+            ((Node)nodes.get(nmap[iy-1][ix])).addNbor(n2,cost);
+          }
+        }
+      } else {
+        nmap[iy][ix] = -1;
+      }
     }
   }
 }
