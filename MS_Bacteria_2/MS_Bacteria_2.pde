@@ -1,151 +1,50 @@
-/* @pjs preload="block.png"; */
-/* @pjs preload="block2.png"; */
-/* @pjs preload="block3.png"; */
-/* @pjs preload="block4.png"; */
-/* @pjs preload="face.png"; */
-
-int gSelected = 1; //current selected 
-EConfig bulletEntity = new EConfig();
-Entity testEntity;
-
-void setup(){
+/*LOCK*/void setup(){
   size(700,700); //must be square
-  M_Setup();
+/*LOCK*/  M_Setup(); //call API setup
+/*LOCK*/}
+
+/*LOCK*/void safePreSetup(){} //first function called, in case you need to set some variables before anything else starts
+
+/*LOCK*/void safeSetup(){ //called when world generation and entity placement is ready to begin
+  addGeneralBlock(0,color(225,180,255),false,0); //set block 0 to be a light purple block that is not solid
+  addGeneralBlock(1,color(255,0,0),true,0); //set block 1 to be a red block that is solid and breaks in 1 hit
+  addGeneralBlock(2,color(0,255,0),true,1); //set block 2 to be a green block that is solid and breaks in 2 hits
+  addGeneralBlock(3,color(0,0,255),true,4); //set block 3 to be a blue block that is solid and breaks in 5 hits
+  addGeneralBlock(4,color(0,0,0),true,20); //set block 4 to be a black block that is solid and breaks in 21 hit
+  //addImageSpecialBlock(4,loadImage("block.png"),0); //make block four have an image that (0 or 1 = ) fits inside the block (or 2 = moves with background)
+  //addTextSpecialBlock(4,"Hello World",11); //make block four display text when the player is near
+  
+  int[] blocksArg = { 0, 1, 2, 3, 4 }; //create a set of blocks
+  float[] probArg = { 20, 14, 3, 2, 1 }; //create a list of probabilities for these blocks
+  genRandomProb(0, blocksArg, probArg); //place these blocks in the world with their respective probabilities (the world, by default is all 0 and these random blocks replace 0 here)
+  
+  scaleView(wSize); //scale the view to fit the entire map
+  centerView(wSize/2,wSize/2); //center the view in the middle of the world
+  
+  entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
 }
 
-void safePresetup(){
-  //wSize = 50;
-}
-
-void safeSetup(){ 
-  //blockImg = loadImage("block.png");
-  addGeneralBlock(0,color(0,0,0),true,1);
-  addGeneralBlock(1,color(255,0,0),false,0);
-  addGeneralBlock(2,color(0,255,0),true,1);
-  addGeneralBlock(3,color(0,0,255),true,1);
-  addGeneralBlock(4,color(0,255,255),true,1);
-  addGeneralBlock(5,color(255,0,255),false,0);
-  addGeneralBlock(6,color(255,255,0),true,1);
-  addGeneralBlock(7,color(255,255,255),true,1);
-  addGeneralBlock(8,color(100,100,100),true,1);
-  addGeneralBlock(9,color(200,200,200),true,1);
-//  addImageSpecialBlock(3,loadImage("block2.png"),2);
-//  addTextSpecialBlock(0,"Hello World",11);
-  bulletEntity.Size = .1;
-  
-  testEntity = new Entity(51,51,new EConfig(),0);
-  testEntity.EC.Genre = 1;
-  testEntity.EC.Img = loadImage("face.png");
-  testEntity.EC.AISearchMode = 1;
-  testEntity.EC.AITarget = -1;
-  testEntity.EC.AITargetID = player.EC.ID;
-  testEntity.EC.SMax = .05;
-  testEntity.EC.Type = 1;
-  entities.add(testEntity);
-  
-  genRect(0,0,wSize,wSize,1);
-  int[] blocksArg = { 1, 2, 3 };
-  float[] probArg = { 3, 1, 1 };
-  genRandomProb(1,blocksArg,probArg);
-  
-  println(genSpread(1600,2,4));
-  println(genCountBlock(4));
-  
-  scaleView(100);
-  
-  //***WAVE***//updateWaveImages();
-}
-
-void safeAsync(int n){
-  if(n%25 == 0){ //every second
-    //println(frameRate);
+/*LOCK*/void safeAsync(int n){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
+  if(n%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
+    println(frameRate); //display the game FPS
   }
-  if(n%250 == 0){ //every ten seconds
-    
-  }
+  if(n%250 == 0){} //every ten seconds (similar idea applies here)
 }
 
-float tempZooms = 0;
-void safeUpdate(){
-  centerView(player.x,player.y);
-  //PVector tempV2 = new PVector(mouseX,mouseY); tempV2 = screen2Pos(tempV2); centerView((player.x*5+tempV2.x)/6,(player.y*5+tempV2.y)/6);
-  //PVector tempV2 = new PVector(maxAbs(0,float(mouseX-width/2)/50)+width/2-2,maxAbs(0,float(mouseY-height/2)/50)+height/2-2); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y);
-  //if(mousePressed){PVector tempV2 = new PVector(width/2+(pmouseX-mouseX)-2,height/2+(pmouseY-mouseY)-2); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y);}
+/*LOCK*/void safeUpdate(){ //called before anything has been drawn to the screen (update the world before it is drawn)
+  //centerView(player.x,player.y); //center the view on the player
+  //PVector tempV2 = new PVector(mouseX,mouseY); tempV2 = screen2Pos(tempV2); centerView((player.x*5+tempV2.x)/6,(player.y*5+tempV2.y)/6); //center view on the player but pull toward the mouse slightly
+  //PVector tempV2 = new PVector(maxAbs(0,float(mouseX-width/2)/50)+width/2,maxAbs(0,float(mouseY-height/2)/50)+height/2); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y); //move the view in the direction of the mouse
+  if(mousePressed){PVector tempV2 = new PVector(width/2+(pmouseX-mouseX),height/2+(pmouseY-mouseY)); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y);} //drag the view around
 }
 
-void safeDraw(){
-  //genRing(mouseX,mouseY,float(mouseX)/2,mouseY/2,10,0);
-  //genCircle(mouseX,mouseY,float(mouseX)/5,0);
-  //genLine(60,60,mouseX,mouseY,10,0);
-  //genRect(60,60,mouseX,mouseY,0);
-  //genBox(60,60,mouseX,mouseY,10,0);
-  //genRoundRect(30,30,50,50,5,0);
-}
+/*LOCK*/void safeDraw(){} //called after everything else has been drawn on the screen (draw things on the game)
+/*LOCK*/void safeKeyPressed(){} //called when a key is pressed
+/*LOCK*/void safeKeyReleased(){} //called when a key is released
+/*LOCK*/void safeMousePressed(){} //called when the mouse is pressed
 
-void mousePressed(){
-  
-  if(mouseButton == RIGHT){
-    //moveToAnimate(new PVector(10,10), 4000);
-  } else {
-    //moveToAnimate(new PVector(90,90), 4000);
-  }
-  
-  if(!menu){
-    if(mouseButton == RIGHT){
-      PVector tempPosS = screen2Pos(new PVector(mouseX,mouseY));
-      
-      if(aGS(wU,tempPosS.x,tempPosS.y) == 0){
-        aSS(wU,tempPosS.x,tempPosS.y,gSelected);
-      } else {
-        aSS(wU,tempPosS.x,tempPosS.y,0);
-      }
-      //wU[min(wSize-1,max(0,(int)tempPosS.x))][min(wSize-1,max(0,floor(float(mouseY)/gScale+pV.y)+round(pG.y)))] = gSelected;
-    }
-    refreshWorld();
-  }
-  
-  PVector tempV = screen2Pos(new PVector(mouseX,mouseY));
-  player.fire(tempV);
-  //genFlood(tempV.x,tempV.y,4);
-  //genReplace(2,6);
-  println(genTestPathExists(tempV.x,tempV.y,player.x,player.y));
-  refreshWorld();
-}
-
-void keyPressed(){
-  if(chatPushing){
-    if(key != CODED){
-      if(keyCode == BACKSPACE){
-        if(chatKBS.length() > 0){
-          chatKBS = chatKBS.substring(0,chatKBS.length()-1);
-        }
-      } else if(key == ESC) {
-        chatPushing = false;
-        chatKBS = "";
-      } else if(keyCode == ENTER) {
-        if(chatKBS.length() > 0){
-          cL.add(new Chat(chatKBS));
-          chatKBS = "";
-          chatPushing = false;
-          chatPush = 0;
-        }
-      } else {
-        chatKBS = chatKBS+key;
-      }
-    }
-  } else {
-    if(key == 't' || key == 'T' || key == 'c' || key == 'C' || key == ENTER){
-      chatPushing = true;
-    }
-    
-    player.moveEvent(0);
-  }
-  
-  if(key == ESC) {
-    key = 0;
-  }
-}
-
-void keyReleased(){
-  player.moveEvent(1);
-}
+/*LOCK*/void safeKeyTyped(){} //may be added in the future
+/*LOCK*/void safeMouseWheel(){} //may be added in the future
+/*LOCK*/void safeMouseClicked(){} //may be added in the future
+/*LOCK*/void safeMouseMoved(){} //may be added in the future
+/*LOCK*/void safeMouseDragged(){} //may be added in the future

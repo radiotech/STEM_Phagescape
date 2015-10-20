@@ -1,3 +1,5 @@
+//STEM Phagescape API v(see above)
+
 void genRing(int x, int y, float w, float h, float weight, int b){
   float c = TWO_PI/floor(PI*max(w,h)*10);
   float r = 0;
@@ -181,3 +183,5 @@ int genCountBlock(int b){
   }
   return count;
 }
+
+//STEM Phagescape API v(see above)

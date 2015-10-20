@@ -1,3 +1,5 @@
+//STEM Phagescape API v(see above)
+
 void nodeWorld(PVector startV, int targetBlock, int vision){
   int q;
   Node n2;
@@ -176,3 +178,5 @@ void nodeDraw() {
     rect(tVec.x+gScale/4,tVec.y+gScale/4,+gScale/2,+gScale/2);
   }
 }
+
+//STEM Phagescape API v(see above)

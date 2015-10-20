@@ -1,3 +1,4 @@
+//STEM Phagescape API v(see above)
 
 float chatHeight = 40;
 float chatPush = 0;
@@ -88,3 +89,35 @@ void drawTextBubble(float tx, float ty, String tText){
   fill(0);
   text(tText,tx2-tw/2+chatHeight/2,ty2);
 }
+
+void keyPressedChat(){
+  if(chatPushing){
+    if(key != CODED){
+      if(keyCode == BACKSPACE){
+        if(chatKBS.length() > 0){
+          chatKBS = chatKBS.substring(0,chatKBS.length()-1);
+        }
+      } else if(key == ESC) {
+        chatPushing = false;
+        chatKBS = "";
+      } else if(keyCode == ENTER) {
+        if(chatKBS.length() > 0){
+          cL.add(new Chat(chatKBS));
+          chatKBS = "";
+          chatPushing = false;
+          chatPush = 0;
+        }
+      } else {
+        if(textWidth(chatKBS+key) < width/5*4-chatHeight/5*2){
+          chatKBS = chatKBS+key;
+        }
+      }
+    }
+  } else {
+    if(key == 't' || key == 'T' || key == 'c' || key == 'C' || key == ENTER){
+      chatPushing = true;
+    }
+  }
+}
+
+//STEM Phagescape API v(see above)

@@ -1,3 +1,5 @@
+//STEM Phagescape API v(see above)
+
 void setupWorld(){
   gScale = float(width)/(gSize-1);
   wU = new int[wSize][wSize];
@@ -110,12 +112,12 @@ void drawWorld(){
         PVector tempV2 = grid2Pos(new PVector(i,j));
         if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
           if(aGS(wUDamage,tempV2.x,tempV2.y) > aGS1D(gBStrength,thisBlock)){
-            aSS(wU,tempV2.x,tempV2.y,1);
+            aSS(wU,tempV2.x,tempV2.y,0);
             refreshWorld();
           } else {
             stroke(255);
             strokeWeight(gScale/15);
-            float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y)-1)/(aGS1D(gBStrength,thisBlock)-1+.0001)*gScale/2;
+            float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y)-1)/(aGS1D(gBStrength,thisBlock)-1+.01)*gScale/2;
             line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
             line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
           }
@@ -282,3 +284,4 @@ boolean rayCast(int x0, int y0, int x1, int y1){
   return tClear;
 }
 
+//STEM Phagescape API v(see above)

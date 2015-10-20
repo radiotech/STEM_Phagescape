@@ -1,4 +1,5 @@
 //STEM Phagescape API v1.0
+
 //DO NOT MAKE ANY CHANGES TO THIS DOCUMENT. IF YOU NEED TO MAKE A CHANGE, CONTACT ME (AJ) - lavabirdaj@gmail.com
 int wSize = 100; //blocks in the world (square)
 float gSize = 10; //grid units displayed on the screen (blocks in view) (square)
@@ -61,13 +62,14 @@ PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter;
 
 void M_Setup(){
-  safePresetup();
+  safePreSetup();
   frameRate(60);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
   setupWorld();
   setupEntities();
+    scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
   refreshWorld();
@@ -77,7 +79,7 @@ void M_Setup(){
 void draw(){
   
   animate();
-  drawWorld();//
+  //drawWorld();//
   nodeDraw();
   if(!menu){
     updateWorld();
@@ -89,13 +91,36 @@ void draw(){
   safeUpdate();
   
   
-  //drawWorld();
+  drawWorld();
   
   drawEntities();
   
   safeDraw();
   
   drawChat();
+}
+
+void keyPressed(){
+  keyPressedChat();
+  
+  if(key == ESC) {
+    key = 0;
+  }
+  
+  if(chatPushing == false){
+    player.moveEvent(0);
+  }
+  
+  safeKeyPressed();
+}
+
+void keyReleased(){
+  player.moveEvent(1);
+  safeKeyReleased();
+}
+
+void mousePressed(){
+  safeMousePressed();
 }
 
 float pointDir(PVector v1,PVector v2){
@@ -227,3 +252,5 @@ void manageAsync(){
 float mDis(float x1,float y1,float x2,float y2) {
   return abs(y2-y1)+abs(x2-x1);
 }
+
+//STEM Phagescape API v(see above)

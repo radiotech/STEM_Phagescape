@@ -1,5 +1,10 @@
+//STEM Phagescape API v(see above)
+
+EConfig bulletEntity = new EConfig();
+
 void setupEntities(){
-  player = new Entity(50,50,new EConfig(),0);
+  bulletEntity.Size = .1; //TO BE REMOVED
+  player = new Entity(wSize/2,wSize/2,new EConfig(),0);
   player.EC.Genre = 1;
   player.EC.Img = loadImage("player.png");
   entities.add(player);
@@ -350,3 +355,4 @@ PVector entityNear(PVector eV,float tEID, float tChance){
   return tRV;
 }
 
+//STEM Phagescape API v(see above)
