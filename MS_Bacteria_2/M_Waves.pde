@@ -16,16 +16,24 @@ void waveGrid(){
   wL.clear();
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      gM[i*2+1][j*2+1] = gU[i][j];
+      
+      if(aGS(gUShade,i,j) == 0){
+        //gM[i*2+1][j*2+1] = -2;
+      } else {
+        gM[i*2+1][j*2+1] = aGS(gU,i,j);
+      }
+      
+      
+      //if(gUHUD[i][j] == false){gM[i*2+1][j*2+1] = 255;}
     }
   }
   for(int i = 0; i < gSize*2+1; i++){
     for(int j = 0; j < gSize*2+1; j++){
       if(i%2!=j%2){
-        if((gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,ceil(gSize)*2)][j] != gM[max(i-1,0)][j]){
-          wL.add(new Wave(i,j,0,1,(j+i)%4-2));
-        }
-        if((gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,ceil(gSize)*2)] != gM[i][max(j-1,0)]){
+        if(gBColor[gM[min(i+1,ceil(gSize)*2)][j]] != gBColor[gM[max(i-1,0)][j]]){
+           wL.add(new Wave(i,j,0,1,(j+i)%4-2));
+         }
+        if(gBColor[gM[i][min(j+1,ceil(gSize)*2)]] != gBColor[gM[i][max(j-1,0)]]){
           wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
         }
       }
@@ -134,13 +142,17 @@ class Wave {
     
     
     
-    strokeWeight(gScale/15);
-    stroke(255);
-    line(ta.x,ta.y,tb.x,tb.y);
-    noStroke();
-    fill(255);
-    ellipse(ta.x,ta.y,gScale/15-1,gScale/15-1);
-    ellipse(tb.x,tb.y,gScale/15-1,gScale/15-1);
+    //gridBuffer.strokeWeight(gScale/15-3);
+    //gridBuffer.stroke(strokeColor);
+    
+    int strokeWe = ceil((gScale/15-3)/2);
+    rectL.add(new RectObj(int(ta.x)+ceil(gScale)-strokeWe,int(ta.y)+ceil(gScale)-strokeWe,int(tb.x)+ceil(gScale)-int(ta.x+ceil(gScale))+strokeWe,int(tb.y)+ceil(gScale)-int(ta.y+ceil(gScale))+strokeWe,color(255)));
+    
+    //gridBuffer.line(ta.x+ceil(gScale),ta.y+ceil(gScale),tb.x+ceil(gScale),tb.y+ceil(gScale));
+    //gridBuffer.noStroke();
+    //gridBuffer.fill(255);
+    //ellipse(ta.x,ta.y,gScale/15-1-1,gScale/15-1-1);
+    //ellipse(tb.x,tb.y,gScale/15-1-1,gScale/15-1-1);
     //waveFromImage(ta.x,ta.y,amp*floor((wPhase+shift)*10),wDir);
   }
 }

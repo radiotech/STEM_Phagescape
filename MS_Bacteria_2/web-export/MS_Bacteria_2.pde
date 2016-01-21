@@ -1,27 +1,201 @@
+/* @pjs preload="face.png"; */
+
+int[] bacteriaAlive = {0,0,0,0,0,0};
+int[] bacteriaGoal = {0,0,0,0,0,0};
+String[] bacteriaNames = {"Baby Maker","Meat Macerator","Resource Diffuser","Warrior","Fast Fighter","Heavy Hitter"};
+String[] bacteriaDetails = {"This bacteria will birth your army!","This bacteria will rot flesh to##provide resources!","This bacteria will spread##your resources!","This bacteria will fight for you!","This fighter is fast but weak!","This fighter is strong but slow!"};
+int[] bacteriaCosts = {50,30,20,40,30,50};
+
+
+Entity testEntity;
+EConfig normEnemyConfig = new EConfig();
+EConfig fastEnemyConfig = new EConfig();
+EConfig bossEnemyConfig = new EConfig();
+ArrayList<RoomType>[] randomRooms = (ArrayList<RoomType>[])new ArrayList[8];
+
 /*LOCK*/void setup(){
   size(700,700); //must be square
-/*LOCK*/  M_Setup();
+/*LOCK*/  M_Setup(); //call API setup
 /*LOCK*/}
 
 /*LOCK*/void safePreSetup(){} //first function called, in case you need to set some variables before anything else starts
 
 /*LOCK*/void safeSetup(){ //called when world generation and entity placement is ready to begin
-  addGeneralBlock(0,color(225,180,255),false,0); //set block 0 to be a light purple block that is not solid
-  addGeneralBlock(1,color(255,0,0),true,0); //set block 1 to be a red block that is solid and breaks in 1 hit
-  addGeneralBlock(2,color(0,255,0),true,1); //set block 2 to be a green block that is solid and breaks in 2 hits
-  addGeneralBlock(3,color(0,0,255),true,4); //set block 3 to be a blue block that is solid and breaks in 5 hits
-  addGeneralBlock(4,color(0,0,0),true,20); //set block 4 to be a black block that is solid and breaks in 21 hit
-  addImageSpecialBlock(4,loadImage("block.png"),1); //make block four have an image that fits inside the block (2 = moves with background)
-  //addTextSpecialBlock(4,"Hello World",11);
+
+  bulletEntity.Size = .1;
   
-  int[] blocksArg = { 0, 1, 2, 3, 4 };
-  float[] probArg = { 20, 14, 3, 2, 1 };
-  genRandomProb(0, blocksArg, probArg);
+  normEnemyConfig.Genre = 1;
+  normEnemyConfig.Img = loadImage("player.png");
+  normEnemyConfig.AISearchMode = 1;
+  normEnemyConfig.AITarget = -1;
+  normEnemyConfig.AITargetID = player.EC.ID-1;
+  normEnemyConfig.SMax = .05;
+  normEnemyConfig.Type = 1;
+  normEnemyConfig.HMax = 20;
   
+  fastEnemyConfig.Genre = 1;
+  fastEnemyConfig.Img = loadImage("face.png");
+  fastEnemyConfig.AISearchMode = 1;
+  fastEnemyConfig.AITarget = -1;
+  fastEnemyConfig.AITargetID = player.EC.ID-1;
+  fastEnemyConfig.SMax = .1;
+  fastEnemyConfig.Type = 1;
+  fastEnemyConfig.HMax = 10;
+  
+  bossEnemyConfig.Genre = 1;
+  bossEnemyConfig.Img = loadImage("face.png");
+  bossEnemyConfig.AISearchMode = 1;
+  bossEnemyConfig.AITarget = -1;
+  bossEnemyConfig.AITargetID = player.EC.ID-1;
+  bossEnemyConfig.SMax = .03;
+  bossEnemyConfig.Type = 1;
+  bossEnemyConfig.HMax = 100;
+  bossEnemyConfig.DeathCommand = "openDoors";
+  
+  CFuns.add(new CFun(0,"spawn",3,false)); //add a function
+  CFuns.add(new CFun(1,"openDoors",0,false));
+  CFuns.add(new CFun(2,"question",0,false));
+  CFuns.add(new CFun(3,"key",0,false));
+  CFuns.add(new CFun(4,"chest",2,false));
+  
+  addGeneralBlock(0,color(100,0,0),false,0); //background
+  addGeneralBlock(1,color(255,255,190),true,-1); //bone
+  addGeneralBlock(2,color(200,0,0),true,50); //flesh
+  addGeneralBlock(3,color(102,0,51),false,-1); //spawn
+  addGeneralBlock(4,color(204,0,102),false,-1); //around spawn background
+  addGeneralBlock(5,color(255,165,0),false,-1); //spawn help 1
+  addTextSpecialBlock(5,"Help 1",1);
+  addGeneralBlock(6,color(255,165,0),false,-1); //spawn help 2
+  addTextSpecialBlock(6,"Help 2",1);
+  addGeneralBlock(7,color(255,165,0),false,-1); //spawn help 3
+  addTextSpecialBlock(7,"Help 3",1);
+  addGeneralBlock(8,color(255,165,0),false,-1); //spawn help 4
+  addTextSpecialBlock(8,"Help 4",1);
+  addGeneralBlock(9,color(102,51,0),false,-1); //end
+  addGeneralBlock(10,color(204,102,0),false,-1); //around end background
+  addGeneralBlock(11,color(255,165,0),false,-1); //end help 1
+  addTextSpecialBlock(11,"Help 5",1);
+  addGeneralBlock(12,color(255,165,0),false,-1); //end help 2
+  addTextSpecialBlock(12,"Help 6",1);
+  addGeneralBlock(13,color(255,165,0),false,-1); //end help 3
+  addTextSpecialBlock(13,"Help 7",1);
+  addGeneralBlock(14,color(255,165,0),false,-1); //end help 4
+  addTextSpecialBlock(14,"Help 8",1);
+  addGeneralBlock(15,color(255,255,0),false,-1); //key
+  addGeneralBlockBreak(15,0,"key");
+  addActionSpecialBlock(15,21);
+  addGeneralBlock(16,color(255,200,30),false,-1); //chest
+  addGeneralBlockBreak(16,0,"chest _x_ _y_");
+  addTextSpecialBlock(16,"You may need a key##to open this chest!",1);
+  addGeneralBlock(17,color(0),true,0); //boss egg
+  addGeneralBlockBreak(17,0,"spawn _x_ _y_ boss");
+  addActionSpecialBlock(17,14);
+  addGeneralBlock(18,color(0),true,0); //fast egg
+  addGeneralBlockBreak(18,0,"spawn _x_ _y_ fast");
+  addActionSpecialBlock(18,20);
+  addGeneralBlock(19,color(0),true,0); //norm egg
+  addGeneralBlockBreak(19,0,"spawn _x_ _y_ norm");
+  addActionSpecialBlock(19,20);
+  addGeneralBlock(20,color(0,255,0),true,2); //question
+  addGeneralBlockBreak(20,0,"question");
+  addGeneralBlock(21,color(100,100,100),true,50); //fast spawner
+  ///////////////////////////////////////////////////////////////////spawn
+  addGeneralBlock(22,color(100,100,100),true,50); //norm spawner
+  ///////////////////////////////////////////////////////////////////spawn
+  addGeneralBlock(40,color(200,200,110),false,-1); //door frame
+  addGeneralBlockBreak(40,49,null);
+  addGeneralBlock(49,color(200,200,110),true,4); //door frame 2
+  addGeneralBlockBreak(49,40,null);
+  addGeneralBlock(41,color(204,50,102),true,-1); //door closed
+  addGeneralBlockBreak(41,42,null);
+  addActionSpecialBlock(41,46);
+  addGeneralBlock(42,color(100,0,0),false,0); //door open
+  addGeneralBlockBreak(42,41,null);
+  addActionSpecialBlock(42,46);
+  addGeneralBlock(43,color(204,50,102),true,-1); //boss door closed
+  addGeneralBlockBreak(43,44,null);
+  addActionSpecialBlock(43,46);
+  addGeneralBlock(44,color(100,0,0),false,0); //boss door open
+  addGeneralBlock(45,color(204,50,102),true,-1); //boss door locked
+  
+  
+  genLoadMap(loadImage("map4.png")); //load the map to read the room types
+  
+  for(int i = 0; i < 8; i++){ //for each room type
+    randomRooms[i] = new ArrayList<RoomType>(); //make a list of room type variations
+  }
+  
+  for(int i = 0; i < wSize; i++){ //for each block in the world (x)
+    for(int j = 0; j < wSize; j++){ //for each block in the world (y)
+      if(wU[i][j]>=100 && wU[i][j]<108){ //if it is a block that indicates that this room needs to be loaded
+        randomRooms[wU[i][j]-100].add(new RoomType(i-8,j,9,9)); //load the room into the correct list for the room type
+      }
+    }
+  }
+  
+  boolean badMap = true; //sat that the map is bad to induce the first level generation
+  
+  while(badMap){ //if the level is bad, try to generate it until it is not bad
+    badMap = false; //a new level generation has begun, lets start out by saying this level is good
+    genLoadMap(loadImage("map4.png")); //load the premade map to work with, this resets the map back to the original version
+    
+    genSpread(50,200,201); //mark up to 50 doors to be removed
+    
+    for(int i = 0; i < wSize; i++){ //for each block in the world (x)
+      for(int j = 0; j < wSize; j++){ //for each block in the world (y)
+        if(wU[i][j] == 201){ //if this block is a door marked for removal,
+          wU[i][j] = 200; //chage this block back to normal door
+          genFlood(i,j,40); //change the door into doorframe
+          genFlood(i,j,1); //change the door frame into bone
+        }
+      }
+    }
+    
+    genReplace(200,41); //make all of the remporary doors actual doors since we are done messing with them
+    
+    for(int i = 0; i < wSize; i++){ //for each block in the world (x)
+      for(int j = 0; j < wSize; j++){ //for each block in the world (y)
+        if(wU[i][j]>=100 && wU[i][j]<108){ //if it is a block that indicates that this room has stuff in it
+          genRect(i-7,j,8,9,0); //clear the room (leave the upper left corner intact)
+          genRect(i-8,j+1,9,8,0); //clear the room (leave the upper left corner intact - this indicates the room type)
+        }
+      }
+    }
+    
+    genTestPathExists(50,50,-1,-1); //run a test path to nowhere to flood the maze with imaginary water from the center
+    
+    for(int i = 0; i < 9; i++){ //for each room (x)
+      for(int j = 0; j < 9; j++){ //for each room (y)
+        if(nmap[i*10+9][j*10+9] == 0){ //if the imaginary water did not reach this room
+          badMap = true; //mark this generation as bad (will generate again)
+        }
+      }
+    }
+  }
+  
+  addGeneralBlock(40,color(200,200,110),true,4); //make door frames solid (they were not solid so imaginary water could flood through doors but not walls)
+  
+  for(int i = 0; i < 9; i++){ //for each room (x)
+    for(int j = 0; j < 9; j++){ //for each room (y)
+      RoomType tempRoom = randomRooms[wU[i*10+5][j*10+5]-108].get(floor(random(randomRooms[wU[i*10+5][j*10+5]-108].size()))); //load a random room of the correct type
+      tempRoom.paste(i*10+5,j*10+5); //paste this room in
+      wU[i*10+5][j*10+5] = 1; //remove temporary indicator block
+      wU[i*10+13][j*10+5] = 1; //remove temporary indicator block
+    }
+  }
+    
+ // shadows = true;
+  //scaleView(10); //scale the view to fit the entire map
   scaleView(100);
-  centerView(wSize/2,wSize/2);
   
-  entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
+  centerView(wSize/2-.5,wSize/2-.5); //center the view in the middle of the world
+  player.x = wSize/2-.5;
+  player.y = wSize/2-.5;
+  
+  //entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
+  
+  //entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
+  //testEntity.destroy();
 }
 
 /*LOCK*/void safeAsync(int n){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
@@ -32,66 +206,184 @@
 }
 
 /*LOCK*/void safeUpdate(){ //called before anything has been drawn to the screen (update the world before it is drawn)
-  //centerView(player.x,player.y); //center the view on the player
-  //PVector tempV2 = new PVector(mouseX,mouseY); tempV2 = screen2Pos(tempV2); centerView((player.x*5+tempV2.x)/6,(player.y*5+tempV2.y)/6); //center view on the player but pull toward the mouse slightly
-  //PVector tempV2 = new PVector(maxAbs(0,float(mouseX-width/2)/50)+width/2,maxAbs(0,float(mouseY-height/2)/50)+height/2); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y); //move the view in the direction of the mouse
-  if(mousePressed){PVector tempV2 = new PVector(width/2+(pmouseX-mouseX),height/2+(pmouseY-mouseY)); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y);} //drag the view around
+  centerView(player.x,player.y); //center the view on the player
+}
+
+class RoomType{
+  int[][] data;
+  int w;
+  int h;
+  RoomType(int x, int y, int tW, int tH){
+    w = tW;
+    h = tH;
+    data = new int[w][h];
+    for(int i = 0; i < w; i++){
+      for(int j = 0; j < h; j++){
+        data[i][j] = aGS(wU,x+i,y+j);
+      }
+    }
+  }
+  void paste(int x, int y){
+    for(int i = 0; i < w; i++){
+      for(int j = 0; j < h; j++){
+        aSS(wU,x+i,y+j,data[i][j]);
+      }
+    }
+  }
 }
 
 /*LOCK*/void safeDraw(){} //called after everything else has been drawn on the screen (draw things on the game)
-/*LOCK*/void safeKeyPressed(){} //called when a key is pressed
+/*LOCK*/void safePostDraw(){} //called after everything else has been drawn on the screen (draw things on the screen)
+/*LOCK*/void safeKeyPressed(){
+  if(key == 't'){
+    player.x = mouseX;
+    player.y = mouseY;
+  }
+  if(key == 'u'){
+    genReplace(43,44);
+    genReplace(44,45);
+  }
+} //called when a key is pressed
 /*LOCK*/void safeKeyReleased(){} //called when a key is released
-/*LOCK*/void safeMousePressed(){} //called when the mouse is pressed
+/*LOCK*/void safeMousePressed(){
+  if(mouseButton == RIGHT){
+    PVector tempV = screen2Pos(new PVector(mouseX,mouseY));
+    player.fire(tempV);
+  }
+} //called when the mouse is pressed
+
+/*LOCK*/void chatEvent(String source){} //called when a chat message is created
+
+void executeCommand(int index,String[] commands){
+  switch(index){
+    case 0: //function id stated above
+      if(commands[3].equals("norm")){
+        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, normEnemyConfig,random(TWO_PI)));
+      } else if(commands[3].equals("fast")){
+        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, fastEnemyConfig,random(TWO_PI)));
+      } else if(commands[3].equals("boss")){
+        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, bossEnemyConfig,random(TWO_PI)));
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////tp followers to player
+        genReplace(43,44);
+        genReplace(44,45);
+      }
+      break;
+    case 1: //function id stated above
+      genReplace(45,0);
+      genReplace(17,0);
+      refreshWorld();
+      break;
+    case 2: //function id stated above
+      //question
+      break;
+    case 3: //function id stated above
+      //key
+      HUDText("You collected a key!", "", 58, 40, color(255), color(255), 24, 25, 12, 75);
+      sBHasText[16] = false;
+      addActionSpecialBlock(16,21);
+      break;
+    case 4: //function id stated above
+      //chest
+      for(int i = 0; i < 5; i++){
+        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, bossEnemyConfig,random(TWO_PI)));
+      }
+      break;
+      
+      
+  }
+}
 
 /*LOCK*/void safeKeyTyped(){} //may be added in the future
 /*LOCK*/void safeMouseWheel(){} //may be added in the future
 /*LOCK*/void safeMouseClicked(){} //may be added in the future
 /*LOCK*/void safeMouseMoved(){} //may be added in the future
 /*LOCK*/void safeMouseDragged(){} //may be added in the future
+//STEM Phagescape API v(see above)
+
 void nodeWorld(PVector startV, int targetBlock, int vision){
   int q;
   Node n2;
   for ( int ix = 0; ix < wSize; ix+=1 ) {
     for ( int iy = 0; iy < wSize; iy+=1) {
-
-        if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
-          nodes.add(new Node(ix,iy));
-          nmap[iy][ix] = nodes.size()-1;
-          if (ix>0) {
-            if (nmap[iy][ix-1]!=-1) {
-              n2 = (Node)nodes.get(nodes.size()-1);
-              float cost = random(0.25,2);
-              n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
-              ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
-            }
+      if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || wU[ix][iy] == targetBlock) {
+        nodes.add(new Node(ix,iy));
+        nmap[iy][ix] = nodes.size()-1;
+        if (ix>0) {
+          if (nmap[iy][ix-1]!=-1) {
+            n2 = (Node)nodes.get(nodes.size()-1);
+            float cost = random(0.25,2);
+            n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
+            ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
           }
-          if (iy>0) {
-            if (nmap[iy-1][ix]!=-1) {
-              n2 = (Node)nodes.get(nodes.size()-1);
-              float cost = random(0.25,2);
-              n2.addNbor((Node)nodes.get(nmap[iy-1][ix]),cost);
-              ((Node)nodes.get(nmap[iy-1][ix])).addNbor(n2,cost);
-            }
-          }
-        } else {
-          nmap[iy][ix] = -1;
         }
+        if (iy>0) {
+          if (nmap[iy-1][ix]!=-1) {
+            n2 = (Node)nodes.get(nodes.size()-1);
+            float cost = random(0.25,2);
+            n2.addNbor((Node)nodes.get(nmap[iy-1][ix]),cost);
+            ((Node)nodes.get(nmap[iy-1][ix])).addNbor(n2,cost);
+          }
+        }
+      } else {
+        nmap[iy][ix] = -1;
+      }
+    }
+  }
+}
+
+void nodeWorldPos(PVector startV, PVector targetBlock, int vision){
+  int q;
+  Node n2;
+  
+  
+  
+  for ( int ix = 0; ix < wSize; ix+=1 ) {
+    for ( int iy = 0; iy < wSize; iy+=1) {
+      if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || (ix == floor(targetBlock.x) && iy == floor(targetBlock.y))) {
+        
+        nodes.add(new Node(ix,iy));
+        nmap[iy][ix] = nodes.size()-1;
+        if (ix>0) {
+          if (nmap[iy][ix-1]!=-1) {
+            n2 = (Node)nodes.get(nodes.size()-1);
+            float cost = random(0.25,2);
+            n2.addNbor((Node)nodes.get(nmap[iy][ix-1]),cost);
+            ((Node)nodes.get(nmap[iy][ix-1])).addNbor(n2,cost);
+          }
+        }
+        if (iy>0) {
+          if (nmap[iy-1][ix]!=-1) {
+            n2 = (Node)nodes.get(nodes.size()-1);
+            float cost = random(0.25,2);
+            n2.addNbor((Node)nodes.get(nmap[iy-1][ix]),cost);
+            ((Node)nodes.get(nmap[iy-1][ix])).addNbor(n2,cost);
+          }
+        }
+      } else {
+        nmap[iy][ix] = -1;
+      }
     }
   }
 }
  
-boolean astar(int iStart, int targetBlock) {
-  float endX,endY;
-   
+boolean astar(int iStart, int targetBlock, PVector endV) {
+  
+  println("d");
+  
   openSet.clear();
   closedSet.clear();
-  path.clear();
+  Apath.clear();
    
   //add initial node to openSet
   openSet.add( ((Node)nodes.get(iStart)) );
   ((Node)openSet.get(0)).p = -1;
   ((Node)openSet.get(0)).g = 0;
-  PVector tVec = blockNear(new PVector(((Node)openSet.get(0)).x,((Node)openSet.get(0)).y), targetBlock, 100);
+  PVector tVec;
+  if(targetBlock != -1){
+    tVec = blockNear(new PVector(((Node)openSet.get(0)).x,((Node)openSet.get(0)).y), targetBlock, 100);
+  } else {
+    tVec = new PVector(endV.x,endV.y);
+  }
   ((Node)openSet.get(0)).h = mDis( ((Node)openSet.get(0)).x, ((Node)openSet.get(0)).y, tVec.x, tVec.y );
    
   Node current;
@@ -108,14 +400,26 @@ boolean astar(int iStart, int targetBlock) {
       }
     }
     current = (Node)openSet.get(lowId);
-    if ( aGS(wU,current.x,current.y) == targetBlock) { //path found
-      //follow parents backward from goal
-      Node d = (Node)openSet.get(lowId);
-      while( d.p != -1 ) {
-        path.add( d );
-        d = (Node)nodes.get(d.p);
+    if(targetBlock != -1){
+      if ( aGS(wU,current.x,current.y) == targetBlock) { //path found
+        //follow parents backward from goal
+        Node d = (Node)openSet.get(lowId);
+        while( d.p != -1 ) {
+          Apath.add( d );
+          d = (Node)nodes.get(d.p);
+        }
+        return true;
       }
-      return true;
+    } else {
+      if ( abs(current.x-endV.x) < .5 && abs(current.y-endV.y) < .5 ) { //path found
+        //follow parents backward from goal
+        Node d = (Node)openSet.get(lowId);
+        while( d.p != -1 ) {
+          Apath.add(d);
+          d = (Node)nodes.get(d.p);
+        }
+        return true;
+      }
     }
     closedSet.add( (Node)openSet.get(lowId) );
     openSet.remove( lowId );
@@ -138,7 +442,12 @@ boolean astar(int iStart, int targetBlock) {
       if ( tentativeIsBetter ) {
         ((Node)current.nbors.get(n)).p = nodes.indexOf( (Node)closedSet.get(closedSet.size()-1) ); //!!!!
         ((Node)current.nbors.get(n)).g = tentativeGScore;
-        tVec = blockNear(new PVector(((Node)current.nbors.get(n)).x,((Node)current.nbors.get(n)).y), targetBlock, 100);
+        if(targetBlock != -1){
+          tVec = blockNear(new PVector(((Node)current.nbors.get(n)).x,((Node)current.nbors.get(n)).y), targetBlock, 100);
+        } else {
+          tVec = new PVector(endV.x,endV.y);
+        }
+        
         ((Node)current.nbors.get(n)).h = mDis( ((Node)current.nbors.get(n)).x, ((Node)current.nbors.get(n)).y, tVec.x, tVec.y );
       }
     }
@@ -174,7 +483,7 @@ int start = -1;
 ArrayList openSet;
 ArrayList closedSet;
 ArrayList nodes = new ArrayList();
-ArrayList path = new ArrayList();
+ArrayList Apath = new ArrayList();
  
 ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
   //size(480,320); //can be any dimensions as long as divisible by 16
@@ -182,7 +491,7 @@ ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
   openSet = new ArrayList();
   closedSet = new ArrayList();
   nodes = new ArrayList();
-  path = new ArrayList();
+  Apath = new ArrayList();
   
   //generateMap(targetBlock);
   
@@ -192,15 +501,42 @@ ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
   
   int start = aGS(nmap,startV.y,startV.x);
   boolean tempB = false;
-  if(start > -1){
-    tempB = astar(start,targetBlock);
+  if(start > -1 && targetBlock > -1){
+    tempB = astar(start,targetBlock,null);
   }
   
   if(tempB == false){
-    path = new ArrayList();
+    Apath = new ArrayList();
   }
   
-  return path;
+  return Apath;
+}
+
+ArrayList searchWorldPos(PVector startV, PVector endV, int vision) {
+  //size(480,320); //can be any dimensions as long as divisible by 16
+  nmap = new int[wSize][wSize];
+  openSet = new ArrayList();
+  closedSet = new ArrayList();
+  nodes = new ArrayList();
+  Apath = new ArrayList();
+  
+  //generateMap(targetBlock);
+  
+
+  nodeWorldPos(startV, endV, vision);
+  
+  
+  int start = aGS(nmap,startV.y,startV.x);
+  boolean tempB = false;
+  if(start > -1){
+    tempB = astar(start,-1,endV);
+  }
+  
+  if(tempB == false){
+    Apath = new ArrayList();
+  }
+  
+  return Apath;
 }
 
 void nodeDraw() {
@@ -211,9 +547,9 @@ void nodeDraw() {
       fill(0,255,0);
     }
     else {
-      if (path.contains(t1)) {
+      if (Apath.contains(t1)) {
         fill(255);
-        if(((Node)path.get(path.size()-1)).x == t1.x && ((Node)path.get(path.size()-1)).y == t1.y){
+        if(((Node)Apath.get(Apath.size()-1)).x == t1.x && ((Node)Apath.get(Apath.size()-1)).y == t1.y){
           fill(0,0,255);
         }
       }
@@ -226,7 +562,10 @@ void nodeDraw() {
     rect(tVec.x+gScale/4,tVec.y+gScale/4,+gScale/2,+gScale/2);
   }
 }
+
+//STEM Phagescape API v(see above)
 //STEM Phagescape API v1.0
+
 //DO NOT MAKE ANY CHANGES TO THIS DOCUMENT. IF YOU NEED TO MAKE A CHANGE, CONTACT ME (AJ) - lavabirdaj@gmail.com
 int wSize = 100; //blocks in the world (square)
 float gSize = 10; //grid units displayed on the screen (blocks in view) (square)
@@ -240,7 +579,6 @@ scaleView(_SIZE_)
 moveToAnimate(new PVector(_X_,_Y_),_T_) //moves to a position over time in milliseconds
 ***** World Changes *****
 setupWorld() //apply changes to world size (wSize) and clear the world
-refreshWorld() //redraw the world after block changes have been made
 aGS(wU,_X_,_Y_) //access a block at a position in the world - each block is represented by a general block ID
 aSS(wU,_X_,_Y_,_BLOCK_ID_) //change a block at a position in the world
 addGeneralBlock(_BLOCK_ID_,color(_R_,_G_,_B_),_IS_SOLID?_) //make this block ID represent a block with a certain color that is either solid (true) or not solid (false)
@@ -261,10 +599,13 @@ minAbs(_NUM_1_,_NUM_2_)
 */
 //These variables should not be changed
 int[][] gU; //Grid unit - contains all blocks being drawn to the screen
+boolean[][] gUHUD;
 int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
 int[][] wU; //World Unit - contains all blocks in the world
+
 int[][] wUDamage;
-boolean[][] wUText; //World Unit - contains all blocks in the world
+boolean[][] wUText; //
+int[][] wUUpdate; //
 float gScale; //the width and height of blocks being drawn to the screen in pixels
 float wPhase = 0; //the current phase of all waves in the world (where they are in their animation)
 ArrayList wL = new ArrayList<Wave>(); //Wave list - list of all waves in the world
@@ -274,57 +615,94 @@ int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
 ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+color strokeColor = color(255);
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
 int[] gBStrength = new int[256];
+int[] gBBreakType = new int[256];
+String[] gBBreakCommand = new String[256];
 boolean[] sBHasImage = new boolean[256];
 PImage[] sBImage = new PImage[256];
 int[] sBImageDrawType = new int[256];
 boolean[] sBHasText = new boolean[256];
 String[] sBText = new String[256];
 int[] sBTextDrawType = new int[256];
+boolean[] sBHasAction = new boolean[256];
+int[] sBAction = new int[256];
 PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter;
+PFont fontNorm;
+PFont fontBold;
+int[][] distanceMatrix = new int[300][300];
+boolean shadows = false; //are there shadows?
+int lightStrength = 10;
+boolean mouseClicked = false;
+boolean drawHUDSoftEdge = false;
+int fn = 0;
+
+boolean clicking = true;
+PVector clickPos = new PVector(-1,-1);
 
 void M_Setup(){
-  safePreSetup();
+  fontNorm = createFont("monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
+  fontBold = createFont("monofonto.ttf",18);//"Monospaced.bold-23.vlw"
+  HUDImage = loadImage("shadowHUD.png");
   frameRate(60);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
+  safePreSetup();
+
   setupWorld();
   setupEntities();
-    scaleView(10);
+  scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
+  
   refreshWorld();
 }
 
 
 void draw(){
-  
-  animate();
-  //drawWorld();//
-  nodeDraw();
-  if(!menu){
-    updateWorld();
-    
+  if(clicking){
+    if(pointDistance(clickPos,new PVector(mouseX,mouseY)) > 5){
+      clicking = false;
+    } else if(mousePressed == false){
+      mouseClicked = true;
+      safeMouseClicked();
+      clicking = false;
+    }
   }
+  
+    //clickQuestion();
+  
+    //animate();
+  
+    //nodeDraw();
   
   manageAsync();
   
   safeUpdate();
   
-  
   drawWorld();
+  
+    //safePostUpdate();
   
   drawEntities();
   
+    //drawSound();
+  
   safeDraw();
   
-  drawChat();
+    //drawHUD();
+  
+    //drawChat();
+  
+    //safePostDraw();
+  
+  mouseClicked = false;
 }
 
 void keyPressed(){
@@ -338,24 +716,41 @@ void keyPressed(){
     player.moveEvent(0);
   }
   
+  if(key == 'F' || key == 'f') {
+    if(HUDSstage == 0){
+      HUDSstage = 1;
+    } else {
+      HUDSstage = -HUDSstage;
+    }
+  }
+  
   safeKeyPressed();
 }
 
 void keyReleased(){
   player.moveEvent(1);
   safeKeyReleased();
+  
+  
 }
 
 void mousePressed(){
+  clicking = true;
+  clickPos = new PVector(mouseX,mouseY);
+  
   safeMousePressed();
 }
 
 float pointDir(PVector v1,PVector v2){
-  float tDir = atan((v2.y-v1.y)/(v2.x-v1.x));
-  if(v1.x-v2.x > 0){
-    tDir -= PI;
+  if((v2.x-v1.x) != 0){
+    float tDir = atan((v2.y-v1.y)/(v2.x-v1.x));
+    if(v1.x-v2.x > 0){
+      tDir -= PI;
+    }
+    return tDir;
+  } else {
+    return random(2*PI);
   }
-  return tDir;
 }
 
 float pointDistance(PVector v1,PVector v2){
@@ -403,6 +798,7 @@ float posMod(float tA, float tB){
 }
 
 void aSS(int[][] tMat, float tA, float tB, int tValue){ //array set safe
+  //println(tValue);
   tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))] = tValue;
 }
 
@@ -418,7 +814,16 @@ int aGS1D(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
+void aSS1D(int[] tMat, float tA, int tValue){ //array set safe
+  //println(tValue);
+  tMat[max(0,min(tMat.length-1,(int)tA))] = tValue;
+}
+
 boolean aGS1DB(boolean[] tMat, float tA){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))];
+}
+
+String aGS1DS(String[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
@@ -450,6 +855,49 @@ float minAbs(float tA, float tB){
   }
 }
 
+float runAvg(float curAvg, float newVal, int pastValNum){
+  return (curAvg*pastValNum+newVal)/float(pastValNum+1);
+}
+
+int mode(int[] array) {
+    int[] modeMap = new int [255];
+    int maxEl = array[0];
+    int maxCount = 1;
+
+    for (int i = 0; i < array.length; i++) {
+        int el = array[i];
+        if (modeMap[el] == 0) {
+            modeMap[el] = 1;
+        }
+        else {
+            modeMap[el]++;
+        }
+
+        if (modeMap[el] > maxCount) {
+            maxEl = el;
+            maxCount = modeMap[el];
+        }
+    }
+    return maxEl;
+}
+
+boolean boxHitsBlocks(float x, float y, float w, float h){
+  if(gBIsSolid[aGS(wU,x-w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x-w/2,y+h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y+h/2)]){
+    return true;
+  }
+  return false;
+}
+
+
 PImage resizeImage(PImage tImg, int tw, int th){
   PImage tImgNew = createImage(tw,th,ARGB);
   //tImgNew.loadPixels();
@@ -465,14 +913,24 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
-int asyncC = 0;
 int asyncT = 1000;
 void manageAsync(){
   while(millis()-40>asyncT){
+    if(millis()-1000 > asyncT){ asyncT = millis(); }
     asyncT += 40;
-    asyncC++;
-    safeAsync(asyncC);
-    updateEntities(asyncC);
+    fn++;
+    safeAsync();
+    updateWorld();
+    updateEntities();
+    updateSound();
+    updateHUD();
+    if(fn % 13 == 0){
+      updateSpecialBlocks();
+      updateSpawners();
+    }
+    if(fn % 125 == 0){
+      healEntities();
+    }
   }
 }
 
@@ -480,15 +938,51 @@ float mDis(float x1,float y1,float x2,float y2) {
   return abs(y2-y1)+abs(x2-x1);
 }
 
+String StringReplaceAll(String str, String from, String to){
+  int index = str.indexOf(from);
+  while(index != -1){
+    str = str.substring(0,index) + to + str.substring(index+from.length(),str.length());
+    index = str.indexOf(from);
+  }
+  return str;
+}
+
+PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
+  int xCap = min(max(x+w,0),canvas.width-1);
+  int yCap = min(max(y+h,0),canvas.width-1);
+  for(int i = min(max(x,0),canvas.width-1); i < xCap; i++){
+    for(int j = min(max(y,0),canvas.width-1); j < yCap; j++){
+      canvas.pixels[j*canvas.width+i] = col;
+    }
+  }
+  return canvas;
+}
+
+//STEM Phagescape API v(see above)
+//STEM Phagescape API v(see above)
+
+float charWidth = 9;
+boolean isHoverText = false;
+String hoverText = "";
+
 float chatHeight = 40;
 float chatPush = 0;
 float chatPushSpeed = .07;
 boolean chatPushing = false;
 String chatKBS = "";
+int totalChatWidth = 0;
+int lastChatCount = 0;
 ArrayList cL = new ArrayList<Chat>();
 
+ArrayList CFuns = new ArrayList<CFun>();
 
 void drawChat(){
+  
+  if(lastChatCount!=cL.size()){
+    chatEvent("");
+  }
+  lastChatCount = cL.size();
+  
   
   if(chatPushing){
     if(chatPush < 1){
@@ -512,23 +1006,193 @@ void drawChat(){
   
   if(chatPush > 0){
     textAlign(LEFT,CENTER);
-    textSize(20);
+    textSize(18);
     stroke(255,220*chatPush);
+    strokeWeight(3);
     fill(0,200*chatPush);
     rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
-    fill(255,220*chatPush);
-    text(chatKBS,chatHeight/5,height-chatHeight/2);
+    totalChatWidth = textMarkup(chatKBS,18,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
+    simpleText(chatKBS,chatHeight/5,height-chatHeight/2);
+  }
+  
+  if(isHoverText){
+    if(chatPush > .5){drawTextBubble(mouseX,mouseY,hoverText,127);} else {drawTextBubble(mouseX,mouseY,hoverText,90);}
+    isHoverText = false;
   }
 }
 
+void simpleText(String a, float x, float y){
+  text(a,x,y);
+}
+
+int textMarkup(String text, float size, float x, float y, color defCol, float alpha, boolean showMarks){
+  size = size/18;
+  
+  textFont(fontBold);
+  
+  textSize(size*18);
+  fill(defCol,alpha);
+  noStroke();
+  int pointer = 0;
+  color lastColor = defCol;
+  boolean tUL = false;
+  boolean tST = false;
+  boolean rURL = false;
+  String tREF = "";
+  String tempStr;
+  String tempStr2;
+  for(int i = 0; i < text.length(); i++){
+    //println(text.charAt(i));
+    tempStr = text.charAt(i)+"";
+    if(tempStr.equals("*")){
+      if(showMarks){
+        fill(200,0,255,alpha);
+        simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
+        pointer++;
+      }
+      if(text.length() > i+1){
+        if(showMarks){
+          simpleText(text.charAt(i+1)+"",x+pointer*charWidth*size,y);
+          pointer++;
+        }
+        tempStr = text.charAt(i+1)+"";
+        if(tempStr.equals("r")){fill(255,0,0,alpha); lastColor=color(255,0,0);}  
+        if(tempStr.equals("o")){fill(255,150,0,alpha); lastColor=color(255,150,0);}
+        if(tempStr.equals("y")){fill(255,255,0,alpha); lastColor=color(255,255,0);}
+        if(tempStr.equals("g")){fill(0,255,0,alpha); lastColor=color(0,255,0);}
+        if(tempStr.equals("c")){fill(0,255,255,alpha); lastColor=color(0,255,255);}
+        if(tempStr.equals("b")){fill(0,0,255,alpha); lastColor=color(0,0,255);}
+        if(tempStr.equals("p")){fill(225,0,255,alpha); lastColor=color(225,0,255);}  
+        if(tempStr.equals("m")){fill(255,0,255,alpha); lastColor=color(255,0,255);}
+        if(tempStr.equals("w")){fill(255,255,255,alpha); lastColor=color(255,255,255);}
+        if(tempStr.equals("k")){fill(0,0,0,alpha); lastColor=color(0,0,0);}
+        if(tempStr.equals("i")){/*textFont(fontNorm);*/}
+        if(tempStr.equals("n")){fill(defCol,alpha); lastColor=defCol; /*textFont(fontBold);*/ tUL = false; tST = false;}
+        if(tempStr.equals("u")){tUL = true;}
+        if(tempStr.equals("s")){tST = true;}
+        if(tempStr.equals("a")){
+          tREF = "";
+          tempStr = text.charAt(i+1)+"";
+          tempStr2 = text.charAt(i)+"";
+          while(text.length() > i+2 && ((!tempStr.equals("!")) || (!tempStr2.equals("!")))){
+            if(showMarks){
+              simpleText(text.charAt(i+2)+"",x+pointer*charWidth*size,y);
+              pointer++;
+            }
+            tREF = tREF + text.charAt(i+2);
+            i++;
+            tempStr = text.charAt(i+1)+"";
+            tempStr2 = text.charAt(i)+"";
+          }
+          if(tREF.indexOf("!!") > -1){
+            tREF = tREF.substring(0,tREF.length()-2);
+            if(tREF.indexOf("::") > -1){
+              String[] tREF2 = split(tREF,"::");
+              if(tREF2.length == 2){
+                for(int j = 0; j < tREF2[1].length(); j++){
+                  simpleText(tREF2[1].charAt(j)+"",x+pointer*charWidth*size,y);
+                  pointer++;
+                }
+                if(mouseX > x+(pointer-tREF2[1].length())*charWidth*size && mouseX < x+pointer*charWidth*size){
+                  if(mouseY > y-chatHeight/4 && mouseY < y+chatHeight/4){
+                    if(tREF2[0].indexOf("\"\"") > -1){
+                      String[] tREF3 = split(tREF2[0],"\"\"");
+                      if(tREF3.length == 2){
+                        isHoverText = true;
+                        hoverText = tREF3[1];
+                        if(mouseClicked){
+                          tryCommand(tREF3[0],"");
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            fill(lastColor,alpha);
+          }
+        }
+        tempStr = text.charAt(i+1)+"";
+        if(tempStr.equals("#")){ textMarkup(text.substring(i+2,text.length()), size*18, x, y+size*18, defCol, alpha, showMarks); i = text.length(); }
+      }
+      i++;
+    } else {
+      simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
+      pointer++;
+      if(tUL){
+        rect(x+pointer*charWidth*size-charWidth*size,y+10,charWidth*size,1);
+      }
+      if(tST){
+        rect(x+pointer*charWidth*size-charWidth*size,y,charWidth*size,1);
+      }
+    }
+    
+  }
+  return pointer;
+}
+
+float simpleTextWidth(String str, float size){
+  if(str.indexOf("*#") == -1){
+    return str.length()*charWidth*size/18;
+  } else {
+    int pos = str.indexOf("*#");
+    return max(pos*charWidth*size/18,simpleTextWidth(str.substring(pos+2,str.length()),size));
+  }
+}
+
+float simpleTextHeight(String str, float size){
+  int lines = 1;
+  int nextIndex = str.indexOf("*#");
+  while(nextIndex != -1){
+    lines++;
+    nextIndex = str.indexOf("*#",nextIndex+1);
+  }
+  return lines*size;
+}
+
+String simpleTextCrush(String str, float size, float w){
+  String[] lines = new String[100];
+  int nextLine = 1;
+  int pointer = 0;
+  String tempStr;
+  lines[0] = StringReplaceAll(str,"*#"," ");
+  
+  while(nextLine < 99 && simpleTextWidth(lines[nextLine-1],size) > w){
+    pointer = floor(w/(charWidth*size/18));
+    tempStr = lines[nextLine-1].charAt(pointer) + "";
+    while(pointer > 0 && !tempStr.equals(" ")){
+      pointer--;
+      tempStr = lines[nextLine-1].charAt(pointer) + "";
+    }
+    if(pointer > 0){
+      lines[nextLine] = lines[nextLine-1].substring(pointer+1,lines[nextLine-1].length());
+    } else {
+      pointer = ceil(w/(charWidth*size/18));
+      lines[nextLine] = lines[nextLine-1].substring(pointer,lines[nextLine-1].length());
+    }
+    lines[nextLine-1] = lines[nextLine-1].substring(0,pointer);
+    if(nextLine > 1){
+      str = str + "*#" + lines[nextLine-1];
+    } else {
+      str = lines[0];
+    }
+    nextLine++;
+  }
+  if(nextLine > 1){
+    str = str + "*#" + lines[nextLine-1];
+  }
+  return str;
+}
 
 class Chat{
   String content;
   int time;
+  int totalChatWidthL;
   
   Chat(String tContent) {
     content = tContent;
     time = millis();
+    totalChatWidthL = width*2;
   }
   
   void display(int i){
@@ -541,36 +1205,54 @@ class Chat{
         }
         fadeOut = min(max(fadeOut,0),1);
         
-        
         noStroke();
       
         fill(0,100+100*chatPush-255*fadeOut);
-        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,textWidth(content)+chatHeight,chatHeight,0,100,100,0);
-        fill(255,170+50*chatPush-255*fadeOut);
-        text(content,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush);
+        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,charWidth*totalChatWidthL+chatHeight,chatHeight,0,100,100,0);
+        totalChatWidthL = textMarkup(content,18,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush,color(255),100+100*chatPush-255*fadeOut,false);
       }
     }
   }
-  
 }
 
-void drawTextBubble(float tx, float ty, String tText){
-  float tw = textWidth(tText)+chatHeight;
-  float td = chatHeight;
-  
-  float tx2 = tx-(tx-width/2)/(width/2)*tw/2*1.5;
-  float ty2 = -abs(ty-(td+chatHeight/2))/(ty-(td+chatHeight/2))*td+ty;
-  
-  stroke(255,100);
-  strokeWeight(7);
-  fill(255);
-  triangle(tx,ty,tx2-chatHeight/2+(tx-width/2)/(width/2)*tw/4,ty2,tx2+chatHeight/2+(tx-width/2)/(width/2)*tw/4,ty2);
-  rect(tx2-tw/2,ty2-chatHeight/2,tw,chatHeight,chatHeight/10);
-  fill(0);
-  text(tText,tx2-tw/2+chatHeight/2,ty2);
+void drawTextBubble(float tx, float ty, String tText, float opacity){
+  if(tText != ""){
+    String[] textFragments = split(tText,"##");
+    float tw = 0;
+    for(int i = 0; i < textFragments.length; i++){
+      tw = max(textFragments[i].length()*charWidth+chatHeight,tw);
+    }
+    
+    float td = chatHeight+(textFragments.length-1)*chatHeight*2/3;
+    
+    float tx2 = abs(width-tx-tw+.5)/(width-tx-tw+.5)*tw/2+tx;
+    if(tx2-tw/2 < 0){tx2 = tw/2; if(tw>width){tx2 = width/2;}}
+    float ty2 = -abs(ty-(td+chatHeight/2)+.5)/(ty-(td+chatHeight/2)+.5)*(td-chatHeight*2/3*(textFragments.length-1)/2)+ty;
+    
+    noStroke();
+    
+    int fliph=1;
+    int flipv=1;
+    if(tx2<tx){fliph=-1;}
+    if(ty2>ty){flipv=-1;}
+    
+    fill(255,opacity/2);
+    triangle(tx,ty,tx-3*fliph,ty-(chatHeight/2-3)*flipv,tx+(chatHeight/3+3)*fliph,ty-(chatHeight/2-3)*flipv);
+    rect(tx2-tw/2-3-chatHeight/10,ty2-chatHeight/2-3-chatHeight*2/3*(textFragments.length-1)/2,tw+6+chatHeight/5,td+6,chatHeight/10);
+    
+    fill(255,opacity);
+    triangle(tx,ty,tx,ty-chatHeight/2*flipv,tx+chatHeight/3*fliph,ty-chatHeight/2*flipv);
+    rect(tx2-tw/2-chatHeight/10,ty2-chatHeight/2-chatHeight*2/3*(textFragments.length-1)/2,tw+chatHeight/5,td,chatHeight/10);
+    
+    for(int i = 0; i < textFragments.length; i++){
+      textMarkup(textFragments[i],18,tx2-tw/2+chatHeight/2,ty2-chatHeight*2/3*(textFragments.length-1)/2+chatHeight*2/3*i,color(0),opacity*2,false);
+    }
+  }
 }
 
 void keyPressedChat(){
+  println(key);
+  println(keyCode);
   if(chatPushing){
     if(key != CODED){
       if(keyCode == BACKSPACE){
@@ -582,14 +1264,18 @@ void keyPressedChat(){
         chatKBS = "";
       } else if(keyCode == ENTER) {
         if(chatKBS.length() > 0){
-          cL.add(new Chat(chatKBS));
+          if(chatKBS.charAt(0) == '/'){
+            tryCommand(chatKBS.substring(1,chatKBS.length()),"player");
+          } else {
+            cL.add(new Chat(chatKBS));
+          }
           chatKBS = "";
           chatPushing = false;
           chatPush = 0;
         }
       } else {
-        if(textWidth(chatKBS+key) < width/5*4-chatHeight/5*2){
-          chatKBS = chatKBS+key;
+        if(charWidth*totalChatWidth < width/5*4-chatHeight/5*2){
+          chatKBS = chatKBS+str(key);
         }
       }
     }
@@ -599,20 +1285,92 @@ void keyPressedChat(){
     }
   }
 }
+
+void tryCommand(String command, String source) {
+  String[] commands = split(command," ");
+  int args = commands.length-1;
+  commands[0] = commands[0].toLowerCase();
+  
+  Boolean didNone = true;
+  for(int i = 0; i < CFuns.size(); i++){
+    CFun tempFun = (CFun)CFuns.get(i);
+    
+    if(tempFun.name.toLowerCase().equals(commands[0])){
+      didNone = false;
+      if(source.equals("") || tempFun.free){
+        if(tempFun.args == args){
+          executeCommand(tempFun.ID,commands);
+        } else {
+          cL.add(new Chat("*o/*i*o"+commands[0]+"*n*o requires *s*o"+str(tempFun.args)+"*c*o arguments, you provided *s*o"+str(args)));
+        }
+      } else {
+        cL.add(new Chat("*oYou need permission to use /*i*o"+commands[0]+"*n"));
+      }
+    }
+    
+
+  }
+  
+  if(commands[0].length()!=0){
+    if(didNone){
+      cL.add(new Chat("*o/*i*o"+commands[0]+"*n*o was not recognized as a command"));
+    }
+  }
+}
+
+
+
+class CFun{
+  int ID;
+  String name;
+  int args;
+  boolean free;
+  CFun(int tID, String tName, int tArgs, boolean tFree){
+    ID = tID;
+    name = tName;
+    args = tArgs;
+    free = tFree;
+  }
+}
+
+
+
+
+//STEM Phagescape API v(see above)
+
+//STEM Phagescape API v(see above)
+
+boolean[][] smap;
+
 EConfig bulletEntity = new EConfig();
 
 void setupEntities(){
-  bulletEntity.Size = .1; //TO BE REMOVED
+  
+  bulletEntity.Size = .13; //TO BE REMOVED
   player = new Entity(wSize/2,wSize/2,new EConfig(),0);
   player.EC.Genre = 1;
   player.EC.Img = loadImage("player.png");
   entities.add(player);
 }
 
-void updateEntities(int cycle){
-  for (int i = 0; i < entities.size(); i++) {
+void updateEntities(){
+  for (int i = entities.size()-1; i >= 0; i--) {
     Entity tempE = (Entity) entities.get(i);
-    tempE.moveAI(cycle);
+    tempE.moveAI();
+  }
+  if((floor(player.eV.x) != floor(player.eVLast.x)) || (floor(player.eV.y) != floor(player.eVLast.y))){
+    updateSpecialBlocks();
+  }
+}
+
+void healEntities(){
+  for (int i = entities.size()-1; i >= 0; i--) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.eHealth < tempE.EC.HMax){
+      tempE.eHealth++;
+    } else {
+      tempE.eHealth = tempE.EC.HMax;
+    }
   }
 }
 
@@ -625,7 +1383,10 @@ void drawEntities(){
 
 class Entity {
   float ID = random(1000);
-    
+  
+  int trail = 20;
+  ArrayList path = new ArrayList<PVector>();
+  
   int thisI;
   EConfig EC;
   float x;
@@ -633,6 +1394,7 @@ class Entity {
   PVector eV;
   float eDir = 0;
   PVector eD;
+  int eHealth = 1;
   float eSpeed = 0; //Player speed
   float eTSpeed = 0; //Player turn speed
   boolean eMove = false;
@@ -642,8 +1404,15 @@ class Entity {
   float eFade = 0; //Particle fade
   
   int eID;
+  float sourceID = -1;
+  
   
   PVector AITargetPos = new PVector(-1,-1);
+  int AIDir = 1;
+  boolean AIFollowSide = false;
+  int[][] AIMap = new int[100][100];
+  
+  int timeOff = floor(random(100));
   
   Entity(float tx, float ty, EConfig tEC, float tDir) {
     x = tx;
@@ -654,6 +1423,10 @@ class Entity {
     eVLast = new PVector(x,y);
     eV = new PVector(x,y);
     eID = floor(random(2147483.647))*1000;
+    eHealth = EC.HMax;
+    path.add(new PVector(eV.x, eV.y));
+    
+    tryCommand(StringReplaceAll(StringReplaceAll(EC.BirthCommand,"_x_",str(x)),"_y_",str(y)),"");
   }
   
   void moveEvent(int eventID){
@@ -664,19 +1437,14 @@ class Entity {
         tempTo = 0;
       }
       if(key == CODED){
-        switch(keyCode){
-          case UP:
+        if(keyCode == UP){
             pKeys[0] = tempTo;
-            break;
-          case DOWN:
+        } else if(keyCode == DOWN){
             pKeys[1] = tempTo;
-            break;
-          case LEFT:
+        } else if(keyCode == LEFT){
             pKeys[2] = tempTo;
-            break;
-          case RIGHT:
+        } else if(keyCode == RIGHT){
             pKeys[3] = tempTo;
-            break;
         }
       } else {
         switch(key){
@@ -701,31 +1469,18 @@ class Entity {
     }
   }
   
-  void moveAI(int cycle){
+  void moveAI(){
     eV = new PVector(x,y);
     if(EC.Genre == 0){
-      if(x>wSize || x<0 || y>wSize || y<0 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
+      if(x>wSize+5 || x<-5 || y>wSize+5 || y<-5 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
         if(aGS1DB(gBIsSolid,aGS(wU,x,y))){
           EConfig tempConfig;
-          for(int i = 0; i <100; i++){
-            if(random(100)<30){
-              tempConfig = new EConfig();
-              tempConfig.Genre = 2;
-              tempConfig.Size = .1;
-              tempConfig.FadeRate = random(.1)+.05;
-              tempConfig.Type = floor(random(3));
-              tempConfig.SMax = random(EC.SMax/5);
-              if(random(100)<50){
-                tempConfig.Color = aGS1DC(gBColor,aGS(wU,x,y));
-              } else {
-                tempConfig.Color = EC.Color;
-              }
-              entities.add(new Entity(x,y,tempConfig,random(TWO_PI)));
-            }
-          }
-          aSS(wUDamage,x,y,aGS(wUDamage,x,y)+1);
+          particleEffect(x-.5,y-.5,1,1,5,aGS1DC(gBColor,aGS(wU,x,y)),EC.Color,EC.SMax/5);
+          hitBlock(x,y,1);
         }
+        
         destroy();
+        
       } else {
         x += EC.SMax*cos(eDir);
         y += EC.SMax*sin(eDir);
@@ -733,6 +1488,62 @@ class Entity {
       }
     } else if(EC.Genre == 1){
       eMove = false;
+      if(EC.Type == 0 || EC.Type == 1){
+        if(fn % 15 == 0){
+          if(EC.AIDoorBlock > -1 || EC.AIDoorBlockClose > -1){
+            PVector doorCenter = new PVector(0,0);
+            int pastFrames = 0;
+            boolean isClosed = false;
+            boolean isOpen = false;
+            for(int i = -EC.AIDoorWidth; i <= EC.AIDoorWidth; i++){
+              for(int j = -EC.AIDoorWidth; j <= EC.AIDoorWidth; j++){
+                if(aGS(wU,x+i,y+j)==EC.AIDoorBlock || aGS(wU,x+i,y+j)==EC.AIDoorBlockClose){
+                  if(pastFrames == 0){
+                    doorCenter = new PVector(x+i,y+j);
+                  } else if(pastFrames == 1){
+                    doorCenter = new PVector((x+i+doorCenter.x)/2,(y+j+doorCenter.y)/2);
+                  }
+                  if(aGS(wU,x+i,y+j)==EC.AIDoorBlock){
+                    isClosed = true;
+                  } else {
+                    isOpen = true;
+                  }
+                  pastFrames++;
+                }
+              }
+            }
+            
+            if(isOpen != isClosed){
+              if(pastFrames > 0 && pastFrames < 3){
+                boolean changeDoorState = false;
+                if(pointDistance(doorCenter,new PVector(eV.x+cos(eDir)/20,eV.y+sin(eDir)/20)) < pointDistance(doorCenter,eV)){
+                  if(isOpen == false){
+                    changeDoorState = true;
+                  }
+                }
+              
+                if(pointDistance(doorCenter,new PVector(eV.x+cos(eDir)/20,eV.y+sin(eDir)/20)) > pointDistance(doorCenter,eV)){
+                  if(isOpen){
+                    changeDoorState = true;
+                  }
+                }
+                
+                if(changeDoorState){
+                  for(int i = -EC.AIDoorWidth; i <= EC.AIDoorWidth; i++){
+                    for(int j = -EC.AIDoorWidth; j <= EC.AIDoorWidth; j++){
+                      if(aGS(wU,x+i,y+j)==EC.AIDoorBlock){
+                        aSS(wU,x+i,y+j,gBBreakType[EC.AIDoorBlock]);
+                      } else if(aGS(wU,x+i,y+j)==EC.AIDoorBlockClose){
+                        aSS(wU,x+i,y+j,gBBreakType[EC.AIDoorBlockClose]);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
       if(EC.Type == 0){
         if(mousePressed || max(pKeys) == 1){
           if(!mousePressed){
@@ -745,64 +1556,146 @@ class Entity {
       }
       if(EC.Type == 1){
         if(EC.AISearchMode > -1){
-          if(cycle % 25 == 0){
-            if(pointDistance(eV,AITargetPos)<EC.ActDist){
-              if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))){
-                fire(AITargetPos);
+          
+
+          
+          
+          if(EC.AISearchMode < 10){
+            if(fn % EC.FireDelay == timeOff % EC.FireDelay){
+              if(pointDistance(eV,AITargetPos)<EC.ActDist){
+                if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))){
+                  fire(AITargetPos);
+                }
               }
             }
-          }
-          if(EC.AITarget > -1){
-            if(cycle % 125 == 0){
-            
-              if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
-                setAITarget();
-              }
-            }
-          } else {
-            if(cycle % 10 == 0){ 
-              if(pointDistance(entityNear(AITargetPos,EC.AITargetID,100),AITargetPos)>.2){
-                //println("HEY, YOU MOVED!");
-                setAITarget();
-              }
-            }
-          }
-          if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
-            if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
-              if(cycle % 25 == 0){
-                if(pointDistance(eVLast,eV)<EC.Drag){
+            if(EC.AITarget > -1){
+              if(fn % 125 == 0){
+              
+                if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
                   setAITarget();
                 }
               }
-              
+            } else {
+              if(fn % 10 == 0){ 
+                if(pointDistance(entityNearID(AITargetPos,EC.AITargetID,30,100),AITargetPos)>.2){
+                  //println("HEY, YOU MOVED!");
+                  setAITarget();
+                }
+              }
             }
-            eMove = true;
-            
-            if(EC.AISearchMode == 3){
-              if(cycle % 125 == 0){
-                setAITarget();
-              }
-              if(floor(eVLast.x) != floor(eV.x) || floor(eVLast.y) != floor(eV.y)){
-                setAITarget();
-              }
-              if(path.size()>0){
-                eD = new PVector(((Node)path.get(path.size()-1)).x+.5,((Node)path.get(path.size()-1)).y+.5);
-              } else {
-                if(cycle % 25 == 0){
+            if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
+              if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
+                if(fn % EC.FireDelay == timeOff % EC.FireDelay){
                   if(pointDistance(eVLast,eV)<EC.Drag){
-                    AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+                    setAITarget();
+                  }
+                }
+                
+              }
+              eMove = true;
+              
+              if(EC.AISearchMode == 3){
+                if(fn % 125 == 0){
+                  setAITarget();
+                }
+                if(floor(eVLast.x) != floor(eV.x) || floor(eVLast.y) != floor(eV.y)){
+                  setAITarget();
+                }
+                if(Apath.size()>0){
+                  eD = new PVector(((Node)Apath.get(Apath.size()-1)).x+.5,((Node)Apath.get(Apath.size()-1)).y+.5);
+                } else {
+                  if(fn % 25 == 0){
+                    if(pointDistance(eVLast,eV)<EC.Drag){
+                      AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+                    }
                   }
                 }
               }
             }
+          } else if(EC.AISearchMode < 30) {
+            if(fn % EC.FireDelay == timeOff % EC.FireDelay){
+              PVector tempTarget = entityNearID(eV,EC.AITargetID,EC.ActDist,100);
+              if(tempTarget.z != -1){
+                fire(AITargetPos);
+              }
+            }
+            if(EC.AISearchMode == 11){
+              if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
+                eMove = true;
+              }
+              if(fn % 25 == 0){
+                setAITarget();
+              }
+            } else if(EC.AISearchMode == 12){
+              eMove = true;
+              if(fn % 250 == 0){
+                AITargetPos = new PVector(eV.x,eV.y);
+              }
+              if(pointDistance(eV,AITargetPos) < .5){
+                setAITarget();
+              }
+            }
+            
+            if(EC.AISearchMode == 21){
+              if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
+                eMove = true;
+              }
+              if(fn % 35 == 0){
+                setAITarget();
+              }
+            } else if(EC.AISearchMode == 22){
+              eMove = true;
+              if(fn % 300 == 0){
+                for(int i = 0; i < wSize; i++){
+                  for(int j = 0; j < wSize; j++){
+                    if(aGS(AIMap,i,j) > 1){aSS(AIMap,i,j,aGS(AIMap,i,j)-1);}
+                    if(aGS(AIMap,i,j) < -1){aSS(AIMap,i,j,aGS(AIMap,i,j)+1);}
+                  }
+                }
+              }
+              if(fn % 10 == 0){
+                for(int i = -6; i < 7; i++){
+                  for(int j = -6; j < 7; j++){
+                    aSS(AIMap,x+i,y+j,min(aGS(AIMap,x+i,y+j)+1,6));
+                  }
+                }
+                
+                for (int k = 0; k < entities.size(); k++) {
+                  Entity tempE = (Entity) entities.get(k);
+                  if(tempE.EC.ID == EC.AITargetID){
+                    for(int i = -6; i < 7; i++){
+                      for(int j = -6; j < 7; j++){
+                        aSS(AIMap,tempE.x+i,tempE.y+j,max(aGS(AIMap,tempE.x+i,tempE.y+j)-1,-6));
+                      }
+                    }
+                  }
+                }
+                
+              }
+              if(fn % 25 == 0){
+                AITargetPos = new PVector(eV.x,eV.y);
+              }
+              if(pointDistance(eV,AITargetPos) < 1.5){
+                setAITarget();
+              }
+            }
+          } else {
+            if(EC.AISearchMode == 30){
+              eDir = pointDir(eV,AITargetPos);
+              if(pointDistance(eV,AITargetPos) < EC.SMax){
+                eV = new PVector(AITargetPos.x,AITargetPos.y);
+              } else {
+                eV = new PVector(eV.x+cos(eDir)*EC.SMax,eV.y+sin(eDir)*EC.SMax);
+              }
+            }
           }
-          
         }
       }
       //PVector tVecss = pos2Screen(new PVector(eD.x,eD.y));
       //ellipse(tVecss.x,tVecss.y,30,30);
       
       eVLast = new PVector(eV.x,eV.y);
+      
       if(eMove){
         if(eSpeed+EC.Accel < EC.SMax){
           eSpeed += EC.Accel;
@@ -824,7 +1717,35 @@ class Entity {
       } else {
         eTSpeed = 0;
       }
-      eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EC.Size-.5,EC.Size-.5);
+      eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EC.Size*EC.HitboxScale-.5,EC.Size*EC.HitboxScale-.5);
+      
+      if(floor(eV.x) != floor(eVLast.x) || floor(eV.y) != floor(eVLast.y)){
+        path.add(new PVector(eV.x, eV.y));
+        if(path.size() > trail){
+          path.remove(0);
+        }
+      } else {
+        PVector tempPV = (PVector)path.get(path.size()-1);
+        tempPV.x = eV.x;
+        tempPV.y = eV.y;
+      }
+      
+      if(isEntityNearGenreSpecial(eV, 0, EC.Size*EC.HitboxScale/3)) {
+        Entity te = entityNearGenreSpecial(eV, 0, EC.Size*EC.HitboxScale/3);
+        //tryCommand(StringReplaceAll(StringReplaceAll(te.EC.DeathCommand,"_x_",str(te.x)),"_y_",str(te.y)),"");
+        if(te.sourceID != ID){
+          te.destroy();
+          eHealth--;
+          
+          tryCommand(StringReplaceAll(StringReplaceAll(EC.HitCommand,"_x_",str(x)),"_y_",str(y)),"");
+          if(EC.HMax > -1 && eHealth <= 0){
+            particleEffect(x-.5,y-.5,1,1,30,EC.AltColor,EC.Color,.1);
+            //tryCommand(StringReplaceAll(StringReplaceAll(EC.DeathCommand,"_x_",str(x)),"_y_",str(y)),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+            destroy();
+          }
+        }
+      }
+  
     } else if(EC.Genre == 2){
       x += EC.SMax*cos(eDir);
       y += EC.SMax*sin(eDir);
@@ -840,9 +1761,9 @@ class Entity {
   
   void setAITarget(){
     if(EC.AISearchMode == 0){
-      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,100);} else {AITargetPos = entityNear(eV,EC.AITargetID,100);}
+      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,100);} else {AITargetPos = entityNearID(eV,EC.AITargetID,30,100);}
     } else if(EC.AISearchMode == 1){
-      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);} else {AITargetPos = entityNear(eV,EC.AITargetID,random(90)+10);}
+      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);} else {AITargetPos = entityNearID(eV,EC.AITargetID,30,random(90)+10);}
     } else if(EC.AISearchMode == 2){
       AITargetPos = blockNearCasting(eV,EC.AITarget);
       if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
@@ -853,9 +1774,156 @@ class Entity {
       if(aGS(wU,eV.x,eV.y) != EC.AITarget){
         searchWorld(eV,EC.AITarget,(int)EC.Vision/10);
         
-        if(path.size()>0){
-          AITargetPos = new PVector(((Node)path.get(0)).x,((Node)path.get(0)).y);
+        if(Apath.size()>0){
+          AITargetPos = new PVector(((Node)Apath.get(0)).x,((Node)Apath.get(0)).y);
         }
+      }
+      
+    } else if(EC.AISearchMode == 11){
+      //follow path (line of sight)
+      //test line of sight, if none, change mode, call again
+      PVector tempTarget = rayCastAllPathsID(eV,EC.AITargetID,30);
+      if(tempTarget != null){
+        AITargetPos = tempTarget;
+      } else {
+        EC.AISearchMode = 12;
+        setAITarget();
+        return;
+      }
+    } else if(EC.AISearchMode == 12){
+      //Strange (no line > 10)
+      //test line of sight, change mode, call again
+
+      if(rayCastAllPathsID(eV,EC.AITargetID,30) == null){
+        AITargetPos.x = floor(AITargetPos.x)+.5;
+        AITargetPos.y = floor(AITargetPos.y)+.5;
+        
+        boolean Side = false;
+        boolean Front = false;
+        boolean LastSide = false;
+        boolean[] BlocksAround = getSolidAround(AITargetPos,AIDir,AIFollowSide);
+        
+        boolean SlideForward = true;
+        
+        Side = BlocksAround[2];
+        Front = BlocksAround[0];
+        LastSide = BlocksAround[3];
+        if(Side){
+          if(Front){
+            //turn left
+            SlideForward = false;
+            if(AIFollowSide){
+              AIDir++;
+            } else {
+              AIDir--;
+            }
+          } else {
+            
+          }
+        } else {
+          if(LastSide){
+            //turn right and move into side
+            if(AIFollowSide){
+              AIDir--;
+            } else {
+              AIDir++;
+            }
+          } else {
+            if(Front){
+              //turn left and start following wall
+              SlideForward = false;
+              if(AIFollowSide){
+                AIDir++;
+              } else {
+                AIDir--;
+              }
+            } else {
+              //continue streight
+            }
+          }
+        }
+        
+        if(random(50)<1 && BlocksAround[6] == false){
+          if(AIFollowSide){
+            AIDir++;
+          } else {
+            AIDir--;
+          }
+          AIFollowSide = false;
+          if(random(100)<50){
+            AIFollowSide = true;
+          }
+        }
+        
+        AIDir = (int)posMod(AIDir,4);
+        if(SlideForward){
+          if(AIDir == 0){
+            AITargetPos.y--;
+          } else if(AIDir == 1){
+            AITargetPos.x++;
+          } else if(AIDir == 2){
+            AITargetPos.y++;
+          } else if(AIDir == 3){
+            AITargetPos.x--;
+          }
+        }
+      } else {
+        EC.AISearchMode = 11;
+        setAITarget();
+        return;
+      }
+      
+    } else if(EC.AISearchMode == 21){
+      //follow path (line of sight)
+      //test line of sight, if none, change mode, call again
+      PVector tempTarget = rayCastAllPathsID(eV,EC.AITargetID,30);
+      if(tempTarget != null){
+        AITargetPos = tempTarget;
+        println("aa");
+      } else {
+        EC.AISearchMode = 22;
+        setAITarget();
+        return;
+      }
+    } else if(EC.AISearchMode == 22){
+      //Strange (no line > 10)
+      //test line of sight, change mode, call again
+
+      if(rayCastAllPathsID(eV,EC.AITargetID,30) == null){
+        
+        PVector[] tPoints = new PVector[30];
+        for(int i = 0; i < 30; i++){
+          int tx = (int) (x+random(20)-10);
+          int ty = (int) (y+random(20)-10);
+          tPoints[i] = new PVector(tx,ty,aGS(AIMap,tx,ty));
+        }
+        for(int i = 0; i < 30; i++){
+          int smallest = 256;
+          int smallestIndex = 0;
+          for(int j = 0; j < 30; j++){
+            if(tPoints[j].z<smallest){
+              smallest = (int) tPoints[j].z;
+              smallestIndex = j;
+            }
+          }
+          tPoints[smallestIndex].z = 999;
+          if(rayCast((int)tPoints[smallestIndex].x,(int)tPoints[smallestIndex].y,(int)x,(int)y)){
+            AITargetPos = new PVector(tPoints[smallestIndex].x,tPoints[smallestIndex].y);
+            i = 1000;
+          }
+        }
+        
+        //set point:
+        //pick 10 points around
+        //sort based upon weight value
+        //pick lowest weight that is line of sight
+        
+        
+        println("cc");
+      } else {
+        EC.AISearchMode = 21;
+        setAITarget();
+        return;
       }
       
     }
@@ -867,37 +1935,56 @@ class Entity {
   
   void fire(PVector tempV){
     float tempDir = pointDir(eV,tempV);
-    entities.add(new Entity(x+EC.Size/2*cos(tempDir),y+EC.Size/2*sin(tempDir),bulletEntity,tempDir));
+    Entity tempEntity = new Entity(x+EC.Size/2*cos(tempDir),y+EC.Size/2*sin(tempDir),EC.myBulletEntity,tempDir);
+    tempEntity.sourceID = ID;
+    entities.add(tempEntity);
   }
   
   void display() {
-    PVector tempV = pos2Screen(new PVector(x,y));
-    if(EC.Genre == 0){
-      stroke(255);
-      strokeWeight(4);
-      fill(EC.Color);
-      ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
-    } else if(EC.Genre == 1) {
-      pushMatrix();
-      translate(tempV.x,tempV.y);
-      rotate(eDir+PI/2);
-      image(EC.Img,-gScale/2*EC.Size,-gScale/2*EC.Size,gScale*EC.Size,gScale*EC.Size);
-      popMatrix();
-    } else if(EC.Genre == 2){
-      stroke(255,255-eFade*255);
-      strokeWeight(2);
-      fill(EC.Color,255-eFade*255);
-      if(EC.Type == 0){
-        ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
-      } else if(EC.Type == 1) {
-        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
-      } else {
-        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+    if(aGS(nmapShade,x,y) > 0){
+      PVector tempV = pos2Screen(new PVector(x,y));
+      if(tempV.x > -gScale*EC.Size/2 && tempV.y > -gScale*EC.Size/2 && tempV.x < width+gScale*EC.Size/2 && tempV.y < height+gScale*EC.Size/2){
+      
+        if(EC.Genre == 0){
+          //stroke(strokeColor);
+          //strokeWeight(1);
+          noStroke();
+          fill(EC.Color);
+          ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
+        } else if(EC.Genre == 1) {
+          pushMatrix();
+          translate(tempV.x,tempV.y);
+          rotate(eDir+PI/2);
+          image(EC.Img,-gScale/2*EC.Size,-gScale/2*EC.Size,gScale*EC.Size,gScale*EC.Size);
+          popMatrix();
+          
+          if(eHealth > 0 && eHealth < EC.HMax && eHealth < 1000000 && EC.HMax > -1){
+            float tempFade = float(eHealth)/EC.HMax;
+            noFill();
+            strokeWeight(gScale/15);
+            stroke(255,255-tempFade*150);
+            arc(tempV.x,tempV.y,gScale*(EC.Size+.1),gScale*(EC.Size+.1),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
+            stroke((1-tempFade)*510,tempFade*510,0,255-tempFade*150);
+            arc(tempV.x,tempV.y,gScale*(EC.Size+.1),gScale*(EC.Size+.1),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
+          }
+        } else if(EC.Genre == 2){
+          stroke(strokeColor,255-eFade*255);
+          strokeWeight(2);
+          fill(EC.Color,255-eFade*255);
+          if(EC.Type == 0){
+            ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
+          } else if(EC.Type == 1) {
+            rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+          } else {
+            rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+          }
+        }
       }
     }
   }
   
   void destroy(){
+    tryCommand(StringReplaceAll(StringReplaceAll(EC.DeathCommand,"_x_",str(x)),"_y_",str(y)),"");
     for (int i = 0; i < entities.size(); i++) {
       Entity tempE = (Entity) entities.get(i);
       if(tempE.ID == ID){
@@ -912,8 +1999,14 @@ class EConfig {
   int Genre = 0;
   
   color Color = color(0);
+  color AltColor = color(255,0,0);
+  String DeathCommand = "";
+  String BirthCommand = "";
+  String HitCommand = "";
   
+  int HMax = 20;
   float Size = 1;
+  float HitboxScale = 1;
   float SMax = .15;
   
   float Accel = .040;
@@ -928,24 +2021,47 @@ class EConfig {
   int AITarget = -1;
   float AITargetID = -1;
   float AIActionMode = -1;
+  int AIDoorBlock = -1;
+  int AIDoorBlockClose = -1;
+  int AIDoorWidth = 5;
   
   float FadeRate = .1;
   float Vision = 100; //100 is generaly a good number... be careful with this and AI mode 3+... if > 140 and no target is near lag is created
   float GoalDist = 3; //Want to get this close
   float ActDist = 10; //Will start acting at this dis
+  int FireDelay = 25;
+  
+  EConfig myBulletEntity = bulletEntity;
   
   EConfig() {}
 }
 
-PVector entityNear(PVector eV,float tEID, float tChance){
-  float minDis = wSize*wSize;
-  PVector tRV = new PVector(random(wSize),random(wSize));
+void particleEffect(float x, float y, float w, float h, int num, color c1, color c2, float ts){
+  for(int i = 0; i <num; i++){
+    EConfig ECParticle = new EConfig();
+    ECParticle.Genre = 2;
+    ECParticle.Size = .1;
+    ECParticle.FadeRate = random(.1)+.05;
+    ECParticle.Type = floor(random(3));
+    ECParticle.SMax = random(ts);
+    if(random(100)<50){
+      ECParticle.Color = c1;
+    } else {
+      ECParticle.Color = c2;
+    }
+    entities.add(new Entity(x+random(w),y+random(h),ECParticle,random(TWO_PI)));
+  }
+}
+
+PVector entityNearID(PVector eV,float tEID, float tDis, float tChance){
+  float minDis = tDis;
+  PVector tRV = new PVector(random(wSize),random(wSize),-1);
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
     if(tempE.EC.ID == tEID){
       if(random(100)<tChance){
         if(pointDistance(eV, tempE.eV) < minDis){
-          tRV = new PVector(tempE.x,tempE.y);
+          tRV = new PVector(tempE.x,tempE.y,0);
           minDis = pointDistance(eV, tRV);
         }
       }
@@ -954,13 +2070,491 @@ PVector entityNear(PVector eV,float tEID, float tChance){
   return tRV;
 }
 
-void genRing(int x, int y, float w, float h, float weight, int b){
-  float c = TWO_PI/floor(PI*max(w,h)*10);
+boolean isEntityNearID(PVector eV,float tEID, float tDis){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.ID == tEID){
+      if(pointDistance(eV, tempE.eV) < tDis){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+/*
+boolean spreadSmell(int x, int y, int dis){
+  if(x >= 0 && y >= 0 && x < wSize && y < wSize){
+    if(aGS2DB(smap,x,y) == false){
+      aSS2DB(smap,x,y,true);
+      if(dis<1){
+        return false;
+      }
+      boolean bools = false;
+      if(aGS1DB(gBIsSolid,aGS(wU,x+1,y)) == false || aGS(wU,x+1,y)==8){if(spreadSmell(x+1,y,dis-1)){bools=true;}}
+      if(aGS1DB(gBIsSolid,aGS(wU,x-1,y)) == false || aGS(wU,x-1,y)==8){if(spreadSmell(x-1,y,dis-1)){bools=true;}}
+      if(aGS1DB(gBIsSolid,aGS(wU,x,y+1)) == false || aGS(wU,x,y+1)==8){if(spreadSmell(x,y+1,dis-1)){bools=true;}}
+      if(aGS1DB(gBIsSolid,aGS(wU,x,y-1)) == false || aGS(wU,x,y-1)==8){if(spreadSmell(x,y-1,dis-1)){bools=true;}}
+      return bools;
+    }
+  }
+  return false;
+}
+*/
+/*
+boolean isEntityNearIDSmell(PVector eV,float tEID, float tDis){
+  smap = new boolean[wSize][wSize];
+  spreadSmell((int)eV.x,(int)eV.y,(int)tDis);
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.ID == tEID){
+      //if(pointDistance(eV, tempE.eV) < tDis){
+        if(aGS2DB(smap,tempE.eV.x,tempE.eV.y)){
+          return true;
+        }
+      //}
+    }
+  }
+  return false;
+}
+*/
+boolean isEntityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.Genre == tEGenre){
+      if(max(abs(eV.x-tempE.eV.x), abs(eV.y-tempE.eV.y)) < tDis){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Entity entityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.Genre == tEGenre){
+      if(max(abs(eV.x-tempE.eV.x), abs(eV.y-tempE.eV.y)) < tDis){
+        return tempE;
+      }
+    }
+  }
+  return null;
+}
+
+
+PVector rayCastAllPathsID(PVector eV,float tEID, float tDis){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.EC.ID == tEID){
+      if(pointDistance(eV, tempE.eV) < tDis){
+        int tempInt = rayCastPath(tempE.path, (int)eV.x, (int)eV.y);
+        if(tempInt > -1){
+          PVector tempPV = (PVector)tempE.path.get(tempInt);
+          return new PVector(tempPV.x,tempPV.y);
+        }
+      }
+    }
+  }
+  return null;
+}
+
+//STEM Phagescape API v(see above)
+
+PImage HUDImage;
+
+String HUDTtext = "";
+String HUDTsubText = "";
+float HUDTtextSize = 10;
+float HUDTsubTextSize = 10;
+color HUDTtextColor = 0;
+color HUDTsubTextColor = 0;
+int HUDTfadeIn = 0;
+int HUDTfadeOut = 0;
+int HUDTsubTextDelay = 0;
+int HUDTdisplayTime = 0;
+int HUDTstage = 0;
+float HUDTtextWidth = 0;
+float HUDTsubTextWidth = 0;
+
+
+
+int HUDSstage = 0;
+int HUDSfade = 10;
+float HUDSradius = float(1)/3;
+
+
+
+void drawHUD(){
+  if(drawHUDSoftEdge){
+    image(HUDImage,0,0);
+  }
+  
+  if(HUDTstage < HUDTfadeIn+HUDTdisplayTime+HUDTfadeOut){
+    float tempAlpha = 255;
+    float tempAlpha2 = 255;
+    float mainOffset = height/15;
+    if(HUDTstage < HUDTfadeIn){
+      tempAlpha = float(HUDTstage)/HUDTfadeIn*255;
+    }
+    if(HUDTstage < HUDTfadeIn+HUDTsubTextDelay){
+      tempAlpha2 = float(HUDTstage-HUDTsubTextDelay)/HUDTfadeIn*255;
+    }
+    if(HUDTstage > HUDTfadeIn+HUDTdisplayTime){
+      tempAlpha = 255-float(HUDTstage-(HUDTfadeIn+HUDTdisplayTime))/HUDTfadeOut*255;
+      tempAlpha2 = min(tempAlpha2,tempAlpha);
+    }
+    
+    if(HUDTsubText.equals("")){
+      mainOffset = +HUDTtextSize/2;
+    }
+    textMarkup(HUDTtext, HUDTtextSize, (width-HUDTtextWidth)/2, height/2-mainOffset, HUDTtextColor, tempAlpha, false);
+    if(!HUDTsubText.equals("")){
+      textMarkup(HUDTsubText, HUDTsubTextSize, (width-HUDTsubTextWidth)/2, height/2+mainOffset, HUDTsubTextColor, tempAlpha2, false);
+    }
+  }
+  
+  if(HUDSstage != 0){
+    
+    int items = 35;
+    float tempFade = float(abs(HUDSstage))/HUDSfade*255;
+    float sliceSize = TWO_PI/items;
+    
+    if(mouseX != width/2 && pointDistance(new PVector(width/2,height/2), new PVector(mouseX,mouseY)) < width*HUDSradius){
+      fill(0,255,0,tempFade*4/5);
+      noStroke();
+      float mousePlace = float(floor((pointDir(new PVector(width/2,height/2), new PVector(mouseX,mouseY))+PI/2)/sliceSize)+0)*sliceSize-PI/2;
+      arc(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2,mousePlace,mousePlace+sliceSize);
+    }
+    
+    stroke(255,tempFade);
+    strokeWeight(width*HUDSradius/30);
+    fill(200,tempFade*4/5);
+    ellipse(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2);
+    ellipse(width/2,height/2,width*HUDSradius/30,width*HUDSradius/30);
+    float dir = -PI/2;
+    fill(100,tempFade);
+    
+    for(int i = 0; i < items; i++){
+      line(width/2,height/2,width/2+width*HUDSradius*cos(dir),height/2+width*HUDSradius*sin(dir));
+      
+      textAlign(CENTER,CENTER);
+      textSize(20);
+      if(i < 10){
+        text(str((i+1)%10),width/2+(width*HUDSradius-18)*cos(dir+.08),height/2+(width*HUDSradius-18)*sin(dir+.08));
+      }
+      textAlign(CENTER,LEFT);
+      
+      dir += sliceSize;
+    }
+    
+    stroke(0,255,0);
+    
+  }
+}
+
+void refreshHUD(){
+  HUDAddLight(int(player.x),int(player.y),1);
+  if(shadows == true){
+    HUDAddLight(int(player.x),int(player.y),lightStrength);
+  }
+}
+
+void HUDAddLight(int x1, int y1, int strength){
+  nmapShade = new int[wSize][wSize];
+  HUDAddLightLoop(max(0,min(wSize,x1)),max(0,min(wSize,y1)),strength);
+}
+
+void HUDAddLightLoop(int x, int y, int dist){
+  if(aGS(nmapShade,x,y) < dist){
+    aSS(nmapShade,x,y,dist);
+    if(aGS1DB(gBIsSolid,aGS(wU,x,y)) == false){
+      HUDAddLightLoop(x+1,y,dist-1);
+      HUDAddLightLoop(x-1,y,dist-1);
+      HUDAddLightLoop(x,y+1,dist-1);
+      HUDAddLightLoop(x,y-1,dist-1);
+    }
+  }
+}
+
+void updateHUD(){
+  if(HUDTstage < HUDTfadeIn+HUDTdisplayTime+HUDTfadeOut){
+    HUDTstage++;
+  }
+  
+  if(HUDSstage != 0){
+    if(HUDSstage > 0 && HUDSstage < HUDSfade){
+      HUDSstage++;
+    }
+    if(HUDSstage < 0 && HUDSstage < 0){
+      HUDSstage++;
+    }
+    
+    noStroke();
+    fill(255,float(abs(HUDSstage))/HUDSfade*255);
+    ellipse(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2);
+  }  
+}
+
+void HUDText(String ttext, String tsubText, float ttextSize, float tsubTextSize, color ttextColor, color tsubTextColor, int tfadeIn, int tfadeOut, int tsubTextDelay, int tdisplayTime){
+  HUDTtext = ttext;
+  HUDTsubText = tsubText;
+  HUDTtextSize = ttextSize;
+  HUDTsubTextSize = tsubTextSize;
+  HUDTtextColor = ttextColor;
+  HUDTsubTextColor = tsubTextColor;
+  HUDTfadeIn = tfadeIn;
+  HUDTfadeOut = tfadeOut;
+  HUDTsubTextDelay = tsubTextDelay;
+  HUDTdisplayTime = tdisplayTime;
+  HUDTstage = 0;
+  
+  HUDTtextWidth = simpleTextWidth(HUDTtext, HUDTtextSize);
+  HUDTsubTextWidth =simpleTextWidth(HUDTsubText, HUDTsubTextSize);
+}
+
+String qText = "";
+String[] qAnswerLabels = {"a. ", "b. ", "c. ", "d. ", "e. ", "f. ", "g. ", "h. ", "i. ", "J. "};
+String[] qAnswers = new String[4];
+int qCorrectAnswer = 0;
+float qSize;
+float qAnswerSize;
+float qWidth;
+float qHeight;
+float qHoverPad = 7;
+float qHover = -1;
+String qGoodCallback;
+String qBadCallback;
+float qLastFade = -1;
+
+void newQuestion(String goodCallback, String badCallback){
+  qHover = -1;
+  qSize = 45.5;
+  qAnswerSize = 40;
+  qWidth = width/10*9;
+  qHeight = height/10*9;
+  
+  qCorrectAnswer = 2;
+  
+  String qTText = "Did you know, if you cut off your left arm, your right arm would be left? Don't worry though, you will (JUSTIN WAS HERE) be all right. [insert question here] The quick brown fox jumped over the lazy dog! When does 1+1 equal three? ";
+  String qTAnswers_0 = "One pluse one equals three when you read 1984 by George Orwell";
+  String qTAnswers_1 = "One pluse one equals three for large values of 1";
+  String qTAnswers_2 = "One pluse one doesn't equal three";
+  String qTAnswers_3 = "One pluse one equals three when a cop says it does. Stop resisting! I'm-a light you up!";
+  
+  boolean resize = true;
+  while(resize){
+    qText = simpleTextCrush(qTText,qSize,qWidth);
+    qAnswers[0] = simpleTextCrush(qAnswerLabels[0]+qTAnswers_0,qAnswerSize,qWidth);
+    qAnswers[1] = simpleTextCrush(qAnswerLabels[1]+qTAnswers_1,qAnswerSize,qWidth);
+    qAnswers[2] = simpleTextCrush(qAnswerLabels[2]+qTAnswers_2,qAnswerSize,qWidth);
+    qAnswers[3] = simpleTextCrush(qAnswerLabels[3]+qTAnswers_3,qAnswerSize,qWidth);
+    
+    float tempH = simpleTextHeight(qText, qSize) + qSize + qAnswerSize*float(qAnswers.length-1);
+    for(int i = 0; i < qAnswers.length; i++){
+      tempH += simpleTextHeight(qAnswers[i], qAnswerSize);
+    }
+    if(tempH > qHeight){
+      qSize-=.5;
+      qAnswerSize = qSize/5*4;
+    } else {
+      resize = false;
+    }
+  }
+  
+  qGoodCallback = goodCallback;
+  qBadCallback = badCallback;
+}
+
+void clickQuestion(){
+  if(mouseClicked){
+    if(qHover > -1){
+      if(qLastFade >= 255){
+        if(qHover == qCorrectAnswer){
+          tryCommand(qGoodCallback,"");
+        } else {
+          tryCommand(qBadCallback,"");
+        }
+        mouseClicked = false;
+        qHover = -1;
+      }
+    }
+  }
+  
+  
+}
+
+void drawQuestion(float fade){
+  qLastFade = fade;
+  float yPointer = (height-qHeight)/2 + qSize/2;
+  
+  textMarkup(qText, qSize, (width-qWidth)/2, yPointer, 255, fade, false);
+  
+  yPointer += simpleTextHeight(qText, qSize) + qSize/2 + qAnswerSize/2;
+  
+  qHover = -1;
+  for(int i = 0; i < qAnswers.length; i++){
+    if(mouseY > yPointer-qAnswerSize/2+qAnswerSize/5-qHoverPad){
+      if(mouseY < yPointer-qAnswerSize/2+qAnswerSize/5+simpleTextHeight(qAnswers[i], qAnswerSize)+qHoverPad){
+        if(mouseX > (width-qWidth)/2-qHoverPad){
+          if(mouseX < (width-qWidth)/2+simpleTextWidth(qAnswers[i], qAnswerSize)+qHoverPad){
+            qHover = i;
+            fill(0,100);
+            noStroke();
+            rect((width-qWidth)/2-qHoverPad,yPointer-qAnswerSize/2+qAnswerSize/15-qHoverPad,simpleTextWidth(qAnswers[i], qAnswerSize)+qHoverPad*2,simpleTextHeight(qAnswers[i], qAnswerSize)+qHoverPad*2,qHoverPad);
+          }
+        }
+      }
+    }
+    textMarkup(qAnswers[i], qAnswerSize, (width-qWidth)/2, yPointer, 255, fade, false);
+    yPointer += simpleTextHeight(qAnswers[i], qAnswerSize) + qAnswerSize;
+  }
+  
+  noFill();
+  stroke(255);
+  strokeWeight(3);
+}
+
+ArrayList sL = new ArrayList<Sound>();
+
+void updateSound(){
+  Sound tempS;
+  for (int i = 0; i < sL.size(); i++){
+    tempS = (Sound) sL.get(i);
+    if(tempS.update()){
+      sL.remove(i);
+      i--;
+    }
+  }
+}
+
+void drawSound(){
+  Sound tempS;
+  for (int i = 0; i < sL.size(); i++){
+    tempS = (Sound) sL.get(i);
+    tempS.display();
+  }
+}
+
+class Sound {
+  float x;
+  float y;
+  PVector posV;
+  SoundConfig config;
   float r = 0;
-  for(float i = 0; i < TWO_PI; i+=c){
-    r = (w*h)/sqrt(sq(w*cos(i))+sq(h*sin(i)))-weight/2;
+  int index = 100;
+  float offX;
+  float offY;
+  float wallMult = 1;
+  
+  Sound(float tx, float ty, SoundConfig tconfig, int tindex) {
+    
+    x = tx;
+    y = ty;
+    index = tindex;
+    config = tconfig;
+    offX = random(config.variance*2)-config.variance;
+    offY = random(config.variance*2)-config.variance;
+    //0 = no effect - always loud
+    //if there is a ray cast - 0 to 100 always loud -> 200 is no sound
+    //if there is a path     - 0 = loud 200 = no sound scales
+    //if completely seperate - 0 to 100 scales -> 100 to 200 no sound
+    if(config.wallEffect > 0){
+      if(rayCast((int) x, (int) y, (int) wViewCenter.x, (int) wViewCenter.y)){
+        wallMult = (100-max(config.wallEffect-100,0))/100;
+      } else if(genTestPathExists( x, y, wViewCenter.x, wViewCenter.y)){
+        wallMult = (200-config.wallEffect)/200;
+      } else {
+        wallMult = (100-config.wallEffect)/100;
+      }
+      wallMult = max(min(wallMult,1),0);
+    }
+    
+    if(index == 0){
+      
+      if(wallMult > 0 && pointDistance(wViewCenter, new PVector(x,y)) < config.rMax*wallMult){
+        AudioPlayer tempAP = (AudioPlayer)config.sound.get(floor(random(config.sound.size())));
+        tempAP.setGain((1-pointDistance(wViewCenter, new PVector(x,y))/(config.rMax*wallMult))*35-35); //-35 to 0 dB
+        tempAP.rewind();
+        tempAP.play();
+        //
+        
+      }
+    }
+    
+  }
+  
+  void display() {
+    if(config.drawWave){
+      posV = pos2Screen(new PVector(x+offX,y+offY));
+      noFill();
+      stroke(config.baseColor,(config.rMax*gScale*wallMult-r*gScale)/(config.rMax*gScale*wallMult)*255);
+      strokeWeight(max(0,(r/(config.rMax*wallMult)*config.bandWidth+.6)*gScale));
+      ellipse(posV.x,posV.y,r*2*gScale,r*2*gScale);
+    }
+  }
+    
+  boolean update() {
+    if(config.drawWave == false){
+      return true;
+    }
+    
+    r+=config.rSpeed;
+    
+    if(index < config.waveCount-1){
+      if(r > config.waveLength){
+        sL.add(new Sound(x,y,config,index+1));
+        index = 999;
+      }
+    }
+    
+    if(r>config.rMax*wallMult){
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+class SoundConfig {
+  boolean drawWave;
+  float rSpeed=1;
+  int rMax=0;
+  float darkness=255;
+  color baseColor=0;
+  float bandWidth=0;
+  int waveCount = 0;
+  float waveLength = 0;
+  float variance = 0;
+  float wallEffect = 0;
+  ArrayList sound = new ArrayList<AudioPlayer>();
+  SoundConfig(boolean tdrawWave, float trSpeed, int trMax, float tdarkness, color tbaseColor, float tbandWidth, int twaveCount, float twaveLength, float tvariance, float twallEffect) {
+    drawWave = tdrawWave;
+    rSpeed=trSpeed;
+    rMax=trMax;
+    darkness=tdarkness;
+    baseColor=tbaseColor;
+    bandWidth=tbandWidth;
+    waveCount = twaveCount;
+    waveLength = twaveLength;
+    variance = tvariance;
+    wallEffect = twallEffect;
+  }
+}
+//STEM Phagescape API v(see above)
+
+void genRing(float x, float y, float w, float h, float weight, int b){
+  genArc(0,TWO_PI,x,y,w,h,weight,b);
+}
+
+void genArc(float rStart, float rEnd, float x, float y, float w, float h, float weight, int b){
+  if(rStart > rEnd){float rTemp = rStart; rStart = rEnd; rEnd = rTemp;}
+  float dR = rEnd-rStart;
+  float c = dR/floor(dR*max(w,h)*10); //dR is range -> range/(circumfrence of arc(radians * 2*max_radius *5 -> 20*radius -> 20 points per block)) -> gives increment value
+  float r;
+  for(float i = rStart; i < rEnd; i+=c){
+    r = (w*h/2)/sqrt(sq(w*cos(i))+sq(h*sin(i)))-weight/2;
     for(float j = 0; j <= weight; j+=.2){
-      aSS(wU,x+floor((r+j)*cos(i)),y+floor((r+j)*sin(i)),b);
+      aSS(wU,round(x+(r+j)*cos(i)),round(y+(r+j)*sin(i)),b);
     }
   }
 }
@@ -976,19 +2570,22 @@ void genCircle(float x, float y, float r, int b){
   }
 }
 
-void genLine(int x1, int y1, int x2, int y2, float weight, int b){
+void genLine(float x1, float y1, float x2, float y2, float weight, int b){
   int itt = ceil(10*pointDistance(new PVector(x1,y1), new PVector(x2,y2)));
-  float rise = float(y2-y1)/itt;
-  float run = float(x2-x1)/itt;
+  float rise = (y2-y1)/itt;
+  float run = (x2-x1)/itt;
   float xOff = 0;
   float yOff = 0;
-  for(float i = 0; i < itt; i+=1){
+  for(float i = 0; i < itt-1; i+=1){
     for(float j = 0; j <= weight*10; j+=2){
       xOff = (j-weight*5)*rise;
       yOff = (j-weight*5)*-run;
       aSS(wU,floor(x1+xOff+i*run),floor(y1+yOff+i*rise),b);
     }
   }
+  aSS(wU,floor(x1),floor(y1),b);
+  aSS(wU,floor(x2),floor(y2),b);
+  
 }
 
 void genRect(float x, float y, float w, float h, int b){
@@ -1004,18 +2601,10 @@ void genRect(float x, float y, float w, float h, int b){
 }
 
 void genBox(float x, float y, float w, float h, float weight, int b){
-  x = round(x); y = round(y); w = round(w); h = round(h); weight = round(weight);
-  int hweight = round(weight/2);
-  for(int j = 0; j <= weight; j++){
-    for(int i = -hweight; i <= w+hweight; i++){
-      aSS(wU,(int)x+i,(int)y-hweight+j,b);
-      aSS(wU,(int)x+i,(int)(y+h)-hweight+j,b);
-    }
-    for(int i = -hweight; i <= h+hweight; i++){
-      aSS(wU,(int)x-hweight+j,(int)y+i,b);
-      aSS(wU,(int)(x+w)-hweight+j,(int)y+i,b);
-    }
-  }
+  genLine(x,y,x+w-1,y,weight,b);
+  genLine(x,y,x,y+h-1,weight,b);
+  genLine(x,y+h-1,x+w-1,y+h-1,weight,b);
+  genLine(x+w-1,y,x+w-1,y+h-1,weight,b);
 }
 
 void genRoundRect(float x, float y, float w, float h, float rounding, int b){
@@ -1096,17 +2685,35 @@ boolean genTestPathExistsLoop(int x, int y, int x2, int y2){
   return false;
 }
 
+boolean genTestPathExistsDis(float x1, float y1, float x2, float y2, float dis){
+  nmap = new int[wSize][wSize];
+  return genTestPathExistsDisLoop((int) x1, (int) y1, (int) x2, (int) y2, (int) dis);
+}
+
+boolean genTestPathExistsDisLoop(int x, int y, int x2, int y2, int dis){
+  println(millis());
+  if(x >= 0 && y >= 0 && x < wSize && y < wSize){
+      if(aGS(nmap,x,y) == 0){
+        if(abs(x-x2)+abs(y-y2) <= 1){
+          return true;
+        }
+        aSS(nmap,x,y,1);  
+        boolean bools = false;
+        if(aGS1DB(gBIsSolid,aGS(wU,x+1,y)) == false){if(genTestPathExistsDisLoop(x+1,y,x2,y2,dis)){bools=true;}}
+        if(aGS1DB(gBIsSolid,aGS(wU,x-1,y)) == false){if(genTestPathExistsDisLoop(x-1,y,x2,y2,dis)){bools=true;}}
+        if(aGS1DB(gBIsSolid,aGS(wU,x,y+1)) == false){if(genTestPathExistsDisLoop(x,y+1,x2,y2,dis)){bools=true;}}
+        if(aGS1DB(gBIsSolid,aGS(wU,x,y-1)) == false){if(genTestPathExistsDisLoop(x,y-1,x2,y2,dis)){bools=true;}}
+        return bools;
+      }
+  }
+  return false;
+}
+
 boolean genSpread(int num, int from, int to){
   int froms = 0;
   int tos = 0;
   int tx, ty;
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      if(wU[i][j] == from){
-        froms++;
-      }
-    }
-  }
+  froms = genCountBlock(from);
   if(froms <= num){
     genReplace(from, to);
     if(froms == num){
@@ -1137,6 +2744,84 @@ int genCountBlock(int b){
   }
   return count;
 }
+
+boolean genLoadMap(PImage thisImage){
+  if(thisImage.width == wSize && thisImage.height == wSize){
+    thisImage.loadPixels();
+    for(int i = 0; i < wSize; i++){
+      for(int j = 0; j < wSize; j++){
+        wU[i][j] = int(blue(thisImage.pixels[i+j*wSize]));
+      }
+    }
+  }
+  return false;
+}
+
+void genSpreadClump(int n, int from, int to, int seeds, int[] falloff){
+  int total = 0;
+  if(genCountBlock(from)>=n){
+    for(int i = 0; i < wSize; i++){
+      for(int j = 0; j < wSize; j++){
+        if(aGS(wU,i,j) == from){
+          distanceMatrix[i][j] = 6;
+        } else {
+          distanceMatrix[i][j] = 0;
+        }
+      }
+    }
+    for(int i = 0; i < wSize; i++){
+      for(int j = 0; j < wSize; j++){
+        if(aGS(distanceMatrix,i,j) == 6){
+          if(aGS(wU,i+1,j) == to || aGS(wU,i-1,j) == to || aGS(wU,i,j+1) == to || aGS(wU,i,j-1) == to){
+            distanceMatrix[i][j] = 1;
+          }
+        }
+      }
+    }
+    
+    while(total < seeds){
+      int x = floor(random(wSize));
+      int y = floor(random(wSize));
+      if(aGS(wU,x,y) == from){
+        aSS(wU,x,y,to);
+        pinDistanceMatrix(x,y,0);
+        total++;
+      }
+    }
+    while(total < n){
+      int x = floor(random(wSize));
+      int y = floor(random(wSize));
+      if(aGS(distanceMatrix,x,y)<6){
+        int tempDis = aGS(distanceMatrix,x,y);
+        if(tempDis > 0){
+          if(random(100)<falloff[tempDis-1]){
+            aSS(wU,x,y,to);
+            pinDistanceMatrix(x,y,0);
+            total++;
+          }
+        }
+      }
+    }
+    
+  } else {
+    genReplace(from, to);
+  }
+}
+
+void pinDistanceMatrix(int x, int y, int d){
+  if(aGS(distanceMatrix,x,y)>d){
+    aSS(distanceMatrix,x,y,d);
+    if(aGS(distanceMatrix,x+1,y)>d+1){pinDistanceMatrix(x+1,y,d+1);}
+    if(aGS(distanceMatrix,x-1,y)>d+1){pinDistanceMatrix(x-1,y,d+1);}
+    if(aGS(distanceMatrix,x,y+1)>d+1){pinDistanceMatrix(x,y+1,d+1);}
+    if(aGS(distanceMatrix,x,y-1)>d+1){pinDistanceMatrix(x,y-1,d+1);}
+  }
+  
+}
+
+//STEM Phagescape API v(see above)
+//STEM Phagescape API v(see above)
+
 /*
 int wavePixels = 100;
 int waveFrames = 60;
@@ -1153,16 +2838,24 @@ void waveGrid(){
   wL.clear();
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      gM[i*2+1][j*2+1] = gU[i][j];
+      
+      if(aGS(gUShade,i,j) == 0){
+        //gM[i*2+1][j*2+1] = -2;
+      } else {
+        gM[i*2+1][j*2+1] = aGS(gU,i,j);
+      }
+      
+      
+      //if(gUHUD[i][j] == false){gM[i*2+1][j*2+1] = 255;}
     }
   }
   for(int i = 0; i < gSize*2+1; i++){
     for(int j = 0; j < gSize*2+1; j++){
       if(i%2!=j%2){
-        if((gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gM[min(i+1,ceil(gSize)*2)][j] != gM[max(i-1,0)][j]){
-          wL.add(new Wave(i,j,0,1,(j+i)%4-2));
-        }
-        if((gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2) && gM[i][min(j+1,ceil(gSize)*2)] != gM[i][max(j-1,0)]){
+        if(gBColor[gM[min(i+1,ceil(gSize)*2)][j]] != gBColor[gM[max(i-1,0)][j]]){
+           wL.add(new Wave(i,j,0,1,(j+i)%4-2));
+         }
+        if(gBColor[gM[i][min(j+1,ceil(gSize)*2)]] != gBColor[gM[i][max(j-1,0)]]){
           wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
         }
       }
@@ -1271,13 +2964,17 @@ class Wave {
     
     
     
-    strokeWeight(gScale/15);
-    stroke(255);
-    line(ta.x,ta.y,tb.x,tb.y);
-    noStroke();
-    fill(255);
-    ellipse(ta.x,ta.y,gScale/15-1,gScale/15-1);
-    ellipse(tb.x,tb.y,gScale/15-1,gScale/15-1);
+    //gridBuffer.strokeWeight(gScale/15-3);
+    //gridBuffer.stroke(strokeColor);
+    
+    int strokeWe = ceil((gScale/15-3)/2);
+    rectL.add(new RectObj(int(ta.x)+ceil(gScale)-strokeWe,int(ta.y)+ceil(gScale)-strokeWe,int(tb.x)+ceil(gScale)-int(ta.x+ceil(gScale))+strokeWe,int(tb.y)+ceil(gScale)-int(ta.y+ceil(gScale))+strokeWe,color(255)));
+    
+    //gridBuffer.line(ta.x+ceil(gScale),ta.y+ceil(gScale),tb.x+ceil(gScale),tb.y+ceil(gScale));
+    //gridBuffer.noStroke();
+    //gridBuffer.fill(255);
+    //ellipse(ta.x,ta.y,gScale/15-1-1,gScale/15-1-1);
+    //ellipse(tb.x,tb.y,gScale/15-1-1,gScale/15-1-1);
     //waveFromImage(ta.x,ta.y,amp*floor((wPhase+shift)*10),wDir);
   }
 }
@@ -1367,21 +3064,130 @@ void waveFromImage(float tx, float ty, int tI, boolean tDir){
 }
 */
 
+//STEM Phagescape API v(see above)
+//STEM Phagescape API v(see above)
+
+ArrayList updates = new ArrayList<PVector>();
+
+PGraphics gridBuffer;
+PImage gridBufferImage;
+PVector gridBufferPos = new PVector(0,0);
+int[][] gUShade;
+int[][] nmapShade;
+ArrayList rectL = new ArrayList<RectObj>();
+
+class RectObj {
+  int x;
+  int y;
+  int w;
+  int h;
+  int col;
+  
+  RectObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx;
+    y = ty;
+    w = tw;
+    h = th;
+    col = tcol;
+  }
+  void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
 void setupWorld(){
   gScale = float(width)/(gSize-1);
+  gridBuffer = createGraphics(width+ceil(gScale*2),height+ceil(gScale*2));
+  gridBufferImage = createImage(width+ceil(gScale*2),height+ceil(gScale*2),RGB);
   wU = new int[wSize][wSize];
   wUText = new boolean[wSize][wSize];
   wUDamage = new int[wSize][wSize];
   gU = new int[ceil(gSize)][ceil(gSize)];
+  gUHUD = new boolean[ceil(gSize)][ceil(gSize)];
+  wUUpdate = new int[wSize][wSize];
 }
 
 void refreshWorld(){
+  
+  refreshHUD();
+  gUShade = new int[floor(gSize)][floor(gSize)];
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
+      gUShade[i][j] = aGS(nmapShade,i+wView.x,j+wView.y);
+      if(i+wView.x < 0 || j+wView.y < 0 || i+wView.x >= wSize || j+wView.y  >= wSize){
+        gUShade[i][j] = 0;
+      }
     }
   }
   waveGrid();
+  
+  //gridBuffer.beginDraw();
+  //gridBuffer.background(0);
+  //gridBufferImage.loadPixels();
+  rectL.clear();
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      //gridBuffer.noStroke();
+      
+      int thisBlock = gU[i][j];
+      
+      int tempColor = aGS1D(gBColor,thisBlock);
+      
+      float tempShade = float(gUShade[i][j]+0)/5;
+      
+      if(tempShade > 1){
+        tempShade = 1;
+      }
+      
+      //gridBuffer.fill(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade);
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
+      //gridBufferImage = toughRect(gridBufferImage, floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade));
+      //gridBufferImage.set(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),airMonster.Img);
+      if(tempColor != gBColor[0] || tempShade != 1){
+        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
+      }
+      //gridBuffer.rect(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+      
+      
+      if(sBHasImage[thisBlock]){
+        float tScale;
+        if(sBImageDrawType[thisBlock] == 0){
+          //gridBuffer.image(sBImage[thisBlock],floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        } else if(sBImageDrawType[thisBlock] == 1) {
+          //gridBuffer.image(sBImage[thisBlock],floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        } else {
+          tScale = width/sBImage[thisBlock].width;
+          //gridBuffer.image(sBImage[thisBlock].get(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)),floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        }
+      }
+    }
+  }
+  
+  if(gSize < 30){
+    for (Wave w : (ArrayList<Wave>) wL) {
+      w.display();
+    }
+  }
+  //gridBuffer.endDraw();
+  
+  
+  //gridBufferImage = gridBuffer.get();
+  //gridBuffer.loadPixels();
+  //gridBufferImage.pixels = gridBuffer.pixels;
+  
+  //gridBufferImage.loadPixels();
+  //for(int i = 0; i < gridBufferImage.pixels.length; i++){
+  //  gridBufferImage.pixels[i] = 1;
+  //}
+  //gridBufferImage.updatePixels();
+  
+  //gridBufferImage = gridBuffer.get();
+  //gridBufferImage.updatePixels();
+  gridBufferPos = new PVector(player.x,player.y);
+  
 }
 
 void moveToAnimate(PVector tV, float tTime){
@@ -1406,6 +3212,7 @@ void scaleView(float tGSize){
   gSize = tGSize;
   gScale = float(width)/(gSize-1);
   gU = new int[ceil(gSize)][ceil(gSize)];
+  gUHUD = new boolean[ceil(gSize)][ceil(gSize)];
   refreshWorld();
 }
 
@@ -1413,6 +3220,13 @@ void addGeneralBlock(int tIndex, color tColor, boolean tIsSolid, int tStrength){
   gBColor[tIndex] = tColor;
   gBIsSolid[tIndex] = tIsSolid;
   gBStrength[tIndex] = tStrength;
+}
+
+void addGeneralBlockBreak(int tIndex, int tBreakType, String tBreakCommand){
+  gBBreakType[tIndex] = tBreakType;
+  if(tBreakCommand != ""){
+    gBBreakCommand[tIndex] = tBreakCommand;
+  }
 }
 
 void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
@@ -1434,6 +3248,11 @@ void addTextSpecialBlock(int tIndex, String tText, int tTextDrawType){
   sBTextDrawType[tIndex] = tTextDrawType;
 }
 
+void addActionSpecialBlock(int tIndex, int tAction){
+  sBHasAction[tIndex] = true;
+  sBAction[tIndex] = tAction;
+}
+
 void centerView(float ta, float tb){
   wViewCenter = new PVector(ta,tb,gSize);
   wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
@@ -1449,56 +3268,223 @@ void centerView(float ta, float tb){
 }
 
 void updateWorld(){
-  wPhase += .09;
-}
-
-void drawWorld(){
-  background(0);
-  
-  
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      noStroke();
-      int thisBlock = gU[i][j];
-      fill(aGS1D(gBColor,thisBlock));
-      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-      rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
-      
-      if(sBHasImage[thisBlock]){
-        float tScale;
-        if(sBImageDrawType[thisBlock] == 0){
-          image(sBImage[thisBlock],tempV.x,tempV.y);
-        } else if(sBImageDrawType[thisBlock] == 1) {
-          image(sBImage[thisBlock],tempV.x,tempV.y);
-        } else {
-          tScale = width/sBImage[thisBlock].width;
-          image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),tempV.x,tempV.y);
+  if(updates.size() > 0) {
+    int removedUpdates = 0;
+    while(updates.size()-removedUpdates > 0){
+      PVector update;
+      for (int i = updates.size() - 1; i >= 0; i--) {
+        update = (PVector) updates.get(i);
+        if(update.z == 20){
+          if(updateBlock(int(update.x),int(update.y))){
+            update.z = -1;
+          } else {
+            update.z = 0;
+          }
+        }
+        if(update.z == 21){
+          update.z = 20;
         }
       }
-      if(aGS1DB(gBIsSolid,thisBlock)){
-        PVector tempV2 = grid2Pos(new PVector(i,j));
-        if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
-          if(aGS(wUDamage,tempV2.x,tempV2.y) > aGS1D(gBStrength,thisBlock)){
-            aSS(wU,tempV2.x,tempV2.y,0);
-            refreshWorld();
-          } else {
-            stroke(255);
-            strokeWeight(gScale/15);
-            float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y)-1)/(aGS1D(gBStrength,thisBlock)-1+.01)*gScale/2;
-            line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
-            line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
+      for (int i = updates.size() - 1; i >= 0; i--) {
+        update = (PVector) updates.get(i);
+        if(update.z == -1){
+          if(!updateExists(update.x+1,update.y)){updates.add(new PVector(update.x+1,update.y,21));}
+          if(!updateExists(update.x-1,update.y)){updates.add(new PVector(update.x-1,update.y,21));}
+          if(!updateExists(update.x,update.y+1)){updates.add(new PVector(update.x,update.y+1,21));}
+          if(!updateExists(update.x,update.y-1)){updates.add(new PVector(update.x,update.y-1,21));}
+        }
+        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++;}
+      }
+    }
+    refreshWorld();
+    updates.clear();
+  }
+}
+
+boolean updateBlock(int x, int y){
+  if(x >= 0 && y >= 0 && x < wSize && y < wSize){
+    int tempBT = aGS(wU,x,y);
+    if(aGS1DB(sBHasAction,tempBT)){
+      int tAction = sBAction[tempBT];
+      if(tAction == 0){
+        //if(aGS(wUP,x+xs,y+ys) == aGS(wU,x,y))
+        //aSS(wUC,x,y,aGS1D(gBBreakType,tempBT)); //what is action 0 again? - needs updated to new system of update list
+      }
+      if(tAction == 46){
+        //if(aGS(wUP,x,y) == tempBT){
+          hitBlock(x,y,10000);
+          return true;
+        //}
+      }
+    }
+  }
+  return false;
+}
+
+void updateSpecialBlocks(){
+  boolean updateAgain = true;
+  
+  int updateDist = 10;
+  int capX = min(max(floor(player.x)+updateDist,0),wSize-1);
+  int capY = min(max(floor(player.y)+updateDist,0),wSize-1);
+  
+  while(updateAgain){
+    updateAgain = false;
+    for(int i = min(max(floor(player.x)-updateDist,0),wSize-1); i <= capX; i++){
+      for(int j = min(max(floor(player.y)-updateDist,0),wSize-1); j <= capY; j++){
+        if(aGS1DB(sBHasAction,aGS(wU,i,j))){
+          int thisBlock = aGS(wU,i,j);
+          int tAction = sBAction[thisBlock];
+          
+          if(tAction >= 1 && tAction <= 10){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
+              hitBlock(i,j,10000);
+              updateAgain = true;
+            }
+          }
+          if(tAction >= 11 && tAction <= 20){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
+              if(genTestPathExists(player.x,player.y,i,j)){
+                hitBlock(i,j,10000);
+                updateAgain = true;
+              }
+            }
+          }
+          if(tAction >= 21 && tAction < 30){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
+              if(genTestPathExists(player.x,player.y,i,j)){
+                if(rayCast(i,j,(int)player.x,(int)player.y)){
+                  hitBlock(i,j,10000);
+                  updateAgain = true;
+                }
+              }
+            }
           }
         }
       }
     }
   }
-  
-  if(gSize < 30){
-    for (Wave w : (ArrayList<Wave>) wL) {
-      w.display();
+}
+
+/*
+void updateBlockLight(int x, int y){
+  if(x >= 0 && y >= 0 && x < wSize && y < wSize){
+    wUCovers[x][y] = wU[x][y];
+    int tempBT = aGS(wU,x,y);
+    if(aGS1DB(sBHasAction,tempBT)){
+      int tAction = sBAction[tempBT];
+      if(tAction == 51){
+        
+        int[] array1 = new int[8];
+        int tempCounter = 0;
+        if(aGS(wU,x+1,y) != tempBT && gBIsSolid[aGS(wU,x+1,y)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x+1,y); tempCounter++;}
+        if(aGS(wU,x+1,y+1) != tempBT && gBIsSolid[aGS(wU,x+1,y+1)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x+1,y+1); tempCounter++;}
+        if(aGS(wU,x,y+1) != tempBT && gBIsSolid[aGS(wU,x,y+1)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x,y+1); tempCounter++;}
+        if(aGS(wU,x-1,y+1) != tempBT && gBIsSolid[aGS(wU,x-1,y+1)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x-1,y+1); tempCounter++;}
+        if(aGS(wU,x-1,y) != tempBT && gBIsSolid[aGS(wU,x-1,y)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x-1,y); tempCounter++;}
+        if(aGS(wU,x-1,y-1) != tempBT && gBIsSolid[aGS(wU,x-1,y-1)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x-1,y-1); tempCounter++;}
+        if(aGS(wU,x,y-1) != tempBT && gBIsSolid[aGS(wU,x,y-1)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x,y-1); tempCounter++;}
+        if(aGS(wU,x+1,y-1) != tempBT && gBIsSolid[aGS(wU,x+1,y-1)] == gBIsSolid[tempBT]){array1[tempCounter] = aGS(wU,x+1,y-1); tempCounter++;}
+        int[] array2 = new int[tempCounter];
+        arrayCopy(array1,array2,tempCounter);
+        int newCover = tempBT;
+        if(tempCounter > 0){
+          newCover = mode(array2);
+        }
+        wUCovers[x][y] = newCover;
+        
+      }
     }
   }
+}
+*/
+
+void updateSpawners(){
+  int spawnDist = 5;
+  int capX = min(max(floor(player.x)+spawnDist,0),wSize-1);
+  int capY = min(max(floor(player.y)+spawnDist,0),wSize-1);
+  for(int i = min(max(floor(player.x)-spawnDist,0),wSize-1); i <= capX; i++){
+    for(int j = min(max(floor(player.y)-spawnDist,0),wSize-1); j <= capY; j++){
+      if(aGS1DB(sBHasAction,wU[i][j])){
+        int tempBlock = wU[i][j];
+        int tempAction = aGS1D(sBAction,tempBlock);
+        if(tempAction >= 31 && tempAction <= 45){
+          if(nmapShade[i][j] > 0){
+            particleEffect(i-.25,j-.25,1.5,1.5,3,aGS1DC(gBColor,aGS(wU,i,j)),color(255),0.03);
+            //particles
+            
+            if(tempAction < 45){
+              if(random(100) < 25){
+                tempAction++;
+              }
+            }
+            
+            if(tempAction == 45){
+            //try to spawn
+            
+              float tempX;
+              float tempY;
+              for(int k = 0; k < 5; k++){
+                tempX = random(5)-2.5;
+                tempY = random(5)-2.5;
+                if(aGS(nmapShade,i,j) > 0){
+                  if(boxHitsBlocks(i+tempX+.5,j+tempY+.5,.6,.6) == false){ //add enemy size
+                    //entities.add(new Entity(i+tempX+.5,j+tempY+.5, airMonster,random(TWO_PI)));
+                    tempAction = 31+floor(random(10));
+                    
+                    //spawn an enemey, poof
+                  }
+                }
+              }
+            }
+              
+            //println(tempAction-31);
+            aSS1D(sBAction,tempBlock,tempAction);
+          }
+        }
+      }
+    }
+  }
+}
+
+void drawWorld(){
   
+  //image(gridBufferImage,(gridBufferPos.x-player.x)*gScale-gScale,(gridBufferPos.y-player.y)*gScale-gScale);
+  
+  background(gBColor[0]);
+  int tempSize = rectL.size();
+  RectObj tempRect;
+  noStroke();
+  for(int i = 0; i < tempSize; i++){
+    tempRect = (RectObj) rectL.get(i);
+    tempRect.display(int((gridBufferPos.x-player.x)*gScale-gScale),int((gridBufferPos.y-player.y)*gScale-gScale));
+  }
+  
+  noFill();
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      
+      int thisBlock = aGS(wU,i+wView.x,j+wView.y);
+      
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        PVector tempV2 = grid2Pos(new PVector(i,j));
+        if(aGS1D(gBStrength,thisBlock) > -1){
+          if(aGS(nmapShade,tempV2.x,tempV2.y) > 0){
+            if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
+              stroke(strokeColor);
+              strokeWeight(gScale/15);
+              float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y))/(aGS1D(gBStrength,thisBlock)-.01);
+              //line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
+              //line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
+              //println(Crumble);
+              PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+              arc(tempV.x+gScale/2,tempV.y+gScale/2,gScale*2/3,gScale*2/3,HALF_PI,HALF_PI+TWO_PI*Crumble);
+            }
+          }
+        }
+      }
+    }
+  }
 
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
@@ -1506,10 +3492,10 @@ void drawWorld(){
       if(sBHasText[thisBlock]){
         PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
         if(sBTextDrawType[thisBlock] == 0){
-          drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock]);
+          drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock],255);
         } else if(sBTextDrawType[thisBlock] <= 10) {
           if(pointDistance(new PVector(width/2-gScale/2,height/2-gScale/2),tempV) < sBTextDrawType[thisBlock]*gScale){
-            drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock]);
+            drawTextBubble(tempV.x+gScale/2,tempV.y+gScale/2,sBText[thisBlock],255);
           }
         } else if(sBTextDrawType[thisBlock] <= 20) {
           PVector tempV2 = grid2Pos(new PVector(i,j));
@@ -1526,31 +3512,6 @@ void drawWorld(){
     }
   }
 }
-
-
-
-color blockColor(int intC){
-  switch(intC){
-    case 0:
-      return color(0);
-    case 1:
-      return color(255,255,0);
-    case 2:
-      return color(0,255,0);
-    case 3:
-      return color(0,255,255);
-    case 4:
-      return color(0,0,255);
-    case 5:
-      return color(255,0,255);
-    case 6:
-      return color(255,0,0);
-    default:
-      return color(0);
-  }
-}
-
-
 
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
 
@@ -1599,6 +3560,31 @@ PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
   return tV2;
 }
 
+boolean[] getSolidAround(PVector pos, int dir, boolean clockwise){ //array get safe
+  //dir = posMod(dir);
+  boolean[] tempBool = new boolean[8];
+  if(clockwise == false){
+    tempBool[(int)posMod(0-dir*2,8)] = gBIsSolid[aGS(wU,pos.x,pos.y-1)];
+    tempBool[(int)posMod(1-dir*2,8)] = gBIsSolid[aGS(wU,pos.x+1,pos.y-1)];
+    tempBool[(int)posMod(2-dir*2,8)] = gBIsSolid[aGS(wU,pos.x+1,pos.y)];
+    tempBool[(int)posMod(3-dir*2,8)] = gBIsSolid[aGS(wU,pos.x+1,pos.y+1)];
+    tempBool[(int)posMod(4-dir*2,8)] = gBIsSolid[aGS(wU,pos.x,pos.y+1)];
+    tempBool[(int)posMod(5-dir*2,8)] = gBIsSolid[aGS(wU,pos.x-1,pos.y+1)];
+    tempBool[(int)posMod(6-dir*2,8)] = gBIsSolid[aGS(wU,pos.x-1,pos.y)];
+    tempBool[(int)posMod(7-dir*2,8)] = gBIsSolid[aGS(wU,pos.x-1,pos.y-1)];
+  } else {
+    tempBool[(int)posMod(0+dir*2,8)] = gBIsSolid[aGS(wU,pos.x,pos.y-1)];
+    tempBool[(int)posMod(7+dir*2,8)] = gBIsSolid[aGS(wU,pos.x+1,pos.y-1)];
+    tempBool[(int)posMod(6+dir*2,8)] = gBIsSolid[aGS(wU,pos.x+1,pos.y)];
+    tempBool[(int)posMod(5+dir*2,8)] = gBIsSolid[aGS(wU,pos.x+1,pos.y+1)];
+    tempBool[(int)posMod(4+dir*2,8)] = gBIsSolid[aGS(wU,pos.x,pos.y+1)];
+    tempBool[(int)posMod(3+dir*2,8)] = gBIsSolid[aGS(wU,pos.x-1,pos.y+1)];
+    tempBool[(int)posMod(2+dir*2,8)] = gBIsSolid[aGS(wU,pos.x-1,pos.y)];
+    tempBool[(int)posMod(1+dir*2,8)] = gBIsSolid[aGS(wU,pos.x-1,pos.y-1)];
+  }
+  return tempBool;
+}
+
 PVector blockNear(PVector eV,int tBlock, float tChance){
   float minDis = wSize*wSize;
   PVector tRV = new PVector(random(wSize),random(wSize));
@@ -1643,14 +3629,60 @@ boolean rayCast(int x0, int y0, int x1, int y1){
   for(int i = 0; i < itts; i++){
     if((round(x0+tempDispX*i) != round(x0) || round(y0+tempDispY*i+.105) != round(y0)) && (round(x0+tempDispX*i) != round(x1) || round(y0+tempDispY*i+.105) != round(y1))){
       if(gBIsSolid[aGS(wU,round(x0+tempDispX*i),round(y0+tempDispY*i+.105))]){
-        tClear = false;
+        return false;
       }
     }
   }
   //println(tClear);
-  return tClear;
+  return true;
 }
 
+int rayCastPath(ArrayList a, int x1, int y1){
+  PVector tempPV;
+  for(int i = a.size()-1; i >= 0; i--){
+    tempPV = (PVector)a.get(i);
+    if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1)){
+      return i;
+    }
+  }
+  return -1;
+}
+
+void hitBlock(float x, float y, int hardness){
+  if(aGS1D(gBStrength,aGS(wU,x,y)) >= 0 || hardness >= 999){
+    aSS(wUDamage,x,y,aGS(wUDamage,x,y)+hardness);
+    
+    if(aGS(wUDamage,x,y) > aGS1D(gBStrength,aGS(wU,x,y))){
+      
+      if(!updateExists(int(x),int(y))){
+        updates.add(new PVector(int(x),int(y),-1));
+      }
+      if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
+        tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+      }
+      color tempC = aGS1DC(gBColor,aGS(wU,x,y));
+      aSS(wU,x,y,aGS1D(gBBreakType,aGS(wU,x,y)));
+      particleEffect(x,y,1,1,15,tempC,aGS1DC(gBColor,aGS(wU,x,y)),.01);
+        
+        
+      
+      aSS(wUDamage,x,y,0);
+    } else if(aGS(wUDamage,x,y) < 0){
+      aSS(wUDamage,x,y,0);
+    }
+  }
+}
+
+boolean updateExists(float x, float y){
+  for (PVector update : (ArrayList<PVector>) updates) {
+    if(update.x == x && update.y == y){
+      return true;
+    }
+  }
+  return false;
+}
+
+//STEM Phagescape API v(see above)
 /*
 
 boolean bEdit = false;

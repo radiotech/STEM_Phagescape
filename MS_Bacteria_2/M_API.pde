@@ -13,7 +13,6 @@ scaleView(_SIZE_)
 moveToAnimate(new PVector(_X_,_Y_),_T_) //moves to a position over time in milliseconds
 ***** World Changes *****
 setupWorld() //apply changes to world size (wSize) and clear the world
-refreshWorld() //redraw the world after block changes have been made
 aGS(wU,_X_,_Y_) //access a block at a position in the world - each block is represented by a general block ID
 aSS(wU,_X_,_Y_,_BLOCK_ID_) //change a block at a position in the world
 addGeneralBlock(_BLOCK_ID_,color(_R_,_G_,_B_),_IS_SOLID?_) //make this block ID represent a block with a certain color that is either solid (true) or not solid (false)
@@ -33,11 +32,17 @@ maxAbs(_NUM_1_,_NUM_2_)
 minAbs(_NUM_1_,_NUM_2_)
 */
 //These variables should not be changed
+import ddf.minim.*;
+Minim minim;
+
 int[][] gU; //Grid unit - contains all blocks being drawn to the screen
+boolean[][] gUHUD;
 int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
 int[][] wU; //World Unit - contains all blocks in the world
+
 int[][] wUDamage;
-boolean[][] wUText; //World Unit - contains all blocks in the world
+boolean[][] wUText; //
+int[][] wUUpdate; //
 float gScale; //the width and height of blocks being drawn to the screen in pixels
 float wPhase = 0; //the current phase of all waves in the world (where they are in their animation)
 ArrayList wL = new ArrayList<Wave>(); //Wave list - list of all waves in the world
@@ -47,57 +52,94 @@ int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
 ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+color strokeColor = color(255);
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
 int[] gBStrength = new int[256];
+int[] gBBreakType = new int[256];
+String[] gBBreakCommand = new String[256];
 boolean[] sBHasImage = new boolean[256];
 PImage[] sBImage = new PImage[256];
 int[] sBImageDrawType = new int[256];
 boolean[] sBHasText = new boolean[256];
 String[] sBText = new String[256];
 int[] sBTextDrawType = new int[256];
+boolean[] sBHasAction = new boolean[256];
+int[] sBAction = new int[256];
 PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter;
+PFont fontNorm;
+PFont fontBold;
+int[][] distanceMatrix = new int[300][300];
+boolean shadows = false; //are there shadows?
+int lightStrength = 10;
+boolean mouseClicked = false;
+boolean drawHUDSoftEdge = false;
+int fn = 0;
+
+boolean clicking = true;
+PVector clickPos = new PVector(-1,-1);
 
 void M_Setup(){
-  safePreSetup();
+  fontNorm = createFont("monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
+  fontBold = createFont("monofonto.ttf",18);//"Monospaced.bold-23.vlw"
+  HUDImage = loadImage("shadowHUD.png");
   frameRate(60);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
+  safePreSetup();
+
   setupWorld();
   setupEntities();
-    scaleView(10);
+  scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
+  
   refreshWorld();
 }
 
 
 void draw(){
-  
-  animate();
-  //drawWorld();//
-  nodeDraw();
-  if(!menu){
-    updateWorld();
-    
+  if(clicking){
+    if(pointDistance(clickPos,new PVector(mouseX,mouseY)) > 5){
+      clicking = false;
+    } else if(mousePressed == false){
+      mouseClicked = true;
+      safeMouseClicked();
+      clicking = false;
+    }
   }
+  
+    //clickQuestion();
+  
+    //animate();
+  
+    //nodeDraw();
   
   manageAsync();
   
   safeUpdate();
   
-  
   drawWorld();
+  
+    //safePostUpdate();
   
   drawEntities();
   
+    //drawSound();
+  
   safeDraw();
   
-  drawChat();
+    //drawHUD();
+  
+    //drawChat();
+  
+    //safePostDraw();
+  
+  mouseClicked = false;
 }
 
 void keyPressed(){
@@ -111,24 +153,41 @@ void keyPressed(){
     player.moveEvent(0);
   }
   
+  if(key == 'F' || key == 'f') {
+    if(HUDSstage == 0){
+      HUDSstage = 1;
+    } else {
+      HUDSstage = -HUDSstage;
+    }
+  }
+  
   safeKeyPressed();
 }
 
 void keyReleased(){
   player.moveEvent(1);
   safeKeyReleased();
+  
+  
 }
 
 void mousePressed(){
+  clicking = true;
+  clickPos = new PVector(mouseX,mouseY);
+  
   safeMousePressed();
 }
 
 float pointDir(PVector v1,PVector v2){
-  float tDir = atan((v2.y-v1.y)/(v2.x-v1.x));
-  if(v1.x-v2.x > 0){
-    tDir -= PI;
+  if((v2.x-v1.x) != 0){
+    float tDir = atan((v2.y-v1.y)/(v2.x-v1.x));
+    if(v1.x-v2.x > 0){
+      tDir -= PI;
+    }
+    return tDir;
+  } else {
+    return random(2*PI);
   }
-  return tDir;
 }
 
 float pointDistance(PVector v1,PVector v2){
@@ -176,6 +235,7 @@ float posMod(float tA, float tB){
 }
 
 void aSS(int[][] tMat, float tA, float tB, int tValue){ //array set safe
+  //println(tValue);
   tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))] = tValue;
 }
 
@@ -191,7 +251,16 @@ int aGS1D(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
+void aSS1D(int[] tMat, float tA, int tValue){ //array set safe
+  //println(tValue);
+  tMat[max(0,min(tMat.length-1,(int)tA))] = tValue;
+}
+
 boolean aGS1DB(boolean[] tMat, float tA){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))];
+}
+
+String aGS1DS(String[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
@@ -223,6 +292,49 @@ float minAbs(float tA, float tB){
   }
 }
 
+float runAvg(float curAvg, float newVal, int pastValNum){
+  return (curAvg*pastValNum+newVal)/float(pastValNum+1);
+}
+
+int mode(int[] array) {
+    int[] modeMap = new int [255];
+    int maxEl = array[0];
+    int maxCount = 1;
+
+    for (int i = 0; i < array.length; i++) {
+        int el = array[i];
+        if (modeMap[el] == 0) {
+            modeMap[el] = 1;
+        }
+        else {
+            modeMap[el]++;
+        }
+
+        if (modeMap[el] > maxCount) {
+            maxEl = el;
+            maxCount = modeMap[el];
+        }
+    }
+    return maxEl;
+}
+
+boolean boxHitsBlocks(float x, float y, float w, float h){
+  if(gBIsSolid[aGS(wU,x-w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x-w/2,y+h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y+h/2)]){
+    return true;
+  }
+  return false;
+}
+
+
 PImage resizeImage(PImage tImg, int tw, int th){
   PImage tImgNew = createImage(tw,th,ARGB);
   //tImgNew.loadPixels();
@@ -238,14 +350,24 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
-int asyncC = 0;
 int asyncT = 1000;
 void manageAsync(){
   while(millis()-40>asyncT){
+    if(millis()-1000 > asyncT){ asyncT = millis(); }
     asyncT += 40;
-    asyncC++;
-    safeAsync(asyncC);
-    updateEntities(asyncC);
+    fn++;
+    safeAsync();
+    updateWorld();
+    updateEntities();
+    updateSound();
+    updateHUD();
+    if(fn % 13 == 0){
+      updateSpecialBlocks();
+      updateSpawners();
+    }
+    if(fn % 125 == 0){
+      healEntities();
+    }
   }
 }
 
@@ -253,4 +375,23 @@ float mDis(float x1,float y1,float x2,float y2) {
   return abs(y2-y1)+abs(x2-x1);
 }
 
-//STEM Phagescape API v(see above)
+String StringReplaceAll(String str, String from, String to){
+  int index = str.indexOf(from);
+  while(index != -1){
+    str = str.substring(0,index) + to + str.substring(index+from.length(),str.length());
+    index = str.indexOf(from);
+  }
+  return str;
+}
+
+PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
+  int xCap = min(max(x+w,0),canvas.width-1);
+  int yCap = min(max(y+h,0),canvas.width-1);
+  for(int i = min(max(x,0),canvas.width-1); i < xCap; i++){
+    for(int j = min(max(y,0),canvas.width-1); j < yCap; j++){
+      canvas.pixels[j*canvas.width+i] = col;
+    }
+  }
+  return canvas;
+}
+
