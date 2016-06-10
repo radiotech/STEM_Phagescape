@@ -2,26 +2,63 @@
 
 ArrayList updates = new ArrayList<PVector>();
 
+int[][] gU; //Grid unit - contains all blocks being drawn to the screen
+boolean[][] gUHUD;
+int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
+int[][] wU; //World Unit - contains all blocks in the world
+
+
+int[][] wUDamage;
+boolean[][] wUText; //
+int[][] wUUpdate; //
+ArrayList<Entity>[][] wUEntities; //new ArrayList()[][];
+float gScale; //the width and height of blocks being drawn to the screen in pixels
+
 PGraphics gridBuffer;
 PImage gridBufferImage;
 PVector gridBufferPos = new PVector(0,0);
 int[][] gUShade;
 int[][] nmapShade;
 ArrayList rectL = new ArrayList<RectObj>();
+ArrayList damageL = new ArrayList<DamageObj>();
+ArrayList textL = new ArrayList<TextObj>();
+
+//searching around for entities
+ArrayList eSearchResults;
+int aSearchPointer;
+int aSearchPointer2;
+int aSearchX;
+int aSearchY;
+int aSearchR;
+
 
 class RectObj {
-  int x;
-  int y;
-  int w;
-  int h;
-  int col;
-  
+  int x, y, w, h, col;
   RectObj(int tx, int ty, int tw, int th, int tcol) {
-    x = tx;
-    y = ty;
-    w = tw;
-    h = th;
-    col = tcol;
+    x = tx; y = ty; w = tw; h = th; col = tcol;
+  }
+  void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
+class DamageObj {
+  int x, y, d, posx, posy;
+  float maxstage;
+  DamageObj(int tx, int ty, int td, int tposx, int tposy) {
+    x = tx; y = ty; d = td; posx = tposx; posy = tposy;
+    maxstage = aGS1D(gBStrength,aGS(wU,posx,posy))-.01;
+  }
+  void display(float offx, float offy) {
+    arc(offx+x,offy+y,d,d,HALF_PI,HALF_PI+TWO_PI*(float(aGS(wUDamage,posx,posy))/maxstage));
+  }
+}
+
+class TextObj {
+  int x, y, w, h, col;
+  TextObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx; y = ty; w = tw; h = th; col = tcol;
   }
   void display(float offx, float offy) {
     fill(col);
@@ -39,6 +76,14 @@ void setupWorld(){
   gU = new int[ceil(gSize)][ceil(gSize)];
   gUHUD = new boolean[ceil(gSize)][ceil(gSize)];
   wUUpdate = new int[wSize][wSize];
+  wUEntities = new ArrayList[wSize][wSize];
+  miniMap = new int[wSize][wSize];
+  
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      wUEntities[i][j] = new ArrayList(0);
+    }
+  }
 }
 
 void refreshWorld(){
@@ -55,11 +100,10 @@ void refreshWorld(){
     }
   }
   waveGrid();
-  
-  //gridBuffer.beginDraw();
-  //gridBuffer.background(0);
-  //gridBufferImage.loadPixels();
+
   rectL.clear();
+  damageL.clear();
+  
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       //gridBuffer.noStroke();
@@ -68,23 +112,41 @@ void refreshWorld(){
       
       int tempColor = aGS1D(gBColor,thisBlock);
       
-      float tempShade = float(gUShade[i][j]+0)/5;
+      float tempShade = float(gUShade[i][j])/5;
+      
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
       
       if(tempShade > 1){
         tempShade = 1;
       }
       
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        if(aGS1D(gBStrength,thisBlock) > -1){
+          if(aGS(gUShade,i,j) > 0){
+            if(aGS1D(gBStrength,thisBlock) > -1){
+              damageL.add(new DamageObj(floor(tempV.x)+ceil(gScale*1.5),floor(tempV.y)+ceil(gScale*1.5),ceil(gScale*2/3),int(i+wView.x),int(j+wView.y)));
+            }
+          }
+        }
+      }
       //gridBuffer.fill(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade);
-      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
+      if(tempShade > 0){
+        if(loadMiniMap){
+          aSS(miniMap,i+wView.x,j+wView.y,tempColor);
+        }
+      }
+      
       
       //gridBufferImage = toughRect(gridBufferImage, floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade));
       //gridBufferImage.set(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),airMonster.Img);
       if(tempColor != gBColor[0] || tempShade != 1){
-        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
+        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale+.1),ceil(gScale+.1), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
       }
       //gridBuffer.rect(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale)); //-pV.x*gScale
       
-      
+      /*
       if(sBHasImage[thisBlock]){
         float tScale;
         if(sBImageDrawType[thisBlock] == 0){
@@ -95,7 +157,7 @@ void refreshWorld(){
           tScale = width/sBImage[thisBlock].width;
           //gridBuffer.image(sBImage[thisBlock].get(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)),floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
         }
-      }
+      }*/
     }
   }
   
@@ -104,22 +166,10 @@ void refreshWorld(){
       w.display();
     }
   }
-  //gridBuffer.endDraw();
   
+  gridBufferPos = new PVector(wViewCenter.x,wViewCenter.y);
   
-  //gridBufferImage = gridBuffer.get();
-  //gridBuffer.loadPixels();
-  //gridBufferImage.pixels = gridBuffer.pixels;
-  
-  //gridBufferImage.loadPixels();
-  //for(int i = 0; i < gridBufferImage.pixels.length; i++){
-  //  gridBufferImage.pixels[i] = 1;
-  //}
-  //gridBufferImage.updatePixels();
-  
-  //gridBufferImage = gridBuffer.get();
-  //gridBufferImage.updatePixels();
-  gridBufferPos = new PVector(player.x,player.y);
+  updateSpecialBlocks();
   
 }
 
@@ -162,6 +212,7 @@ void addGeneralBlockBreak(int tIndex, int tBreakType, String tBreakCommand){
   }
 }
 
+/*
 void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
   sBHasImage[tIndex] = true;
   if(tImageDrawType == 0){
@@ -174,12 +225,15 @@ void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
   sBImage[tIndex] = tImage;
   sBImageDrawType[tIndex] = tImageDrawType;
 }
+*/
 
+/*
 void addTextSpecialBlock(int tIndex, String tText, int tTextDrawType){
   sBHasText[tIndex] = true;
   sBText[tIndex] = tText;
   sBTextDrawType[tIndex] = tTextDrawType;
 }
+*/
 
 void addActionSpecialBlock(int tIndex, int tAction){
   sBHasAction[tIndex] = true;
@@ -189,13 +243,10 @@ void addActionSpecialBlock(int tIndex, int tAction){
 void centerView(float ta, float tb){
   wViewCenter = new PVector(ta,tb,gSize);
   wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
-  if(floor(wViewLast.x) != floor(wView.x)){
+  if(floor(wViewLast.x) != floor(wView.x) || floor(wViewLast.y) != floor(wView.y)){
     refreshWorld();
     wPhase -= PI;
-  }
-  if(floor(wViewLast.y) != floor(wView.y)){
-    refreshWorld();
-    wPhase -= PI;
+    debugLog(color(0,255,255));
   }
   wViewLast = new PVector(wView.x,wView.y);
 }
@@ -226,7 +277,7 @@ void updateWorld(){
           if(!updateExists(update.x,update.y+1)){updates.add(new PVector(update.x,update.y+1,21));}
           if(!updateExists(update.x,update.y-1)){updates.add(new PVector(update.x,update.y-1,21));}
         }
-        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++;}
+        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++; /*segments.add(new Segment("="+str(int(update.x))+";"+str(int(update.y))+";"+str(aGS(wU,update.x,update.y))+"&", 2));*/}
       }
     }
     refreshWorld();
@@ -245,7 +296,7 @@ boolean updateBlock(int x, int y){
       }
       if(tAction == 46){
         //if(aGS(wUP,x,y) == tempBT){
-          hitBlock(x,y,10000);
+          hitBlock(x,y,10000,false);
           return true;
         //}
       }
@@ -271,14 +322,14 @@ void updateSpecialBlocks(){
           
           if(tAction >= 1 && tAction <= 10){
             if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
-              hitBlock(i,j,10000);
+              hitBlock(i,j,10000,false);
               updateAgain = true;
             }
           }
           if(tAction >= 11 && tAction <= 20){
             if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
               if(genTestPathExists(player.x,player.y,i,j)){
-                hitBlock(i,j,10000);
+                hitBlock(i,j,10000,false);
                 updateAgain = true;
               }
             }
@@ -286,8 +337,8 @@ void updateSpecialBlocks(){
           if(tAction >= 21 && tAction < 30){
             if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
               if(genTestPathExists(player.x,player.y,i,j)){
-                if(rayCast(i,j,(int)player.x,(int)player.y)){
-                  hitBlock(i,j,10000);
+                if(rayCast(i,j,(int)player.x,(int)player.y,true)){
+                  hitBlock(i,j,10000,false);
                   updateAgain = true;
                 }
               }
@@ -344,7 +395,6 @@ void updateSpawners(){
         if(tempAction >= 31 && tempAction <= 45){
           if(nmapShade[i][j] > 0){
             particleEffect(i-.25,j-.25,1.5,1.5,3,aGS1DC(gBColor,aGS(wU,i,j)),color(255),0.03);
-            //particles
             
             if(tempAction < 45){
               if(random(100) < 25){
@@ -360,19 +410,14 @@ void updateSpawners(){
               for(int k = 0; k < 5; k++){
                 tempX = random(5)-2.5;
                 tempY = random(5)-2.5;
-                if(aGS(nmapShade,i,j) > 0){
+                if(aGS(nmapShade,i+tempX+.5,j+tempY+.5) > 0){
                   if(boxHitsBlocks(i+tempX+.5,j+tempY+.5,.6,.6) == false){ //add enemy size
-                    //entities.add(new Entity(i+tempX+.5,j+tempY+.5, airMonster,random(TWO_PI)));
-                    tempAction = 31+floor(random(10));
-                    
-                    //spawn an enemey, poof
+                    //addEntity(new Entity(i+tempX+.5,j+tempY+.5, EC_AIR_MONSTER,random(TWO_PI)));
+                    aSS1D(sBAction,tempBlock,31+floor(random(10)));
                   }
                 }
               }
             }
-              
-            //println(tempAction-31);
-            aSS1D(sBAction,tempBlock,tempAction);
           }
         }
       }
@@ -381,44 +426,26 @@ void updateSpawners(){
 }
 
 void drawWorld(){
+  if(alpha(gBColor[0]) == 255){
+    background(gBColor[0]);
+  }
   
-  //image(gridBufferImage,(gridBufferPos.x-player.x)*gScale-gScale,(gridBufferPos.y-player.y)*gScale-gScale);
-  
-  background(gBColor[0]);
-  int tempSize = rectL.size();
-  RectObj tempRect;
   noStroke();
-  for(int i = 0; i < tempSize; i++){
-    tempRect = (RectObj) rectL.get(i);
-    tempRect.display(int((gridBufferPos.x-player.x)*gScale-gScale),int((gridBufferPos.y-player.y)*gScale-gScale));
+  int baseDrawX = int((gridBufferPos.x-wViewCenter.x)*gScale-gScale);
+  int baseDrawY = int((gridBufferPos.y-wViewCenter.y)*gScale-gScale);
+  for(RectObj tempObj : (ArrayList<RectObj>) rectL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-  
   noFill();
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      
-      int thisBlock = aGS(wU,i+wView.x,j+wView.y);
-      
-      if(aGS1DB(gBIsSolid,thisBlock)){
-        PVector tempV2 = grid2Pos(new PVector(i,j));
-        if(aGS1D(gBStrength,thisBlock) > -1){
-          if(aGS(nmapShade,tempV2.x,tempV2.y) > 0){
-            if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
-              stroke(strokeColor);
-              strokeWeight(gScale/15);
-              float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y))/(aGS1D(gBStrength,thisBlock)-.01);
-              //line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
-              //line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
-              //println(Crumble);
-              PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-              arc(tempV.x+gScale/2,tempV.y+gScale/2,gScale*2/3,gScale*2/3,HALF_PI,HALF_PI+TWO_PI*Crumble);
-            }
-          }
-        }
-      }
-    }
+  stroke(strokeColor);
+  strokeWeight(gScale/15);
+  for(DamageObj tempObj : (ArrayList<DamageObj>) damageL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-
+  for(TextObj tempObj : (ArrayList<TextObj>) textL) {
+    tempObj.display(baseDrawX,baseDrawY);
+  }
+  /*
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       int thisBlock = gU[i][j];
@@ -444,6 +471,7 @@ void drawWorld(){
       }
     }
   }
+  */
 }
 
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
@@ -454,43 +482,33 @@ PVector grid2Pos(PVector tA){tA.add(new PVector(floor(wView.x),floor(wView.y)));
 
 //PVector pos2Grid(PVector tA){tA.sub(new PVector(floor(wView.x),floor(wView.y))); return tA;}
 
-PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
-  PVector tV2 = new PVector(tV.x,tV.y);
+void moveInWorld(PVector tV, PVector tS, float tw, float th){
   if(tS.x > 0){
-    if(floor(tV.x+tw/2) != floor(tV.x+tw/2+tS.x)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2))){
-        tS = new PVector(0,tS.y);
-        tV2 = new PVector(floor(tV.x+tw/2+tS.x)+.999-tw/2,tV2.y);
-      }
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2))){
+      tS = new PVector(0,tS.y);
+      
+      tV.x = floor(tV.x+tw/2+tS.x)+.999-tw/2;
     }
-  } else {
-    if(floor(tV.x-tw/2) != floor(tV.x-tw/2+tS.x)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2))){
-        tS = new PVector(0,tS.y);
-        tV2 = new PVector(floor(tV.x-tw/2+tS.x)+tw/2,tV2.y);
-      }
+  } else if(tS.x < 0) {
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2))){
+      tS = new PVector(0,tS.y);
+      tV.x = floor(tV.x-tw/2+tS.x)+tw/2;
     }
   }
-  tV2 = new PVector(tV2.x+tS.x,tV2.y);
+  tV.x += tS.x;
   
   if(tS.y > 0){
-    if(floor(tV.y+th/2) != floor(tV.y+th/2+tS.y)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y))){
-        tS = new PVector(tS.x,0);
-        tV2 = new PVector(tV2.x,floor(tV.y+th/2+tS.y)+.999-th/2);
-      }
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y))){
+      tS = new PVector(tS.x,0);
+      tV.y = floor(tV.y+th/2+tS.y)+.999-th/2;
     }
-  } else {
-    if(floor(tV.y-th/2) != floor(tV.y-th/2+tS.y)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y))){
-        tS = new PVector(tS.x,0);
-        tV2 = new PVector(tV2.x,floor(tV.y-th/2+tS.y)+th/2);
-      }
+  } else if(tS.y < 0){
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y))){
+      tS = new PVector(tS.x,0);
+      tV.y = floor(tV.y-th/2+tS.y)+th/2;
     }
   }
-  tV2 = new PVector(tV2.x,tV2.y+tS.y);
-  
-  return tV2;
+  tV.y += tS.y;
 }
 
 boolean[] getSolidAround(PVector pos, int dir, boolean clockwise){ //array get safe
@@ -543,7 +561,7 @@ PVector blockNearCasting(PVector eV,int tBlock){
     for(int j = 0; j < wSize; j++){
       if(wU[i][j] == tBlock){
         if(pointDistance(eV, new PVector(i,j)) < minDis){
-          if(rayCast(i,j,(int) eV.x,(int) eV.y)){
+          if(rayCast(i,j,(int) eV.x,(int) eV.y,true)){
             tRV = new PVector(i,j);
             minDis = mDis(eV.x,eV.y, i,j);
           }
@@ -554,19 +572,27 @@ PVector blockNearCasting(PVector eV,int tBlock){
   return tRV;
 }
 
-boolean rayCast(int x0, int y0, int x1, int y1){
+boolean rayCast(float x0, float y0, float x1, float y1, boolean ignoreEnds){
   boolean tClear = true;
   int itts = ceil(mDis(x0,y0,x1,y1)*5);
-  float tempDispX = float(x1-x0)/itts;
-  float tempDispY = float(y1-y0)/itts;
+  float tempDispX = (x1-x0)/itts;
+  float tempDispY = (y1-y0)/itts;
+  
+  PVector res = pos2Screen(new PVector(x0,y0));
+  PVector res1 = pos2Screen(new PVector(x1,y1));
+  
+  
   for(int i = 0; i < itts; i++){
-    if((round(x0+tempDispX*i) != round(x0) || round(y0+tempDispY*i+.105) != round(y0)) && (round(x0+tempDispX*i) != round(x1) || round(y0+tempDispY*i+.105) != round(y1))){
-      if(gBIsSolid[aGS(wU,round(x0+tempDispX*i),round(y0+tempDispY*i+.105))]){
+    if(ignoreEnds == false || ((floor(x0+tempDispX*i) != floor(x0) || floor(y0+tempDispY*i) != floor(y0)) && (floor(x0+tempDispX*i) != floor(x1) || floor(y0+tempDispY*i) != floor(y1)))){
+      if(gBIsSolid[aGS(wU,floor(x0+tempDispX*i),floor(y0+tempDispY*i))]){
+        stroke(255,0,0);
+        line(res.x,res.y,res1.x,res1.y);
         return false;
       }
     }
   }
-  //println(tClear);
+  stroke(0,255,0);
+  line(res.x,res.y,res1.x,res1.y);
   return true;
 }
 
@@ -574,16 +600,17 @@ int rayCastPath(ArrayList a, int x1, int y1){
   PVector tempPV;
   for(int i = a.size()-1; i >= 0; i--){
     tempPV = (PVector)a.get(i);
-    if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1)){
+    if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1,true)){
       return i;
     }
   }
   return -1;
 }
 
-void hitBlock(float x, float y, int hardness){
+void hitBlock(float x, float y, int hardness, boolean sent){
   if(aGS1D(gBStrength,aGS(wU,x,y)) >= 0 || hardness >= 999){
     aSS(wUDamage,x,y,aGS(wUDamage,x,y)+hardness);
+    if(sent == false){segments.add(new Segment("HB,"+str(int(x))+","+str(int(y))+","+str(aGS(wU,x,y))+","+str(hardness), 5));}
     
     if(aGS(wUDamage,x,y) > aGS1D(gBStrength,aGS(wU,x,y))){
       
@@ -613,6 +640,240 @@ boolean updateExists(float x, float y){
     }
   }
   return false;
+}
+
+PVector findBreakableNear(float x, float y, int searchR){
+  int tX = (int) x;
+  int tY = (int) y;
+  int iN, iX, iY, i = 0, tB;
+  PVector myReturn = new PVector(-1,-1);
+  boolean looping = true;
+  while(looping){
+    iN = max(i*4,1);
+    for(int j = 0; j < iN; j++){
+      iX = tX+min(j,i)-min(2*i,max(0,(j-i)))+max(0,(j-i*3));
+      iY = tY-i+min(2*i,j)-max(0,(j-2*i));
+      if(iX >= 0 && iY >= 0 && iX < wSize && iY < wSize){
+        tB = wU[iX][iY];
+        if(tB != 0){
+          if(gBIsSolid[tB]){
+            if(gBStrength[tB] >= 0){
+              myReturn = new PVector(iX,iY);
+              looping = false;
+              if(j != 0 && j != i && j != i*2 & j != i*3){
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    i++;
+    if(i > searchR){
+      looping = false;
+    }
+  }
+  return myReturn;
+}
+
+void resetSearches(float x, float y, int r){
+  aSearchPointer = 0;
+  aSearchPointer2 = 0;
+  
+  aSearchX = (int) x;
+  aSearchY = (int) y;
+  aSearchR = r;
+}
+
+ArrayList findEntityGrid(){
+  int iN, iX, iY;
+  ArrayList eL, tempReturn;
+  boolean looping = true;
+  tempReturn = new ArrayList<Entity>();
+  while(looping){
+    iN = max(aSearchPointer*4,1);
+    while(aSearchPointer2 < iN){
+      iX = aSearchX+min(aSearchPointer2,aSearchPointer)-min(2*aSearchPointer,max(0,(aSearchPointer2-aSearchPointer)))+max(0,(aSearchPointer2-aSearchPointer*3));
+      iY = aSearchY-aSearchPointer+min(2*aSearchPointer,aSearchPointer2)-max(0,(aSearchPointer2-2*aSearchPointer));
+      if(iX >= 0 && iY >= 0 && iX < wSize && iY < wSize){
+        
+        if(wUEntities[iX][iY].size() > 0){
+          
+          eL = wUEntities[iX][iY];
+          for(int i = eL.size()-1; i >= 0; i--){
+            tempReturn.add(eL.get(i));
+          }
+          aSearchPointer2++;
+          return tempReturn;
+        }
+      }
+      aSearchPointer2++;
+    }
+    aSearchPointer2 = 0;
+    aSearchPointer++;
+    if(aSearchPointer > aSearchR){
+      looping = false;
+    }
+  }
+  return null;
+}
+
+PVector findNonAirWU(){
+  int iN, iX, iY;
+  boolean looping = true;
+  while(looping){
+    iN = max(aSearchPointer*4,1);
+    while(aSearchPointer2 < iN){
+      iX = aSearchX+min(aSearchPointer2,aSearchPointer)-min(2*aSearchPointer,max(0,(aSearchPointer2-aSearchPointer)))+max(0,(aSearchPointer2-aSearchPointer*3));
+      iY = aSearchY-aSearchPointer+min(2*aSearchPointer,aSearchPointer2)-max(0,(aSearchPointer2-2*aSearchPointer));
+      if(iX >= 0 && iY >= 0 && iX < wSize && iY < wSize){
+        if(wU[iX][iY] != 0){
+          aSearchPointer2++;
+          return new PVector(iX,iY);
+        }
+      }
+      aSearchPointer2++;
+    }
+    aSearchPointer2 = 0;
+    aSearchPointer++;
+    if(aSearchPointer > aSearchR){
+      looping = false;
+    }
+  }
+  return null;
+}
+
+/*
+Entity getGridEntity(ArrayList eL, int tTeam){
+  if(eL.size() > 0){
+    if(eL.size() == 1){
+      if(EConfigs[((Entity)eL.get(0)).EC].Team == tTeam){
+        return (Entity)eL.get(0);
+      }
+    } else {
+      for(int i = eL.size()-1; i >= 0; i--){
+        if(EConfigs[((Entity)eL.get(i)).EC].Team == tTeam){
+          return (Entity)eL.get(i);
+        }
+      }
+    }
+  }
+  return null;
+}
+*/
+
+void removeEntityFromGridPos(ArrayList eL, int tID){
+  if(eL.size() == 0){
+    return;
+  } else if(eL.size() == 1){
+    if(((Entity)eL.get(0)).ID == tID){
+      eL.remove(0);
+      return;
+    }
+  } else {
+    for(int i = eL.size()-1; i >= 0; i--){
+      if(((Entity)eL.get(i)).ID == tID){
+        eL.remove(i);
+      }
+    }
+    return;
+  }
+}
+
+void addEntityToGridPos(ArrayList eL, Entity tE){
+  if(eL.size() == 0){
+    eL.add(tE);
+    return;
+  } else if(eL.size() == 1){
+    if(((Entity)eL.get(0)).ID != tE.ID){
+      eL.add(tE);
+      return;
+    }
+  } else {
+    boolean foundSelf = false;
+    for(int i = eL.size()-1; i >= 0; i--){
+      if(((Entity)eL.get(i)).ID == tE.ID){
+        foundSelf = true;
+      }
+    }
+    if(foundSelf == false){
+      eL.add(tE);
+      return;
+    }
+  }
+}
+
+void removeEntityFromGridArea(float x1, float y1, float tx2, float ty2, int tID){
+  int x2 = min(max((int) tx2,0),wSize-1);
+  int y2 = min(max((int) ty2,0),wSize-1);
+  for(int i = min(max((int) x1,0),wSize-1); i <= x2; i++){
+    for(int j = min(max((int) y1,0),wSize-1); j <= y2; j++){
+      removeEntityFromGridPos(aGSAL(wUEntities,i,j),tID);
+    }
+  }
+}
+
+void addEntityToGridArea(float x1, float y1, float tx2, float ty2, Entity tE){
+  int x2 = min(max((int) tx2,0),wSize-1);
+  int y2 = min(max((int) ty2,0),wSize-1);
+  for(int i = min(max((int) x1,0),wSize-1); i <= x2; i++){
+    for(int j = min(max((int) y1,0),wSize-1); j <= y2; j++){
+      addEntityToGridPos(aGSAL(wUEntities,i,j),tE);
+    }
+  }
+}
+
+ArrayList getEntitiesFromGridAreaOther(float x1, float y1, float tx2, float ty2, int tID){
+  ArrayList myReturn = new ArrayList();
+  ArrayList tempAL;
+  int x2 = min(max((int) tx2,0),wSize-1);
+  int y2 = min(max((int) ty2,0),wSize-1);
+  for(int i = min(max((int) x1,0),wSize-1); i <= x2; i++){
+    for(int j = min(max((int) y1,0),wSize-1); j <= y2; j++){
+      tempAL = aGSAL(wUEntities,i,j);
+      switch(tempAL.size()){
+        case 0:
+          break;
+        case 1:
+          if(((Entity)tempAL.get(0)).ID != tID){
+            addUniqueEntityAL(myReturn,(Entity)tempAL.get(0));
+          }
+          break;
+        default:
+          for(int k = tempAL.size()-1; k >= 0; k--){
+            if(((Entity)tempAL.get(k)).ID != tID){
+              addUniqueEntityAL(myReturn,(Entity)tempAL.get(k));
+            }
+          }
+          break;
+      }
+    }
+  }
+  return myReturn;
+}
+
+void addUniqueEntityAL(ArrayList Tal, Entity Te){
+  switch(Tal.size()){
+    case 0:
+      Tal.add(Te);
+      return;
+    case 1:
+      if(((Entity)Tal.get(0)).ID != Te.ID){
+        Tal.add(Te);
+        return;
+      }
+      break;
+    default:
+      for(int i = Tal.size()-1; i >= 0; i--){
+        //println(str(i)+"ESCAPE "+str(((Entity)Tal.get(i)).ID)+" "+Te.ID);
+        if(((Entity)Tal.get(i)).ID == Te.ID){
+          //println("EQ");
+          return;
+        }
+      }
+      Tal.add(Te);
+      return;
+  }
 }
 
 //STEM Phagescape API v(see above)

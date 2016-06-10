@@ -1,5 +1,6 @@
 //STEM Phagescape API v(see above)
 
+float charWidth = 9;
 boolean isHoverText = false;
 String hoverText = "";
 
@@ -12,9 +13,7 @@ int totalChatWidth = 0;
 int lastChatCount = 0;
 ArrayList cL = new ArrayList<Chat>();
 
-
 ArrayList CFuns = new ArrayList<CFun>();
-
 
 void drawChat(){
   
@@ -46,13 +45,13 @@ void drawChat(){
   
   if(chatPush > 0){
     textAlign(LEFT,CENTER);
-    textSize(20);
+    textSize(18);
     stroke(255,220*chatPush);
     strokeWeight(3);
     fill(0,200*chatPush);
     rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
-    totalChatWidth = textMarkup(chatKBS,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
-    //text(chatKBS,chatHeight/5,height-chatHeight/2);
+    totalChatWidth = textMarkup(chatKBS,18,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
+    simpleText(chatKBS,chatHeight/5,height-chatHeight/2);
   }
   
   if(isHoverText){
@@ -61,8 +60,16 @@ void drawChat(){
   }
 }
 
-int textMarkup(String text, float x, float y, color defCol, float alpha, boolean showMarks){
-  textFont(fontBold,23);
+void simpleText(String a, float x, float y){
+  text(a,x,y);
+}
+
+int textMarkup(String text, float size, float x, float y, color defCol, float alpha, boolean showMarks){
+  size = size/18;
+  
+  textFont(fontBold);
+  
+  textSize(size*18);
   fill(defCol,alpha);
   noStroke();
   int pointer = 0;
@@ -71,41 +78,50 @@ int textMarkup(String text, float x, float y, color defCol, float alpha, boolean
   boolean tST = false;
   boolean rURL = false;
   String tREF = "";
+  String tempStr;
+  String tempStr2;
   for(int i = 0; i < text.length(); i++){
-    if(text.charAt(i) == '*'){
+    //println(text.charAt(i));
+    tempStr = text.charAt(i)+"";
+    if(tempStr.equals("*")){
       if(showMarks){
         fill(200,0,255,alpha);
-        text(text.charAt(i),x+pointer*14,y);
+        simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
         pointer++;
       }
       if(text.length() > i+1){
         if(showMarks){
-          text(text.charAt(i+1),x+pointer*14,y);
+          simpleText(text.charAt(i+1)+"",x+pointer*charWidth*size,y);
           pointer++;
         }
-        if(text.charAt(i+1) == 'r'){fill(255,0,0,alpha); lastColor=color(255,0,0);}  
-        if(text.charAt(i+1) == 'o'){fill(255,150,0,alpha); lastColor=color(255,150,0);}
-        if(text.charAt(i+1) == 'y'){fill(255,255,0,alpha); lastColor=color(255,255,0);}
-        if(text.charAt(i+1) == 'g'){fill(0,255,0,alpha); lastColor=color(0,255,0);}
-        if(text.charAt(i+1) == 'c'){fill(0,255,255,alpha); lastColor=color(0,255,255);}
-        if(text.charAt(i+1) == 'b'){fill(0,0,255,alpha); lastColor=color(0,0,255);}
-        if(text.charAt(i+1) == 'p'){fill(225,0,255,alpha); lastColor=color(225,0,255);}  
-        if(text.charAt(i+1) == 'm'){fill(255,0,255,alpha); lastColor=color(255,0,255);}
-        if(text.charAt(i+1) == 'w'){fill(255,255,255,alpha); lastColor=color(255,255,255);}
-        if(text.charAt(i+1) == 'k'){fill(0,0,0,alpha); lastColor=color(0,0,0);}
-        if(text.charAt(i+1) == 'i'){textFont(fontNorm,23);}
-        if(text.charAt(i+1) == 'n'){fill(defCol,alpha); lastColor=defCol; textFont(fontBold,23); tUL = false; tST = false;}
-        if(text.charAt(i+1) == 'u'){tUL = true;}
-        if(text.charAt(i+1) == 's'){tST = true;}
-        if(text.charAt(i+1) == 'a'){
+        tempStr = text.charAt(i+1)+"";
+        if(tempStr.equals("r")){fill(255,0,0,alpha); lastColor=color(255,0,0);}  
+        if(tempStr.equals("o")){fill(255,150,0,alpha); lastColor=color(255,150,0);}
+        if(tempStr.equals("y")){fill(255,255,0,alpha); lastColor=color(255,255,0);}
+        if(tempStr.equals("g")){fill(0,255,0,alpha); lastColor=color(0,255,0);}
+        if(tempStr.equals("c")){fill(0,255,255,alpha); lastColor=color(0,255,255);}
+        if(tempStr.equals("b")){fill(0,0,255,alpha); lastColor=color(0,0,255);}
+        if(tempStr.equals("p")){fill(225,0,255,alpha); lastColor=color(225,0,255);}  
+        if(tempStr.equals("m")){fill(255,0,255,alpha); lastColor=color(255,0,255);}
+        if(tempStr.equals("w")){fill(255,255,255,alpha); lastColor=color(255,255,255);}
+        if(tempStr.equals("k")){fill(0,0,0,alpha); lastColor=color(0,0,0);}
+        if(tempStr.equals("i")){/*textFont(fontNorm);*/}
+        if(tempStr.equals("n")){fill(defCol,alpha); lastColor=defCol; /*textFont(fontBold);*/ tUL = false; tST = false;}
+        if(tempStr.equals("u")){tUL = true;}
+        if(tempStr.equals("s")){tST = true;}
+        if(tempStr.equals("a")){
           tREF = "";
-          while(text.length() > i+2 && (text.charAt(i+1) != '!' || text.charAt(i) != '!')){
+          tempStr = text.charAt(i+1)+"";
+          tempStr2 = text.charAt(i)+"";
+          while(text.length() > i+2 && ((!tempStr.equals("!")) || (!tempStr2.equals("!")))){
             if(showMarks){
-              text(text.charAt(i+2),x+pointer*14,y);
+              simpleText(text.charAt(i+2)+"",x+pointer*charWidth*size,y);
               pointer++;
             }
             tREF = tREF + text.charAt(i+2);
             i++;
+            tempStr = text.charAt(i+1)+"";
+            tempStr2 = text.charAt(i)+"";
           }
           if(tREF.indexOf("!!") > -1){
             tREF = tREF.substring(0,tREF.length()-2);
@@ -113,11 +129,10 @@ int textMarkup(String text, float x, float y, color defCol, float alpha, boolean
               String[] tREF2 = split(tREF,"::");
               if(tREF2.length == 2){
                 for(int j = 0; j < tREF2[1].length(); j++){
-                  text(tREF2[1].charAt(j),x+pointer*14,y);
+                  simpleText(tREF2[1].charAt(j)+"",x+pointer*charWidth*size,y);
                   pointer++;
                 }
-                //rect(,y-chatHeight/4,tREF2[1].length()*14,chatHeight/2);
-                if(mouseX > x+(pointer-tREF2[1].length())*14 && mouseX < x+pointer*14){
+                if(mouseX > x+(pointer-tREF2[1].length())*charWidth*size && mouseX < x+pointer*charWidth*size){
                   if(mouseY > y-chatHeight/4 && mouseY < y+chatHeight/4){
                     if(tREF2[0].indexOf("\"\"") > -1){
                       String[] tREF3 = split(tREF2[0],"\"\"");
@@ -136,21 +151,76 @@ int textMarkup(String text, float x, float y, color defCol, float alpha, boolean
             fill(lastColor,alpha);
           }
         }
+        tempStr = text.charAt(i+1)+"";
+        if(tempStr.equals("#")){ textMarkup(text.substring(i+2,text.length()), size*18, x, y+size*18, defCol, alpha, showMarks); i = text.length(); }
       }
       i++;
     } else {
-      text(text.charAt(i),x+pointer*14,y);
+      simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
       pointer++;
       if(tUL){
-        rect(x+pointer*14-14,y+10,14,1);
+        rect(x+pointer*charWidth*size-charWidth*size,y+10,charWidth*size,1);
       }
       if(tST){
-        rect(x+pointer*14-14,y,14,1);
+        rect(x+pointer*charWidth*size-charWidth*size,y,charWidth*size,1);
       }
     }
     
   }
   return pointer;
+}
+
+float simpleTextWidth(String str, float size){
+  if(str.indexOf("*#") == -1){
+    return str.length()*charWidth*size/18;
+  } else {
+    int pos = str.indexOf("*#");
+    return max(pos*charWidth*size/18,simpleTextWidth(str.substring(pos+2,str.length()),size));
+  }
+}
+
+float simpleTextHeight(String str, float size){
+  int lines = 1;
+  int nextIndex = str.indexOf("*#");
+  while(nextIndex != -1){
+    lines++;
+    nextIndex = str.indexOf("*#",nextIndex+1);
+  }
+  return lines*size;
+}
+
+String simpleTextCrush(String str, float size, float w){
+  String[] lines = new String[100];
+  int nextLine = 1;
+  int pointer = 0;
+  String tempStr;
+  lines[0] = StringReplaceAll(str,"*#"," ");
+  
+  while(nextLine < 99 && simpleTextWidth(lines[nextLine-1],size) > w){
+    pointer = floor(w/(charWidth*size/18));
+    tempStr = lines[nextLine-1].charAt(pointer) + "";
+    while(pointer > 0 && !tempStr.equals(" ")){
+      pointer--;
+      tempStr = lines[nextLine-1].charAt(pointer) + "";
+    }
+    if(pointer > 0){
+      lines[nextLine] = lines[nextLine-1].substring(pointer+1,lines[nextLine-1].length());
+    } else {
+      pointer = ceil(w/(charWidth*size/18));
+      lines[nextLine] = lines[nextLine-1].substring(pointer,lines[nextLine-1].length());
+    }
+    lines[nextLine-1] = lines[nextLine-1].substring(0,pointer);
+    if(nextLine > 1){
+      str = str + "*#" + lines[nextLine-1];
+    } else {
+      str = lines[0];
+    }
+    nextLine++;
+  }
+  if(nextLine > 1){
+    str = str + "*#" + lines[nextLine-1];
+  }
+  return str;
 }
 
 class Chat{
@@ -177,8 +247,8 @@ class Chat{
         noStroke();
       
         fill(0,100+100*chatPush-255*fadeOut);
-        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,14*totalChatWidthL+chatHeight,chatHeight,0,100,100,0);
-        totalChatWidthL = textMarkup(content,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush,color(255),100+100*chatPush-255*fadeOut,false);
+        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,charWidth*totalChatWidthL+chatHeight,chatHeight,0,100,100,0);
+        totalChatWidthL = textMarkup(content,18,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush,color(255),100+100*chatPush-255*fadeOut,false);
       }
     }
   }
@@ -189,7 +259,7 @@ void drawTextBubble(float tx, float ty, String tText, float opacity){
     String[] textFragments = split(tText,"##");
     float tw = 0;
     for(int i = 0; i < textFragments.length; i++){
-      tw = max(textFragments[i].length()*14+chatHeight,tw);
+      tw = max(textFragments[i].length()*charWidth+chatHeight,tw);
     }
     
     float td = chatHeight+(textFragments.length-1)*chatHeight*2/3;
@@ -214,12 +284,14 @@ void drawTextBubble(float tx, float ty, String tText, float opacity){
     rect(tx2-tw/2-chatHeight/10,ty2-chatHeight/2-chatHeight*2/3*(textFragments.length-1)/2,tw+chatHeight/5,td,chatHeight/10);
     
     for(int i = 0; i < textFragments.length; i++){
-      textMarkup(textFragments[i],tx2-tw/2+chatHeight/2,ty2-chatHeight*2/3*(textFragments.length-1)/2+chatHeight*2/3*i,color(0),opacity*2,false);
+      textMarkup(textFragments[i],18,tx2-tw/2+chatHeight/2,ty2-chatHeight*2/3*(textFragments.length-1)/2+chatHeight*2/3*i,color(0),opacity*2,false);
     }
   }
 }
 
 void keyPressedChat(){
+  println(key);
+  println(keyCode);
   if(chatPushing){
     if(key != CODED){
       if(keyCode == BACKSPACE){
@@ -241,8 +313,8 @@ void keyPressedChat(){
           chatPush = 0;
         }
       } else {
-        if(14*totalChatWidth < width/5*4-chatHeight/5*2){
-          chatKBS = chatKBS+key;
+        if(charWidth*totalChatWidth < width/5*4-chatHeight/5*2){
+          chatKBS = chatKBS+str(key);
         }
       }
     }
@@ -254,7 +326,6 @@ void keyPressedChat(){
 }
 
 void tryCommand(String command, String source) {
-  
   String[] commands = split(command," ");
   int args = commands.length-1;
   commands[0] = commands[0].toLowerCase();
@@ -262,6 +333,7 @@ void tryCommand(String command, String source) {
   Boolean didNone = true;
   for(int i = 0; i < CFuns.size(); i++){
     CFun tempFun = (CFun)CFuns.get(i);
+    
     if(tempFun.name.toLowerCase().equals(commands[0])){
       didNone = false;
       if(source.equals("") || tempFun.free){
@@ -274,6 +346,7 @@ void tryCommand(String command, String source) {
         cL.add(new Chat("*oYou need permission to use /*i*o"+commands[0]+"*n"));
       }
     }
+    
 
   }
   

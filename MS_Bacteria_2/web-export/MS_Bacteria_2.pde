@@ -1,17 +1,13 @@
-/* @pjs preload="face.png"; */
+/* @pjs preload="face.png,map3.png"; */
 
-int[] bacteriaAlive = {0,0,0,0,0,0};
-int[] bacteriaGoal = {0,0,0,0,0,0};
-String[] bacteriaNames = {"Baby Maker","Meat Macerator","Resource Diffuser","Warrior","Fast Fighter","Heavy Hitter"};
-String[] bacteriaDetails = {"This bacteria will birth your army!","This bacteria will rot flesh to##provide resources!","This bacteria will spread##your resources!","This bacteria will fight for you!","This fighter is fast but weak!","This fighter is strong but slow!"};
-int[] bacteriaCosts = {50,30,20,40,30,50};
-
-
+String[] CardText = {"q:What is 1x1?","q:What is 2x2?","q:What is 3x3?","q:What is 4x4?","q:What is 5x5?","q:What is 6x6?","q:What is 7x7?","q:What is 8x8?","a:1","a:4","a:9","a:16","a:25","a:36","a:49","a:64"};
+int[] CardPairs = {1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8};
+int flipStage = -2;
+int pairState = 0;
+int trackEs = 0;
 Entity testEntity;
-EConfig normEnemyConfig = new EConfig();
-EConfig fastEnemyConfig = new EConfig();
-EConfig bossEnemyConfig = new EConfig();
-ArrayList<RoomType>[] randomRooms = (ArrayList<RoomType>[])new ArrayList[8];
+
+int EC_DEATH_M, EC_AIR_M;
 
 /*LOCK*/void setup(){
   size(700,700); //must be square
@@ -21,284 +17,438 @@ ArrayList<RoomType>[] randomRooms = (ArrayList<RoomType>[])new ArrayList[8];
 /*LOCK*/void safePreSetup(){} //first function called, in case you need to set some variables before anything else starts
 
 /*LOCK*/void safeSetup(){ //called when world generation and entity placement is ready to begin
+  
+  EC_DEATH_M = EC_NEXT();
+  EC_AIR_M = EC_NEXT();
+  
+  EConfigs[EC_AIR_M] = new EConfig();
+  EConfigs[EC_AIR_M].Genre = 1;
+  EConfigs[EC_AIR_M].Img = loadImage("airMonster.png");
+  EConfigs[EC_AIR_M].AISearchMode = 11;
+  EConfigs[EC_AIR_M].AITarget = -1;
+  EConfigs[EC_AIR_M].AITargetID = EC_PLAYER;
+  EConfigs[EC_AIR_M].SMax = .05;
+  EConfigs[EC_AIR_M].TSMax = .1;
+  EConfigs[EC_AIR_M].TAccel = .03;
+  EConfigs[EC_AIR_M].TDrag = .01;
+  EConfigs[EC_AIR_M].Type = 1;
+  EConfigs[EC_AIR_M].GoalDist = 3; //Want to get this close
+  EConfigs[EC_AIR_M].ActDist = 10;
+  EConfigs[EC_AIR_M].HMax = 1;
+  EConfigs[EC_AIR_M].myBulletEntity = EC_NEXT();
+  EConfigs[EConfigs[EC_AIR_M].myBulletEntity] = new EConfig();
+  EConfigs[EConfigs[EC_AIR_M].myBulletEntity].Size = .13;
+  EConfigs[EConfigs[EC_AIR_M].myBulletEntity].SMax = .1;
+  EConfigs[EConfigs[EC_AIR_M].myBulletEntity].Color = color(0,100);
+  EConfigs[EC_AIR_M].BirthCommand = "trackE 1";
+  EConfigs[EC_AIR_M].DeathCommand = "trackE -1";
+  EConfigs[EC_AIR_M].FireDelay = 15;
+  EConfigs[EC_AIR_M].AltColor = color(0,100);
+  
+  EConfigs[EC_DEATH_M] = new EConfig();
+  EConfigs[EC_DEATH_M].Genre = 1;
+  EConfigs[EC_DEATH_M].Img = loadImage("D/deathMonster.png");
+  EConfigs[EC_DEATH_M].AISearchMode = 11;
+  EConfigs[EC_DEATH_M].AITarget = -1;
+  EConfigs[EC_DEATH_M].AITargetID = EC_PLAYER;
+  EConfigs[EC_DEATH_M].SMax = .05;
+  EConfigs[EC_DEATH_M].TSMax = .1;
+  EConfigs[EC_DEATH_M].TAccel = .03;
+  EConfigs[EC_DEATH_M].TDrag = .01;
+  EConfigs[EC_DEATH_M].Type = 1;
+  EConfigs[EC_DEATH_M].GoalDist = 3; //Want to get this close
+  EConfigs[EC_DEATH_M].ActDist = 10;
+  EConfigs[EC_DEATH_M].HMax = 17;
+  EConfigs[EC_DEATH_M].myBulletEntity = EC_NEXT();
+  EConfigs[EConfigs[EC_DEATH_M].myBulletEntity] = new EConfig();
+  EConfigs[EConfigs[EC_DEATH_M].myBulletEntity].Size = .13;
+  EConfigs[EConfigs[EC_DEATH_M].myBulletEntity].SMax = .3;
+  EConfigs[EConfigs[EC_DEATH_M].myBulletEntity].Color = color(0,100);
+  EConfigs[EC_DEATH_M].BirthCommand = "trackE 1";
+  EConfigs[EC_DEATH_M].DeathCommand = "trackE -1";
+  EConfigs[EC_DEATH_M].FireDelay = 35;
+  EConfigs[EC_DEATH_M].AltColor = color(0,100);
+  
+  CFuns.add(new CFun(0,"flip",1,false));
+  CFuns.add(new CFun(1,"trackE",1,false));
+  
+  int ta,tb,tcI;
+  String tcS;
+  for(int i = 0; i < 50; i++){
+    ta = floor(random(16));
+    tb = floor(random(16));
+    if(ta != tb){
+      tcI = CardPairs[ta];
+      tcS = CardText[ta];
+      CardPairs[ta] = CardPairs[tb];
+      CardText[ta] = CardText[tb];
+      CardPairs[tb] = tcI;
+      CardText[tb] = tcS;
+    }
+  }
+  
+  addGeneralBlock(5,color(200,0,0),true,5); //rock1
+  addGeneralBlock(6,color(230,0,0),true,10); //rock2
 
-  bulletEntity.Size = .1;
-  
-  normEnemyConfig.Genre = 1;
-  normEnemyConfig.Img = loadImage("player.png");
-  normEnemyConfig.AISearchMode = 1;
-  normEnemyConfig.AITarget = -1;
-  normEnemyConfig.AITargetID = player.EC.ID-1;
-  normEnemyConfig.SMax = .05;
-  normEnemyConfig.Type = 1;
-  normEnemyConfig.HMax = 20;
-  
-  fastEnemyConfig.Genre = 1;
-  fastEnemyConfig.Img = loadImage("face.png");
-  fastEnemyConfig.AISearchMode = 1;
-  fastEnemyConfig.AITarget = -1;
-  fastEnemyConfig.AITargetID = player.EC.ID-1;
-  fastEnemyConfig.SMax = .1;
-  fastEnemyConfig.Type = 1;
-  fastEnemyConfig.HMax = 10;
-  
-  bossEnemyConfig.Genre = 1;
-  bossEnemyConfig.Img = loadImage("face.png");
-  bossEnemyConfig.AISearchMode = 1;
-  bossEnemyConfig.AITarget = -1;
-  bossEnemyConfig.AITargetID = player.EC.ID-1;
-  bossEnemyConfig.SMax = .03;
-  bossEnemyConfig.Type = 1;
-  bossEnemyConfig.HMax = 100;
-  bossEnemyConfig.DeathCommand = "openDoors";
-  
-  CFuns.add(new CFun(0,"spawn",3,false)); //add a function
-  CFuns.add(new CFun(1,"openDoors",0,false));
-  CFuns.add(new CFun(2,"question",0,false));
-  CFuns.add(new CFun(3,"key",0,false));
-  CFuns.add(new CFun(4,"chest",2,false));
-  
   addGeneralBlock(0,color(100,0,0),false,0); //background
-  addGeneralBlock(1,color(255,255,190),true,-1); //bone
-  addGeneralBlock(2,color(200,0,0),true,50); //flesh
-  addGeneralBlock(3,color(102,0,51),false,-1); //spawn
-  addGeneralBlock(4,color(204,0,102),false,-1); //around spawn background
-  addGeneralBlock(5,color(255,165,0),false,-1); //spawn help 1
-  addTextSpecialBlock(5,"Help 1",1);
-  addGeneralBlock(6,color(255,165,0),false,-1); //spawn help 2
-  addTextSpecialBlock(6,"Help 2",1);
-  addGeneralBlock(7,color(255,165,0),false,-1); //spawn help 3
-  addTextSpecialBlock(7,"Help 3",1);
-  addGeneralBlock(8,color(255,165,0),false,-1); //spawn help 4
-  addTextSpecialBlock(8,"Help 4",1);
-  addGeneralBlock(9,color(102,51,0),false,-1); //end
-  addGeneralBlock(10,color(204,102,0),false,-1); //around end background
-  addGeneralBlock(11,color(255,165,0),false,-1); //end help 1
-  addTextSpecialBlock(11,"Help 5",1);
-  addGeneralBlock(12,color(255,165,0),false,-1); //end help 2
-  addTextSpecialBlock(12,"Help 6",1);
-  addGeneralBlock(13,color(255,165,0),false,-1); //end help 3
-  addTextSpecialBlock(13,"Help 7",1);
-  addGeneralBlock(14,color(255,165,0),false,-1); //end help 4
-  addTextSpecialBlock(14,"Help 8",1);
-  addGeneralBlock(15,color(255,255,0),false,-1); //key
-  addGeneralBlockBreak(15,0,"key");
-  addActionSpecialBlock(15,21);
-  addGeneralBlock(16,color(255,200,30),false,-1); //chest
-  addGeneralBlockBreak(16,0,"chest _x_ _y_");
-  addTextSpecialBlock(16,"You may need a key##to open this chest!",1);
-  addGeneralBlock(17,color(0),true,0); //boss egg
-  addGeneralBlockBreak(17,0,"spawn _x_ _y_ boss");
-  addActionSpecialBlock(17,14);
-  addGeneralBlock(18,color(0),true,0); //fast egg
-  addGeneralBlockBreak(18,0,"spawn _x_ _y_ fast");
-  addActionSpecialBlock(18,20);
-  addGeneralBlock(19,color(0),true,0); //norm egg
-  addGeneralBlockBreak(19,0,"spawn _x_ _y_ norm");
-  addActionSpecialBlock(19,20);
-  addGeneralBlock(20,color(0,255,0),true,2); //question
-  addGeneralBlockBreak(20,0,"question");
-  addGeneralBlock(21,color(100,100,100),true,50); //fast spawner
-  ///////////////////////////////////////////////////////////////////spawn
-  addGeneralBlock(22,color(100,100,100),true,50); //norm spawner
-  ///////////////////////////////////////////////////////////////////spawn
-  addGeneralBlock(40,color(200,200,110),false,-1); //door frame
-  addGeneralBlockBreak(40,49,null);
-  addGeneralBlock(49,color(200,200,110),true,4); //door frame 2
-  addGeneralBlockBreak(49,40,null);
-  addGeneralBlock(41,color(204,50,102),true,-1); //door closed
-  addGeneralBlockBreak(41,42,null);
-  addActionSpecialBlock(41,46);
-  addGeneralBlock(42,color(100,0,0),false,0); //door open
-  addGeneralBlockBreak(42,41,null);
-  addActionSpecialBlock(42,46);
-  addGeneralBlock(43,color(204,50,102),true,-1); //boss door closed
-  addGeneralBlockBreak(43,44,null);
-  addActionSpecialBlock(43,46);
-  addGeneralBlock(44,color(100,0,0),false,0); //boss door open
-  addGeneralBlock(45,color(204,50,102),true,-1); //boss door locked
   
+  addGeneralBlock(1,color(255,255,190),true,-1); //bone1
+  addGeneralBlock(2,color(255,255,170),true,-1); //bone2
+  addGeneralBlock(3,color(255,255,210),true,-1); //bone3
   
-  genLoadMap(loadImage("map4.png")); //load the map to read the room types
+  addGeneralBlock(4,color(0,255,0),true,-1); //correct answer
+  addGeneralBlock(7,color(255,0,0),true,-1); //jail wall
   
-  for(int i = 0; i < 8; i++){ //for each room type
-    randomRooms[i] = new ArrayList<RoomType>(); //make a list of room type variations
+  for(int i = 0; i < 16; i++){
+    addGeneralBlock(10+i,color(255,127,0),true,5); //question
+    addGeneralBlockBreak(10+i,30+i,"flip "+str(i));
+    
+    addGeneralBlock(30+i,color(255,255,0),true,-1); //answer
+    addGeneralBlockBreak(30+i,10+i,"");
   }
+
   
-  for(int i = 0; i < wSize; i++){ //for each block in the world (x)
-    for(int j = 0; j < wSize; j++){ //for each block in the world (y)
-      if(wU[i][j]>=100 && wU[i][j]<108){ //if it is a block that indicates that this room needs to be loaded
-        randomRooms[wU[i][j]-100].add(new RoomType(i-8,j,9,9)); //load the room into the correct list for the room type
+  
+  boolean genLoop = true;
+  while(genLoop){
+    genLoop = false;
+    genRect(0,0,wSize,wSize,0);
+    genBox(0,0,wSize,wSize, 1, 1);
+
+    int[] falloff = {10,0,0,0,0}; //
+    
+    for(int i = 35; i < 75; i+=10){
+      for(int j = 35; j < 75; j+=10){
+        genCircle(i,j,3,1);
       }
     }
-  }
-  
-  boolean badMap = true; //sat that the map is bad to induce the first level generation
-  
-  while(badMap){ //if the level is bad, try to generate it until it is not bad
-    badMap = false; //a new level generation has begun, lets start out by saying this level is good
-    genLoadMap(loadImage("map4.png")); //load the premade map to work with, this resets the map back to the original version
     
-    genSpread(50,200,201); //mark up to 50 doors to be removed
+    genSpreadClump(2500,0,1,100,falloff); //
     
-    for(int i = 0; i < wSize; i++){ //for each block in the world (x)
-      for(int j = 0; j < wSize; j++){ //for each block in the world (y)
-        if(wU[i][j] == 201){ //if this block is a door marked for removal,
-          wU[i][j] = 200; //chage this block back to normal door
-          genFlood(i,j,40); //change the door into doorframe
-          genFlood(i,j,1); //change the door frame into bone
+    genSpreadClump(1500,0,5,200,falloff); //
+    genSpreadClump(700,1,5,0,falloff); //
+    
+    genCircle(wSize/2,wSize/2,5,0);
+    for(int i = 35; i < 75; i+=10){
+      for(int j = 35; j < 75; j+=10){
+        genCircle(i,j,4,0);
+      }
+    }
+    
+    genFlood(wSize/2,wSize/2,200);
+    //genReplace(0,1);
+    genBox(0,0,wSize,wSize, 1, 1);
+    genReplace(200,0);
+    
+    int tempCount = 0;
+    for(int i = 35; i < 75; i+=10){
+      for(int j = 35; j < 75; j+=10){
+        if(wU[i][j] == 0){
+          wU[i][j] = 10+tempCount++;
+        } else {
+          genLoop = true;
         }
       }
     }
     
-    genReplace(200,41); //make all of the remporary doors actual doors since we are done messing with them
-    
-    for(int i = 0; i < wSize; i++){ //for each block in the world (x)
-      for(int j = 0; j < wSize; j++){ //for each block in the world (y)
-        if(wU[i][j]>=100 && wU[i][j]<108){ //if it is a block that indicates that this room has stuff in it
-          genRect(i-7,j,8,9,0); //clear the room (leave the upper left corner intact)
-          genRect(i-8,j+1,9,8,0); //clear the room (leave the upper left corner intact - this indicates the room type)
-        }
-      }
+    if(!genLoop){
+      genSpread(genCountBlock(1)/5,1,2);
+      genSpread(genCountBlock(2),1,3);
+      genSpread(genCountBlock(5)/4,5,6);
     }
     
-    genTestPathExists(50,50,-1,-1); //run a test path to nowhere to flood the maze with imaginary water from the center
+    println("Generated");
     
-    for(int i = 0; i < 9; i++){ //for each room (x)
-      for(int j = 0; j < 9; j++){ //for each room (y)
-        if(nmap[i*10+9][j*10+9] == 0){ //if the imaginary water did not reach this room
-          badMap = true; //mark this generation as bad (will generate again)
-        }
-      }
-    }
   }
   
-  addGeneralBlock(40,color(200,200,110),true,4); //make door frames solid (they were not solid so imaginary water could flood through doors but not walls)
   
-  for(int i = 0; i < 9; i++){ //for each room (x)
-    for(int j = 0; j < 9; j++){ //for each room (y)
-      RoomType tempRoom = randomRooms[wU[i*10+5][j*10+5]-108].get(floor(random(randomRooms[wU[i*10+5][j*10+5]-108].size()))); //load a random room of the correct type
-      tempRoom.paste(i*10+5,j*10+5); //paste this room in
-      wU[i*10+5][j*10+5] = 1; //remove temporary indicator block
-      wU[i*10+13][j*10+5] = 1; //remove temporary indicator block
+  scaleView(10); //scale the view to fit the entire map
+  player.eDir = random(2*PI);
+  shadows = true;
+  centerView(player.x,player.y); //center the view in the middle of the world
+  /*
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      miniMap[i][j] = gBColor[wU[i][j]];
     }
   }
-    
- // shadows = true;
-  //scaleView(10); //scale the view to fit the entire map
-  scaleView(100);
-  
-  centerView(wSize/2-.5,wSize/2-.5); //center the view in the middle of the world
-  player.x = wSize/2-.5;
-  player.y = wSize/2-.5;
-  
-  //entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
-  
-  //entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
+  */
+  //removeEntity(player,-1); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
   //testEntity.destroy();
 }
 
-/*LOCK*/void safeAsync(int n){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
-  if(n%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
-    println(frameRate); //display the game FPS
+/*LOCK*/void safeAsync(){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
+  
+  if(flipStage > 0){
+    flipStage--;
+    if(flipStage == 0){
+      if(pairState != -1){
+        
+        flipStage = -2;
+        HUDTtext = "";
+        HUDText("Correct!", " ", 40, 40, color(0,255,0), color(255), 25, 25, 0, 10);
+        genReplace(30+pairState,4);
+        for(int i = 0; i < 16; i++){
+          if(CardPairs[i] == pairState){
+            genReplace(30+i,4);
+          } else {
+            genReplace(30+i,10+i);
+          }
+          
+        }
+      } else {
+        HUDText("Incorrect!", " ", 40, 40, color(255,0,0), color(255), 25, 25, 0, 10);
+        for(int i = 0; i < 16; i++){
+          gBColor[30+i] = color(255,0,0);
+        }
+        
+        PVector spawnCenter = new PVector(player.x,player.y);
+        
+        resetSearches(player.x,player.y,100);
+        boolean searchLoop = true;PVector tempPV;while(searchLoop){tempPV = findNonAirWU();if(tempPV != null){
+            if(aGS(wU,tempPV.x,tempPV.y) >= 30 && aGS(wU,tempPV.x,tempPV.y) < 30+16){
+              spawnCenter = new PVector(tempPV.x+.5,tempPV.y+.5);
+              searchLoop = false;
+            }
+        }else{searchLoop = false;}}
+        
+        genLine(spawnCenter.x-2,spawnCenter.y-3,spawnCenter.x+2,spawnCenter.y-3,0,7);
+        genLine(spawnCenter.x-2,spawnCenter.y+3,spawnCenter.x+2,spawnCenter.y+3,0,7);
+        genLine(spawnCenter.x-3,spawnCenter.y-2,spawnCenter.x-3,spawnCenter.y+2,0,7);
+        genLine(spawnCenter.x+3,spawnCenter.y-2,spawnCenter.x+3,spawnCenter.y+2,0,7);
+        
+        float td = pointDir(spawnCenter,player.eV);
+        
+        if(pointDistance(spawnCenter,player.eV) > 2){
+          player.x = spawnCenter.x+cos(td)*2;
+          player.y = spawnCenter.y+sin(td)*2;
+        }
+        
+        td+= PI;
+        
+        for(int i = 2+floor(random(4)); i > 0; i--){
+          float tdr = td + random(PI/2)-PI/4;
+          entities.add(new Entity(spawnCenter.x+cos(tdr)*2,spawnCenter.y+sin(tdr)*2,EC_DEATH_M+floor(random(2)),tdr+PI));
+        }
+        
+      }
+      refreshWorld();
+      refreshMiniMapCards();
+    }
   }
-  if(n%250 == 0){} //every ten seconds (similar idea applies here)
+  
+  
+  if(fn%10 == 0){
+    
+  }
+  
+  if(fn%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
+    //println(frameRate); //display the game FPS
+  }
+  if(fn%100 == 0){
+    
+    
+    
+  } //every ten seconds (similar idea applies here)
 }
 
 /*LOCK*/void safeUpdate(){ //called before anything has been drawn to the screen (update the world before it is drawn)
   centerView(player.x,player.y); //center the view on the player
+  //PVector tempV2 = new PVector(mouseX,mouseY); tempV2 = screen2Pos(tempV2); centerView((player.x*5+tempV2.x)/6,(player.y*5+tempV2.y)/6); //center view on the player but pull toward the mouse slightly
+  //PVector tempV2 = new PVector(maxAbs(0,float(mouseX-width/2)/50)+width/2,maxAbs(0,float(mouseY-height/2)/50)+height/2); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y); //move the view in the direction of the mouse
+  //if(mousePressed){PVector tempV2 = new PVector(width/2+(pmouseX-mouseX),height/2+(pmouseY-mouseY)); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y);} //drag the view around
 }
 
-class RoomType{
-  int[][] data;
-  int w;
-  int h;
-  RoomType(int x, int y, int tW, int tH){
-    w = tW;
-    h = tH;
-    data = new int[w][h];
-    for(int i = 0; i < w; i++){
-      for(int j = 0; j < h; j++){
-        data[i][j] = aGS(wU,x+i,y+j);
-      }
+void safePostUpdate(){}
+
+void safePluginAI(Entity e){
+  /*
+  Control the AI of an entity e
+  This function is called 25 times each second
+  Input: all data associated with entity such as position, EC (basic entity type), speed, direction, AI variables, etc.
+  Output: fire() usage with direction to fire a bullet, eMove value, eD destination value
+  */
+  if(e.EC == EC_AIR_M){
+    AIWander(e,6,20,90);
+    e.eStamina = 100;
+    if(e.eFireCooldown == 0){
+      e.fire(player.eV);
+    }
+  } else if(e.EC == EC_DEATH_M){
+    AIWander(e,6,20,90);
+    e.eStamina = 100;
+    if(e.eFireCooldown == 0){
+      e.fire(player.eV);
     }
   }
-  void paste(int x, int y){
-    for(int i = 0; i < w; i++){
-      for(int j = 0; j < h; j++){
-        aSS(wU,x+i,y+j,data[i][j]);
-      }
-    }
-  }
+  /*
+  Control the AI of an entity e
+  This function is called 25 times each second
+  Input: all data associated with entity such as position, EC (basic entity type), speed, direction, AI variables, etc.
+  Output: fire() usage with direction to fire a bullet, eMove value, eD destination value
+  */
 }
 
 /*LOCK*/void safeDraw(){} //called after everything else has been drawn on the screen (draw things on the game)
-/*LOCK*/void safePostDraw(){} //called after everything else has been drawn on the screen (draw things on the screen)
-/*LOCK*/void safeKeyPressed(){
-  if(key == 't'){
-    player.x = mouseX;
-    player.y = mouseY;
+/*LOCK*/void safePostDraw(){
+  
+  
+  
+  
+  /*
+  stroke(255);
+  strokeWeight(2);
+  for(int i = -5; i <= 5; i++){
+    for(int j = -5; j <= 5; j++){
+      PVector tempPV = new PVector(floor(player.x)+i+.5,floor(player.y)+j+.5);
+      
+      PVector tempPV2 = pos2Screen(new PVector(tempPV.x,tempPV.y));
+      
+      ArrayList tempAL = aGSAL(wUEntities,tempPV.x,tempPV.y);
+      
+      for(int k = 0; k < tempAL.size(); k++){
+        if(((Entity)tempAL.get(k)).ID == player.ID){
+          fill(0,100,255);
+        } else if(EConfigs[((Entity)tempAL.get(k)).EC].Genre == 3){
+          fill(0,255,0);
+        } else {
+          fill(255,0,100);
+        }
+        ellipse(tempPV2.x+gScale/10*k,tempPV2.y,10,10);
+      }
+      //text(.size(),tempPV2.x,tempPV2.y);
+      
+    }
   }
-  if(key == 'u'){
-    genReplace(43,44);
-    genReplace(44,45);
+  */
+  
+  
+  
+  
+
+  
+  if(chatPush != 0){
+    stroke(255,chatPush*500);
+    strokeWeight(2);
+    fill(0,chatPush*500);
+    rect(-10,height-chatHeight-2,width+20,100);
+    //textMarkup(chatKBS,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
   }
-} //called when a key is pressed
+} //called after everything else has been drawn on the screen (draw things on the screen)
+/*LOCK*/void safeKeyPressed(){} //called when a key is pressed
 /*LOCK*/void safeKeyReleased(){} //called when a key is released
 /*LOCK*/void safeMousePressed(){
   if(mouseButton == RIGHT){
     PVector tempV = screen2Pos(new PVector(mouseX,mouseY));
     player.fire(tempV);
   }
+  
 } //called when the mouse is pressed
 
-/*LOCK*/void chatEvent(String source){} //called when a chat message is created
-
-void executeCommand(int index,String[] commands){
-  switch(index){
-    case 0: //function id stated above
-      if(commands[3].equals("norm")){
-        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, normEnemyConfig,random(TWO_PI)));
-      } else if(commands[3].equals("fast")){
-        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, fastEnemyConfig,random(TWO_PI)));
-      } else if(commands[3].equals("boss")){
-        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, bossEnemyConfig,random(TWO_PI)));
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////tp followers to player
-        genReplace(43,44);
-        genReplace(44,45);
+void refreshMiniMapCards(){
+  for(int i = 35; i < 75; i+=10){
+    for(int j = 35; j < 75; j+=10){
+      if(miniMap[i][j] != 0){
+        miniMap[i][j] = gBColor[wU[i][j]];
       }
-      break;
-    case 1: //function id stated above
-      genReplace(45,0);
-      genReplace(17,0);
-      refreshWorld();
-      break;
-    case 2: //function id stated above
-      //question
-      break;
-    case 3: //function id stated above
-      //key
-      HUDText("You collected a key!", "", 58, 40, color(255), color(255), 24, 25, 12, 75);
-      sBHasText[16] = false;
-      addActionSpecialBlock(16,21);
-      break;
-    case 4: //function id stated above
-      //chest
-      for(int i = 0; i < 5; i++){
-        entities.add(new Entity(int(commands[1])+.5,int(commands[2])+.5, bossEnemyConfig,random(TWO_PI)));
-      }
-      break;
-      
-      
+    }
   }
 }
 
+/*LOCK*/void chatEvent(String source){
+} //called when a chat message is created
+
+void executeCommand(int index, String[] commands){
+  switch(index){
+    case 0: //function id stated above
+      if(flipStage < 0){
+        
+        String thisCardText = CardText[int(commands[1])];
+        if(thisCardText.substring(0,2).equals("q:")){
+          thisCardText = "Question "+thisCardText.substring(2,thisCardText.length());
+          if(flipStage == -1){
+            HUDText(thisCardText, HUDTtext, 40, 40, color(255), color(255), 25, 25, 0, 50);
+          }
+        } else {
+          thisCardText = "Answer "+thisCardText.substring(2,thisCardText.length());
+          if(flipStage == -1){
+            HUDText(HUDTtext, thisCardText, 40, 40, color(255), color(255), 25, 25, 0, 50);
+          }
+        }
+        if(flipStage == -2){
+          HUDText(thisCardText, " ", 40, 40, color(255), color(255), 25, 25, 0, 50);
+        }
+        
+        
+        
+        
+        if(flipStage == -2){
+          flipStage = -1;
+          pairState = CardPairs[int(commands[1])];
+        } else {
+          flipStage = 100;
+          if(pairState != CardPairs[int(commands[1])]){
+            pairState = -1;
+          }
+        }
+        refreshMiniMapCards();
+      }
+      break;
+    case 1:
+      if(commands[1].equals("-1")){
+        trackEs--;
+        if(trackEs == 0){
+          genReplace(7,5);
+          for(int i = 0; i < 16; i++){
+            gBColor[30+i] = color(255,0,0);
+            genReplace(30+i,10+i);
+          }
+          flipStage = -2;
+          refreshWorld();
+          refreshMiniMapCards();
+        }
+      } else {
+        trackEs++;
+      }
+      break;
+  }
+}
+
+void safeMouseReleased(){}
 /*LOCK*/void safeKeyTyped(){} //may be added in the future
 /*LOCK*/void safeMouseWheel(){} //may be added in the future
 /*LOCK*/void safeMouseClicked(){} //may be added in the future
 /*LOCK*/void safeMouseMoved(){} //may be added in the future
 /*LOCK*/void safeMouseDragged(){} //may be added in the future
 //STEM Phagescape API v(see above)
+
+int Astart = -1;
+
+void AIWander(Entity e, int AIradius, int AItestDelay, int AItestChance){ //Total behavior function
+  float disToD = pointDistance(e.eV,e.eD);
+  if(fn % AItestDelay == 0){
+    if(random(100) < AItestChance || disToD > wSize-10){
+      int loopingC = 0;
+      while(loopingC < 100){
+        e.eD = new PVector(e.x+random(AIradius*2)-AIradius,e.y+random(AIradius*2)-AIradius);
+        if(rayCast(e.x,e.y,e.eD.x,e.eD.y,false)){
+          loopingC = 101;
+        }
+        loopingC++;
+        println(loopingC);
+      }
+      if(loopingC == 100){
+        e.eD = new PVector(e.x,e.y);
+      }
+    }
+  }
+  if(disToD > 2){
+    e.eMove = true;
+  }
+}
+
+
+
 
 void nodeWorld(PVector startV, int targetBlock, int vision){
   int q;
@@ -336,10 +486,12 @@ void nodeWorldPos(PVector startV, PVector targetBlock, int vision){
   Node n2;
   
   
-  
   for ( int ix = 0; ix < wSize; ix+=1 ) {
     for ( int iy = 0; iy < wSize; iy+=1) {
+
+      
       if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || (ix == floor(targetBlock.x) && iy == floor(targetBlock.y))) {
+        //entities.add(new Entity(ix+.5,iy+.5,0,0));
         
         nodes.add(new Node(ix,iy));
         nmap[iy][ix] = nodes.size()-1;
@@ -391,7 +543,11 @@ boolean astar(int iStart, int targetBlock, PVector endV) {
   boolean tentativeIsBetter;
   float lowest = 999999999;
   int lowId = -1;
+  
+  println("NOa");
+  
   while( openSet.size()>0 ) {
+    println("NOb");
     lowest = 999999999;
     for ( int a = 0; a < openSet.size(); a++ ) {
       if ( ( ((Node)openSet.get(a)).g+((Node)openSet.get(a)).h ) <= lowest ) {
@@ -406,18 +562,22 @@ boolean astar(int iStart, int targetBlock, PVector endV) {
         Node d = (Node)openSet.get(lowId);
         while( d.p != -1 ) {
           Apath.add( d );
+          println("NOc");
           d = (Node)nodes.get(d.p);
         }
+          println("NO1");
         return true;
       }
     } else {
-      if ( abs(current.x-endV.x) < .5 && abs(current.y-endV.y) < .5 ) { //path found
+      if ( abs(current.x-endV.x) <= .5 && abs(current.y-endV.y) <= .5 ) { //path found
         //follow parents backward from goal
         Node d = (Node)openSet.get(lowId);
         while( d.p != -1 ) {
           Apath.add(d);
+          println("NOd");
           d = (Node)nodes.get(d.p);
         }
+          println("NO2");
         return true;
       }
     }
@@ -453,6 +613,7 @@ boolean astar(int iStart, int targetBlock, PVector endV) {
     }
   }
   //no path found
+  println("noz");
   return false;
 }
 
@@ -499,14 +660,14 @@ ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
   nodeWorld(startV, targetBlock, vision);
   
   
-  int start = aGS(nmap,startV.y,startV.x);
+  Astart = aGS(nmap,startV.y,startV.x);
   boolean tempB = false;
-  if(start > -1 && targetBlock > -1){
-    tempB = astar(start,targetBlock,null);
+  if(Astart > -1 && targetBlock > -1){
+    tempB = astar(Astart,targetBlock,null);
   }
   
   if(tempB == false){
-    Apath = new ArrayList();
+    //Apath = new ArrayList();
   }
   
   return Apath;
@@ -521,15 +682,14 @@ ArrayList searchWorldPos(PVector startV, PVector endV, int vision) {
   Apath = new ArrayList();
   
   //generateMap(targetBlock);
-  
 
   nodeWorldPos(startV, endV, vision);
   
   
-  int start = aGS(nmap,startV.y,startV.x);
+  Astart = aGS(nmap,startV.y,startV.x);
   boolean tempB = false;
-  if(start > -1){
-    tempB = astar(start,-1,endV);
+  if(Astart > -1){
+    tempB = astar(Astart,-1,endV);
   }
   
   if(tempB == false){
@@ -543,10 +703,9 @@ void nodeDraw() {
   Node t1;
   for ( int i = 0; i < nodes.size(); i++ ) {
     t1 = (Node)nodes.get(i);
-    if (i==start) {
+    if (i==Astart) {
       fill(0,255,0);
-    }
-    else {
+    } else {
       if (Apath.contains(t1)) {
         fill(255);
         if(((Node)Apath.get(Apath.size()-1)).x == t1.x && ((Node)Apath.get(Apath.size()-1)).y == t1.y){
@@ -598,15 +757,12 @@ maxAbs(_NUM_1_,_NUM_2_)
 minAbs(_NUM_1_,_NUM_2_)
 */
 //These variables should not be changed
-int[][] gU; //Grid unit - contains all blocks being drawn to the screen
-boolean[][] gUHUD;
-int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
-int[][] wU; //World Unit - contains all blocks in the world
+import ddf.minim.*;
+Minim minim;
 
-int[][] wUDamage;
-boolean[][] wUText; //
-int[][] wUUpdate; //
-float gScale; //the width and height of blocks being drawn to the screen in pixels
+int playerID = 0;
+
+
 float wPhase = 0; //the current phase of all waves in the world (where they are in their animation)
 ArrayList wL = new ArrayList<Wave>(); //Wave list - list of all waves in the world
 PVector wView = new PVector(45,45); //current world position of the center of the viewing window
@@ -614,25 +770,20 @@ PVector wViewLast = new PVector(0,0); //previous world position of the center of
 int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
-ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+
+ArrayList mimics = new ArrayList<Mimic>();
 color strokeColor = color(255);
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
 int[] gBStrength = new int[256];
 int[] gBBreakType = new int[256];
 String[] gBBreakCommand = new String[256];
-boolean[] sBHasImage = new boolean[256];
-PImage[] sBImage = new PImage[256];
-int[] sBImageDrawType = new int[256];
-boolean[] sBHasText = new boolean[256];
-String[] sBText = new String[256];
-int[] sBTextDrawType = new int[256];
 boolean[] sBHasAction = new boolean[256];
 int[] sBAction = new int[256];
 PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
-PVector wViewCenter;
+PVector wViewCenter = new PVector(50,50);
 PFont fontNorm;
 PFont fontBold;
 int[][] distanceMatrix = new int[300][300];
@@ -641,27 +792,41 @@ int lightStrength = 10;
 boolean mouseClicked = false;
 boolean drawHUDSoftEdge = false;
 int fn = 0;
+int frameRateGoal = 45;
 
 boolean clicking = true;
 PVector clickPos = new PVector(-1,-1);
+boolean isLeft;
+boolean isRight;
+boolean isI;
 
 void M_Setup(){
+  minim = new Minim(this);
   fontNorm = createFont("monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
   fontBold = createFont("monofonto.ttf",18);//"Monospaced.bold-23.vlw"
   HUDImage = loadImage("shadowHUD.png");
-  frameRate(60);
+  arrowImg = loadImage("arrow.png");
+  frameRate(frameRateGoal);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
   safePreSetup();
-
+  
+  setupHUD();
   setupWorld();
+  setupDebug();
   setupEntities();
   scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
   
   refreshWorld();
+  
+  wView.x -= .1; wView.y -= .1; refreshWorld(); wView.x += .1; wView.y += .1; // prefrence for positive blocks rendering on minimap
+  
+  refreshWorld();
+  
+  setupServer();
 }
 
 
@@ -676,11 +841,11 @@ void draw(){
     }
   }
   
-    //clickQuestion();
+    clickQuestion();
   
-    //animate();
+    animate();
   
-    //nodeDraw();
+    nodeDraw();
   
   manageAsync();
   
@@ -688,21 +853,25 @@ void draw(){
   
   drawWorld();
   
-    //safePostUpdate();
+    safePostUpdate();
   
   drawEntities();
   
-    //drawSound();
+    drawSound();
   
   safeDraw();
   
-    //drawHUD();
+    drawHUD();
   
-    //drawChat();
+    drawChat();
   
-    //safePostDraw();
+    safePostDraw();
   
   mouseClicked = false;
+  
+  
+  //updateDebug();
+  
 }
 
 void keyPressed(){
@@ -712,6 +881,10 @@ void keyPressed(){
     key = 0;
   }
   
+  if(key == 'i' || key == 'I'){
+    isI = true;
+  }
+  
   if(chatPushing == false){
     player.moveEvent(0);
   }
@@ -719,9 +892,23 @@ void keyPressed(){
   if(key == 'F' || key == 'f') {
     if(HUDSstage == 0){
       HUDSstage = 1;
+      disconnect();
     } else {
       HUDSstage = -HUDSstage;
     }
+  }
+  
+  if(key == '+') {
+    if(miniMapZoomSmall < 20){
+      miniMapZoomSmall++;
+    }
+    miniMapZoomLarge = 4;
+  }
+  if(key == '-') {
+    if(miniMapZoomSmall > 0){
+      miniMapZoomSmall--;
+    }
+    miniMapZoomLarge = 0;
   }
   
   safeKeyPressed();
@@ -730,15 +917,35 @@ void keyPressed(){
 void keyReleased(){
   player.moveEvent(1);
   safeKeyReleased();
-  
+  if(key == 'i' || key == 'I'){
+    isI = false;
+  }
   
 }
 
 void mousePressed(){
   clicking = true;
+  if(mouseButton == RIGHT){
+    isRight = true;
+  } else if(mouseButton == LEFT){
+    isLeft = true;
+  }
   clickPos = new PVector(mouseX,mouseY);
   
   safeMousePressed();
+}
+
+void mouseReleased(){
+  
+  if(mouseButton == RIGHT){
+    isRight = false;
+    println("Right");
+  } else if(mouseButton == LEFT){
+    isLeft = false;
+    println("Left");
+  }
+  
+  safeMouseReleased();
 }
 
 float pointDir(PVector v1,PVector v2){
@@ -749,7 +956,15 @@ float pointDir(PVector v1,PVector v2){
     }
     return tDir;
   } else {
-    return random(2*PI);
+    if((v2.y-v1.y) != 0){
+      if(v2.y > v1.y){
+        return PI/2;
+      } else {
+        return PI/2*3;
+      }
+    } else {
+      return random(2*PI);
+    }
   }
 }
 
@@ -784,9 +999,17 @@ float angleDir(float tA, float tB){
   if(tA<tB-PI){tA+=PI*2;}
   if(tB<tA-PI){tB+=PI*2;}
   if(tB == tA){
-    return 1;
+    return 0;
   }
   return (tB-tA)/abs(tB-tA);
+}
+
+int total(int[] list){
+  int myReturn = 0;
+  for(int i = 0; i < list.length; i++){
+    myReturn += list[i];
+  }
+  return myReturn;
 }
 
 float posMod(float tA, float tB){
@@ -807,6 +1030,10 @@ void aSS2DB(boolean[][] tMat, float tA, float tB, boolean tValue){ //array set s
 }
 
 int aGS(int[][] tMat, float tA, float tB){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
+}
+
+ArrayList aGSAL(ArrayList[][] tMat, float tA, float tB){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
 }
 
@@ -913,6 +1140,7 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
+int lastMillis = 0;
 int asyncT = 1000;
 void manageAsync(){
   while(millis()-40>asyncT){
@@ -920,17 +1148,18 @@ void manageAsync(){
     asyncT += 40;
     fn++;
     safeAsync();
+    debugLog(color(0,255,0));
     updateWorld();
     updateEntities();
     updateSound();
     updateHUD();
     if(fn % 13 == 0){
-      updateSpecialBlocks();
       updateSpawners();
     }
     if(fn % 125 == 0){
       healEntities();
     }
+    //updateServer();
   }
 }
 
@@ -957,8 +1186,6 @@ PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
   }
   return canvas;
 }
-
-//STEM Phagescape API v(see above)
 //STEM Phagescape API v(see above)
 
 float charWidth = 9;
@@ -1056,16 +1283,18 @@ int textMarkup(String text, float size, float x, float y, color defCol, float al
           pointer++;
         }
         tempStr = text.charAt(i+1)+"";
-        if(tempStr.equals("r")){fill(255,0,0,alpha); lastColor=color(255,0,0);}  
-        if(tempStr.equals("o")){fill(255,150,0,alpha); lastColor=color(255,150,0);}
-        if(tempStr.equals("y")){fill(255,255,0,alpha); lastColor=color(255,255,0);}
-        if(tempStr.equals("g")){fill(0,255,0,alpha); lastColor=color(0,255,0);}
-        if(tempStr.equals("c")){fill(0,255,255,alpha); lastColor=color(0,255,255);}
-        if(tempStr.equals("b")){fill(0,0,255,alpha); lastColor=color(0,0,255);}
-        if(tempStr.equals("p")){fill(225,0,255,alpha); lastColor=color(225,0,255);}  
-        if(tempStr.equals("m")){fill(255,0,255,alpha); lastColor=color(255,0,255);}
-        if(tempStr.equals("w")){fill(255,255,255,alpha); lastColor=color(255,255,255);}
-        if(tempStr.equals("k")){fill(0,0,0,alpha); lastColor=color(0,0,0);}
+        if(tempStr.equals("r")){fill(255,0,0,alpha); lastColor=color(255,0,0);}  //red
+        if(tempStr.equals("o")){fill(255,150,0,alpha); lastColor=color(255,150,0);} //orange
+        if(tempStr.equals("y")){fill(255,255,0,alpha); lastColor=color(255,255,0);} //yellow
+        if(tempStr.equals("g")){fill(0,255,0,alpha); lastColor=color(0,255,0);} //green
+        if(tempStr.equals("c")){fill(0,255,255,alpha); lastColor=color(0,255,255);} //cyan
+        if(tempStr.equals("b")){fill(0,0,255,alpha); lastColor=color(0,0,255);} //blue
+        if(tempStr.equals("p")){fill(225,0,255,alpha); lastColor=color(225,0,255);} //purple
+        if(tempStr.equals("m")){fill(255,0,255,alpha); lastColor=color(255,0,255);} //magenta
+        if(tempStr.equals("w")){fill(255,255,255,alpha); lastColor=color(255,255,255);} //white
+        if(tempStr.equals("l")){fill(255,255,255,alpha); lastColor=color(200,200,200);} //light grey
+        if(tempStr.equals("d")){fill(255,255,255,alpha); lastColor=color(100,100,100);} //dark grey
+        if(tempStr.equals("k")){fill(0,0,0,alpha); lastColor=color(0,0,0);} //black (key)
         if(tempStr.equals("i")){/*textFont(fontNorm);*/}
         if(tempStr.equals("n")){fill(defCol,alpha); lastColor=defCol; /*textFont(fontBold);*/ tUL = false; tST = false;}
         if(tempStr.equals("u")){tUL = true;}
@@ -1337,44 +1566,142 @@ class CFun{
 
 
 //STEM Phagescape API v(see above)
+//String[] effects = {""}
+PImage debugGraph;
+ArrayList debugWave = new ArrayList<PVector>();
+ArrayList debugEvents = new ArrayList<PVector>();
 
+void setupDebug(){
+  debugGraph = new PImage(width/2,height/3);
+  debugWave.add(new PVector(width/2-1,0));
+}
+
+void debugLog(int argColor){
+  debugEvents.add(new PVector(argColor,0));
+}
+
+void updateDebug(){
+  
+  int bar = int(height/3-(1000/frameRateGoal));
+  
+  PVector tempPointer = (PVector)debugWave.get(debugWave.size()-1);
+  debugWave.add(new PVector((tempPointer.x+1)%(width/2),min(millis()-lastMillis,height/3-1-15*debugEvents.size())));
+  if(debugWave.size() > 10){
+    debugWave.remove(0);
+  }
+  tempPointer = (PVector)debugWave.get(debugWave.size()-1);
+  
+  debugGraph.loadPixels();
+  for(int i = 0; i < height/3; i++){
+    if(i == bar){
+      debugGraph.pixels[int(tempPointer.x)+i*(width/2)] = color(0,255,0);
+    } else {
+      debugGraph.pixels[int(tempPointer.x)+i*(width/2)] = color(0);
+    }
+  }
+  for(int j = debugEvents.size()-1; j >= 0; j--){
+    PVector eventColor = (PVector) debugEvents.get(j);
+    for(int i = 1; i < 16; i++){
+      debugGraph.pixels[int(min(tempPointer.x,width/2-1))+(min(i+15*j,height/3-1))*(width/2)] = int(eventColor.x);
+    }
+  }
+  debugEvents.clear();
+  for(int i = floor((height/3)-tempPointer.y); i < height/3; i++){
+    if(i == bar){
+      debugGraph.pixels[int(tempPointer.x)+i*(width/2)] = color(0,255,0);
+    } else {
+      debugGraph.pixels[int(tempPointer.x)+i*(width/2)] = color(255,0,0);
+    }
+  }
+  for(int j = debugWave.size()-2; j >= 0; j--){
+    tempPointer = (PVector)debugWave.get(j);
+    for(int i = floor((height/3)-tempPointer.y); i < height/3; i++){
+      if(i == bar){
+        debugGraph.pixels[int(tempPointer.x)+i*(width/2)] = color(0,255,0);
+      } else {
+        debugGraph.pixels[int(tempPointer.x)+i*(width/2)] = color(150+j*10,0,0);
+      }
+      
+    }
+  }
+  debugGraph.updatePixels();
+  image(debugGraph,width/2,height/3*2);
+  
+  lastMillis = millis();
+}
 //STEM Phagescape API v(see above)
 
-boolean[][] smap;
+EConfig[] EConfigs = new EConfig[356];
 
-EConfig bulletEntity = new EConfig();
+boolean[][] smap;
+int entityIDCycle = 0;
+int maxMimicID = -1;
+ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+Mimic[][] mimicIDs = new Mimic[100][0];
+
+int EC_PLAYER = 0;
+int EC_BULLET = 1;
+int EC_NEXT(){return ecCycleNext++;}
+int ecCycleNext = 2;
+
+PImage arrowImg;
+
+int particleCycle = 0;
+
+//EConfig bulletEntity = new EConfig();
+
+
 
 void setupEntities(){
   
-  bulletEntity.Size = .13; //TO BE REMOVED
-  player = new Entity(wSize/2,wSize/2,new EConfig(),0);
-  player.EC.Genre = 1;
-  player.EC.Img = loadImage("player.png");
-  entities.add(player);
+  EConfigs[EC_BULLET] = new EConfig();
+  EConfigs[EC_BULLET].Size = .13; //TO BE REMOVED
+  EConfigs[EC_BULLET].Team = -3;
+  EConfigs[EC_PLAYER] = new EConfig();
+  EConfigs[EC_PLAYER].Genre = 1;
+  EConfigs[EC_PLAYER].Team = -3;
+  EConfigs[EC_PLAYER].SuckRange = 1;
+  EConfigs[EC_PLAYER].Img = loadImage("player.png");
+  player = new Entity(wSize/2,wSize/2,EC_PLAYER,0);
+  addEntity(player);
+}
+
+void reloadMimicIDs(){
+  mimicIDs = new Mimic[100][maxMimicID+1];
+  for (int i = mimics.size()-1; i >= 0; i--) {
+    Mimic tempM = (Mimic) mimics.get(i);
+    mimicIDs[tempM.playerID-1][tempM.ID] = tempM;
+  }
 }
 
 void updateEntities(){
+  /*for (int i = 0; i < mimics.size(); i++) {
+    Mimic tempM = (Mimic) mimics.get(i);
+    tempM.update();
+  }*/
+  
   for (int i = entities.size()-1; i >= 0; i--) {
     Entity tempE = (Entity) entities.get(i);
     tempE.moveAI();
-  }
-  if((floor(player.eV.x) != floor(player.eVLast.x)) || (floor(player.eV.y) != floor(player.eVLast.y))){
-    updateSpecialBlocks();
   }
 }
 
 void healEntities(){
   for (int i = entities.size()-1; i >= 0; i--) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.eHealth < tempE.EC.HMax){
+    if(tempE.eHealth < EConfigs[tempE.EC].HMax){
       tempE.eHealth++;
     } else {
-      tempE.eHealth = tempE.EC.HMax;
+      tempE.eHealth = EConfigs[tempE.EC].HMax;
     }
   }
 }
 
 void drawEntities(){
+  for (int i = 0; i < mimics.size(); i++) {
+    Mimic tempM = (Mimic) mimics.get(i);
+    tempM.display();
+  }
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
     tempE.display();
@@ -1382,22 +1709,28 @@ void drawEntities(){
 }
 
 class Entity {
-  float ID = random(1000);
+  int ID;
   
   int trail = 20;
   ArrayList path = new ArrayList<PVector>();
+  ArrayList pathing = new ArrayList<Node>();
+  ArrayList blockSet = new ArrayList<PVector>();
   
   int thisI;
-  EConfig EC;
+  int EC;
   float x;
   float y;
   PVector eV;
   float eDir = 0;
   PVector eD;
+  PVector eFireD;
   int eHealth = 1;
+  float eStamina = 0;
+  int eFireCooldown = 0;
   float eSpeed = 0; //Player speed
   float eTSpeed = 0; //Player turn speed
   boolean eMove = false;
+  int birthTime = 0;
   
   PVector eVLast;
   
@@ -1414,19 +1747,32 @@ class Entity {
   
   int timeOff = floor(random(100));
   
-  Entity(float tx, float ty, EConfig tEC, float tDir) {
+  Entity(float tx, float ty, int tEC, float tDir) {
+    birthTime = millis();
+    ID = entityIDCycle;
+    entityIDCycle++;
+    //println("ID "+str(ID));
     x = tx;
     y = ty;
     eDir = tDir;
-    eD = new PVector(tx+cos(tDir),ty+sin(tDir));
+    eD = new PVector(tx+cos(tDir)*wSize,ty+sin(tDir)*wSize);
+    eFireD = new PVector(eD.x,eD.y);
     EC = tEC;
     eVLast = new PVector(x,y);
     eV = new PVector(x,y);
     eID = floor(random(2147483.647))*1000;
-    eHealth = EC.HMax;
+    eHealth = EConfigs[EC].HMax;
     path.add(new PVector(eV.x, eV.y));
     
-    tryCommand(StringReplaceAll(StringReplaceAll(EC.BirthCommand,"_x_",str(x)),"_y_",str(y)),"");
+    
+    tryCommand(StringReplaceAll(StringReplaceAll(EConfigs[EC].BirthCommand,"_x_",str(x)),"_y_",str(y)),"");
+    
+    if(EConfigs[EC].Genre == 1 || EConfigs[EC].Genre == 3){
+      addEntityToGridArea(eV.x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eV.y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eV.x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eV.y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,this);
+    }
+    if(EConfigs[EC].Genre == 3){
+      eSpeed = max(0,random(EConfigs[EC].SMax-.1)+.1);
+    }
   }
   
   void moveEvent(int eventID){
@@ -1470,40 +1816,42 @@ class Entity {
   }
   
   void moveAI(){
-    eV = new PVector(x,y);
-    if(EC.Genre == 0){
+    //println(eSpeed);
+    //println(str(testingV.x)+":"+str(testingV.y));
+    eV.x = x; eV.y = y; // = new PVector(x,y);
+    if(EConfigs[EC].Genre == 0){  //BULLET GENRE *****************************************************************************
       if(x>wSize+5 || x<-5 || y>wSize+5 || y<-5 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
         if(aGS1DB(gBIsSolid,aGS(wU,x,y))){
           EConfig tempConfig;
-          particleEffect(x-.5,y-.5,1,1,5,aGS1DC(gBColor,aGS(wU,x,y)),EC.Color,EC.SMax/5);
-          hitBlock(x,y,1);
+          particleEffect(x-.5,y-.5,1,1,5,aGS1DC(gBColor,aGS(wU,x,y)),EConfigs[EC].Color,EConfigs[EC].SMax/5);
+          hitBlock(x,y,1,false);
         }
         
         destroy();
         
       } else {
-        x += EC.SMax*cos(eDir);
-        y += EC.SMax*sin(eDir);
-        eV = new PVector(x,y);
+        x += EConfigs[EC].SMax*cos(eDir);
+        y += EConfigs[EC].SMax*sin(eDir);
+        eV.x = x; eV.y = y; // = new PVector(x,y);
       }
-    } else if(EC.Genre == 1){
+    } else if(EConfigs[EC].Genre == 1){ //MOB AND PLAYER GENRE *****************************************************************************
       eMove = false;
-      if(EC.Type == 0 || EC.Type == 1){
+      if(EConfigs[EC].Type == 0 || EConfigs[EC].Type == 1){ //PLAYER TYPE OR MOB TYPE *****************************************************************************
         if(fn % 15 == 0){
-          if(EC.AIDoorBlock > -1 || EC.AIDoorBlockClose > -1){
+          if(EConfigs[EC].AIDoorBlock > -1 || EConfigs[EC].AIDoorBlockClose > -1){
             PVector doorCenter = new PVector(0,0);
             int pastFrames = 0;
             boolean isClosed = false;
             boolean isOpen = false;
-            for(int i = -EC.AIDoorWidth; i <= EC.AIDoorWidth; i++){
-              for(int j = -EC.AIDoorWidth; j <= EC.AIDoorWidth; j++){
-                if(aGS(wU,x+i,y+j)==EC.AIDoorBlock || aGS(wU,x+i,y+j)==EC.AIDoorBlockClose){
+            for(int i = -EConfigs[EC].AIDoorWidth; i <= EConfigs[EC].AIDoorWidth; i++){
+              for(int j = -EConfigs[EC].AIDoorWidth; j <= EConfigs[EC].AIDoorWidth; j++){
+                if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlock || aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlockClose){
                   if(pastFrames == 0){
                     doorCenter = new PVector(x+i,y+j);
                   } else if(pastFrames == 1){
                     doorCenter = new PVector((x+i+doorCenter.x)/2,(y+j+doorCenter.y)/2);
                   }
-                  if(aGS(wU,x+i,y+j)==EC.AIDoorBlock){
+                  if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlock){
                     isClosed = true;
                   } else {
                     isOpen = true;
@@ -1529,12 +1877,12 @@ class Entity {
                 }
                 
                 if(changeDoorState){
-                  for(int i = -EC.AIDoorWidth; i <= EC.AIDoorWidth; i++){
-                    for(int j = -EC.AIDoorWidth; j <= EC.AIDoorWidth; j++){
-                      if(aGS(wU,x+i,y+j)==EC.AIDoorBlock){
-                        aSS(wU,x+i,y+j,gBBreakType[EC.AIDoorBlock]);
-                      } else if(aGS(wU,x+i,y+j)==EC.AIDoorBlockClose){
-                        aSS(wU,x+i,y+j,gBBreakType[EC.AIDoorBlockClose]);
+                  for(int i = -EConfigs[EC].AIDoorWidth; i <= EConfigs[EC].AIDoorWidth; i++){
+                    for(int j = -EConfigs[EC].AIDoorWidth; j <= EConfigs[EC].AIDoorWidth; j++){
+                      if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlock){
+                        aSS(wU,x+i,y+j,gBBreakType[EConfigs[EC].AIDoorBlock]);
+                      } else if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlockClose){
+                        aSS(wU,x+i,y+j,gBBreakType[EConfigs[EC].AIDoorBlockClose]);
                       }
                     }
                   }
@@ -1544,49 +1892,131 @@ class Entity {
           }
         }
       }
-      if(EC.Type == 0){
-        if(mousePressed || max(pKeys) == 1){
-          if(!mousePressed){
+      if(EConfigs[EC].Type == 0){ //PLAYER TYPE *****************************************************************************
+        if((isLeft) || max(pKeys) == 1){
+          if(!(isLeft)){
             eD = new PVector(eV.x+(-pKeys[2]+pKeys[3]),eV.y+(-pKeys[0]+pKeys[1]));
           } else {
             eD = screen2Pos(new PVector(mouseX,mouseY));
+            float tempDir = pointDir(eV,eD);
+            eD = new PVector(eV.x+cos(tempDir)*wSize,eV.y+sin(tempDir)*wSize);
           }
           eMove = true;
         }
+        
+        
+        if(isRight && eFireCooldown == 0){
+          player.fire(screen2Pos(new PVector(mouseX,mouseY)));
+        }
+        
+        if(isI && eFireCooldown == 0){
+          boolean foundEFireD = false;;
+          float tEDir = round(eDir/(HALF_PI))*HALF_PI;
+          PVector tempPV = new PVector(0,0);
+          tempPV = findBreakableNear(x+cos(tEDir),y+sin(tEDir),10);
+          tempPV.x += .5; tempPV.y += .5;
+          
+          
+          
+          if(rayCast(x,y,tempPV.x,tempPV.y,true)){
+            eFireD = new PVector(tempPV.x,tempPV.y);
+            foundEFireD = true;
+            println("YES!");
+          } else if(abs(x-tempPV.x) > abs(y-tempPV.y)){
+            if(rayCast(x,y,tempPV.x+.501*(abs(x-tempPV.x)/(x-tempPV.x)),tempPV.y,false)){
+              eFireD = new PVector(tempPV.x+.501*(abs(x-tempPV.x)/(x-tempPV.x)),tempPV.y);
+              foundEFireD = true;
+            } else if(rayCast(x,y,tempPV.x,tempPV.y+.501*(abs(y-tempPV.y)/(y-tempPV.y)),false)){
+              eFireD = new PVector(tempPV.x,tempPV.y+.501*(abs(y-tempPV.y)/(y-tempPV.y)));
+              foundEFireD = true;
+            }
+          } else {
+            if(rayCast(x,y,tempPV.x,tempPV.y+.501*(abs(y-tempPV.y)/(y-tempPV.y)),false)){
+              eFireD = new PVector(tempPV.x,tempPV.y+.501*(abs(y-tempPV.y)/(y-tempPV.y)));
+              foundEFireD = true;
+            } else if(rayCast(x,y,tempPV.x+.501*(abs(x-tempPV.x)/(x-tempPV.x)),tempPV.y,false)){
+              eFireD = new PVector(tempPV.x+.501*(abs(x-tempPV.x)/(x-tempPV.x)),tempPV.y);
+              foundEFireD = true;
+            }
+          }
+          
+          //find players
+          //if none found, find entities
+          
+          Entity tempE = null;
+          
+          resetSearches(x+cos(tEDir),y+sin(tEDir),10);
+          boolean searchLoop = true;ArrayList eLResults;while(searchLoop){eLResults = findEntityGrid();if(eLResults != null){for(int j = eLResults.size()-1; j >= 0; j--){ //compact search loop structure
+                println("FOUND!");
+                if(EConfigs[((Entity)eLResults.get(j)).EC].Team == -2){ //if team == -2
+                  tempE = (Entity)eLResults.get(j);
+                  
+                  float mobFutureMotion = (pointDistance(eV,tempE.eV)/EConfigs[EConfigs[EC].myBulletEntity].SMax)*tempE.eSpeed/2;
+                  PVector mobFuturePos;
+                  if(gBIsSolid[aGS(wU,tempE.x+cos(tempE.eDir),tempE.y+sin(tempE.eDir))] == false){
+                    mobFuturePos = new PVector(tempE.x+cos(tempE.eDir)*mobFutureMotion,tempE.y+sin(tempE.eDir)*mobFutureMotion);
+                  } else {
+                    mobFuturePos = new PVector(tempE.x,tempE.y);
+                  }
+                  //project motion
+                  if(rayCast(x,y,mobFuturePos.x,mobFuturePos.y,false)){
+                    eFireD = mobFuturePos;
+                    foundEFireD = true;
+                    searchLoop = false;
+                  }
+                  
+                }
+          }}else{searchLoop = false;}}
+          
+          
+          
+          
+          if(foundEFireD){
+            fire(eFireD);
+          }
+        }
+        
       }
-      if(EC.Type == 1){
-        if(EC.AISearchMode > -1){
+      
+      
+      if(EConfigs[EC].Type == 1){
+        safePluginAI(this);
+      }
+      
+      /*
+      if(EConfigs[EC].Type == 1){ //MOB TYPE *****************************************************************************
+        if(EConfigs[EC].AISearchMode > -1){
           
 
           
           
-          if(EC.AISearchMode < 10){
-            if(fn % EC.FireDelay == timeOff % EC.FireDelay){
-              if(pointDistance(eV,AITargetPos)<EC.ActDist){
-                if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))){
+          if(EConfigs[EC].AISearchMode < 10){
+            if(fn % EConfigs[EC].FireDelay == timeOff % EConfigs[EC].FireDelay){
+              if(pointDistance(eV,AITargetPos)<EConfigs[EC].ActDist){
+                if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y),true)){
                   fire(AITargetPos);
                 }
               }
             }
-            if(EC.AITarget > -1){
+            if(EConfigs[EC].AITarget > -1){
               if(fn % 125 == 0){
               
-                if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
+                if(aGS(wU,AITargetPos.x,AITargetPos.y) != EConfigs[EC].AITarget){
                   setAITarget();
                 }
               }
             } else {
               if(fn % 10 == 0){ 
-                if(pointDistance(entityNearID(AITargetPos,EC.AITargetID,30,100),AITargetPos)>.2){
+                if(pointDistance(entityNearID(AITargetPos,EConfigs[EC].AITargetID,30,100),AITargetPos)>.2){
                   //println("HEY, YOU MOVED!");
                   setAITarget();
                 }
               }
             }
-            if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
-              if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
-                if(fn % EC.FireDelay == timeOff % EC.FireDelay){
-                  if(pointDistance(eVLast,eV)<EC.Drag){
+            if(pointDistance(eV,AITargetPos)>EConfigs[EC].GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y),true) == false){
+              if(EConfigs[EC].AISearchMode == 1 || EConfigs[EC].AISearchMode == 2){
+                if(fn % EConfigs[EC].FireDelay == timeOff % EConfigs[EC].FireDelay){
+                  if(pointDistance(eVLast,eV)<EConfigs[EC].Drag){
                     setAITarget();
                   }
                 }
@@ -1594,7 +2024,7 @@ class Entity {
               }
               eMove = true;
               
-              if(EC.AISearchMode == 3){
+              if(EConfigs[EC].AISearchMode == 3){
                 if(fn % 125 == 0){
                   setAITarget();
                 }
@@ -1605,28 +2035,28 @@ class Entity {
                   eD = new PVector(((Node)Apath.get(Apath.size()-1)).x+.5,((Node)Apath.get(Apath.size()-1)).y+.5);
                 } else {
                   if(fn % 25 == 0){
-                    if(pointDistance(eVLast,eV)<EC.Drag){
-                      AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+                    if(pointDistance(eVLast,eV)<EConfigs[EC].Drag){
+                      AITargetPos = blockNear(eV,EConfigs[EC].AITarget,random(90)+10);
                     }
                   }
                 }
               }
             }
-          } else if(EC.AISearchMode < 30) {
-            if(fn % EC.FireDelay == timeOff % EC.FireDelay){
-              PVector tempTarget = entityNearID(eV,EC.AITargetID,EC.ActDist,100);
+          } else if(EConfigs[EC].AISearchMode < 30) {
+            if(fn % EConfigs[EC].FireDelay == timeOff % EConfigs[EC].FireDelay){
+              PVector tempTarget = entityNearID(eV,EConfigs[EC].AITargetID,EConfigs[EC].ActDist,100);
               if(tempTarget.z != -1){
                 fire(AITargetPos);
               }
             }
-            if(EC.AISearchMode == 11){
-              if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
+            if(EConfigs[EC].AISearchMode == 11){
+              if(pointDistance(eV,AITargetPos)>EConfigs[EC].GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y),true)==false){
                 eMove = true;
               }
               if(fn % 25 == 0){
                 setAITarget();
               }
-            } else if(EC.AISearchMode == 12){
+            } else if(EConfigs[EC].AISearchMode == 12){
               eMove = true;
               if(fn % 250 == 0){
                 AITargetPos = new PVector(eV.x,eV.y);
@@ -1636,14 +2066,14 @@ class Entity {
               }
             }
             
-            if(EC.AISearchMode == 21){
-              if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
+            if(EConfigs[EC].AISearchMode == 21){
+              if(pointDistance(eV,AITargetPos)>EConfigs[EC].GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y),true)==false){
                 eMove = true;
               }
               if(fn % 35 == 0){
                 setAITarget();
               }
-            } else if(EC.AISearchMode == 22){
+            } else if(EConfigs[EC].AISearchMode == 22){
               eMove = true;
               if(fn % 300 == 0){
                 for(int i = 0; i < wSize; i++){
@@ -1662,7 +2092,7 @@ class Entity {
                 
                 for (int k = 0; k < entities.size(); k++) {
                   Entity tempE = (Entity) entities.get(k);
-                  if(tempE.EC.ID == EC.AITargetID){
+                  if(EConfigs[tempE.EC].ID == EConfigs[EC].AITargetID){
                     for(int i = -6; i < 7; i++){
                       for(int j = -6; j < 7; j++){
                         aSS(AIMap,tempE.x+i,tempE.y+j,max(aGS(AIMap,tempE.x+i,tempE.y+j)-1,-6));
@@ -1680,44 +2110,108 @@ class Entity {
               }
             }
           } else {
-            if(EC.AISearchMode == 30){
+            if(EConfigs[EC].AISearchMode == 30){
               eDir = pointDir(eV,AITargetPos);
-              if(pointDistance(eV,AITargetPos) < EC.SMax){
-                eV = new PVector(AITargetPos.x,AITargetPos.y);
+              if(pointDistance(eV,AITargetPos) < EConfigs[EC].SMax){
+                eV.x = AITargetPos.x; eV.y = AITargetPos.y; //eV = new PVector(AITargetPos.x,AITargetPos.y);
               } else {
-                eV = new PVector(eV.x+cos(eDir)*EC.SMax,eV.y+sin(eDir)*EC.SMax);
+                eV.x = eV.x+cos(eDir)*EConfigs[EC].SMax; eV.y = eV.y+sin(eDir)*EConfigs[EC].SMax; //eV = new PVector(eV.x+cos(eDir)*EConfigs[EC].SMax,eV.y+sin(eDir)*EConfigs[EC].SMax);
               }
             }
           }
         }
       }
+      */
       //PVector tVecss = pos2Screen(new PVector(eD.x,eD.y));
       //ellipse(tVecss.x,tVecss.y,30,30);
+                                           //PLAYER AND MOB TYPE *****************************************************************************
       
-      eVLast = new PVector(eV.x,eV.y);
+      if(EConfigs[EC].SuckRange > -1){
+        resetSearches(x,y,EConfigs[EC].SuckRange+1);
+        float tempDis,tempSpeed, tempDir;
+        Entity te;
+        boolean searchLoop = true;ArrayList eLResults;while(searchLoop){eLResults = findEntityGrid();if(eLResults != null){for(int j = eLResults.size()-1; j >= 0; j--){ //compact search loop structure
+              if(EConfigs[((Entity)eLResults.get(j)).EC].Genre == 3  && (millis()-((Entity)eLResults.get(j)).birthTime)>500){ //if team == -2
+                te = (Entity)eLResults.get(j);
+                tempDis = pointDistance(eV,te.eV);
+                if(tempDis < EConfigs[EC].SuckRange){
+                  if(tempDis < EConfigs[EC].Size*EConfigs[EC].HitboxScale/2*.75){
+                    tryCommand(StringReplaceAll(StringReplaceAll(StringReplaceAll(EConfigs[te.EC].HitCommand,"_x_",str(te.x)),"_y_",str(te.y)),"_collector_",str(ID)),"");
+                    te.destroy();
+                  } else {
+                    tempDir = pointDir(te.eV,eV);
+                    tempSpeed = min((1-tempDis/EConfigs[EC].SuckRange)*EConfigs[te.EC].Accel,EConfigs[te.EC].SMax);
+                    moveInWorld(te.eV, new PVector(tempSpeed*cos(tempDir),tempSpeed*sin(tempDir)),0,0);
+                    te.x = te.eV.x; te.y = te.eV.y;
+                  }
+                }
+              }
+        }}else{searchLoop = false;}}
+      }
       
-      if(eMove){
-        if(eSpeed+EC.Accel < EC.SMax){
-          eSpeed += EC.Accel;
-        } else {
-          eSpeed = EC.SMax;
+      ArrayList tempALs = getEntitiesFromGridAreaOther(x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,ID);
+      if(tempALs.size() > 0){
+        Entity te;
+        Float tdis, tgoaldis, rmovefade, tdir;
+        for(int i = tempALs.size()-1; i >= 0; i--){
+          te = (Entity)tempALs.get(i);
+          if(EConfigs[te.EC].Genre == 1 && EConfigs[te.EC].HitboxScale > 0){
+            tdis = pointDistance(eV,te.eV);
+            tgoaldis = EConfigs[EC].Size*EConfigs[EC].HitboxScale/2*.75+EConfigs[te.EC].Size*EConfigs[te.EC].HitboxScale/2*.75;
+            if(tdis < tgoaldis){
+              rmovefade = (tgoaldis-tdis)/15;
+              tdir = pointDir(eV,te.eV);
+              moveInWorld(eV, new PVector(min(rmovefade,EConfigs[EC].SMax)*cos(tdir+PI),min(rmovefade,EConfigs[EC].SMax)*sin(tdir+PI)),EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,EConfigs[EC].Size*EConfigs[EC].HitboxScale/2);
+              moveInWorld(te.eV, new PVector(min(rmovefade,EConfigs[te.EC].SMax)*cos(tdir),min(rmovefade,EConfigs[te.EC].SMax)*sin(tdir)),EConfigs[te.EC].Size*EConfigs[te.EC].HitboxScale/2,EConfigs[te.EC].Size*EConfigs[te.EC].HitboxScale/2);
+              te.x = te.eV.x; te.y = te.eV.y;
+            }
+          }
         }
       }
-      if(eSpeed-EC.Drag > 0){
-        eSpeed -= EC.Drag;
+      
+      eStamina++;
+      
+      if(eMove){
+        //if(eSpeed+EConfigs[EC].Accel < EConfigs[EC].SMax){
+          if(tryStaminaAction(1)){
+            eSpeed += EConfigs[EC].Accel;
+          }
+        //} else {
+        //  eSpeed = EConfigs[EC].SMax;
+        //}
+      }
+      
+      if(eSpeed-EConfigs[EC].Drag > 0){
+        eSpeed -= EConfigs[EC].Drag;
       } else {
         eSpeed = 0;
       }
-      if(abs(eTSpeed)+EC.TAccel < EC.TSMax){
-        eTSpeed += angleDir(eDir,pointDir(eV, eD))*EC.TAccel;
-      }
-      eDir += eTSpeed*eSpeed/EC.SMax; //pTSpeed*pSpeed/pSMax
-      if(abs(eTSpeed)-EC.TDrag > 0){
-        eTSpeed = (abs(eTSpeed)-EC.TDrag)*abs(eTSpeed)/eTSpeed;
+      
+      eSpeed = min(EConfigs[EC].SMax, eSpeed);
+      
+      float aDif = angleDif(eDir,pointDir(eV, eD));
+      //if(abs(aDif) > abs(eTSpeed)+EConfigs[EC].TAccel-EConfigs[EC].TDrag){ //prevent wiggle of the player when going streight
+      int dirS = round(aDif/abs(aDif));
+      float innspeed = eTSpeed+EConfigs[EC].TAccel*dirS-EConfigs[EC].TDrag*dirS;
+      int num = floor(innspeed/EConfigs[EC].TDrag*dirS);
+      float rotDis = (num+1)*(innspeed-num/2*EConfigs[EC].TDrag*dirS);
+      if(abs(rotDis) / abs(aDif) < 1 ){
+        eTSpeed += dirS*EConfigs[EC].TAccel;
+      } 
+      //}
+      
+      if(abs(eTSpeed)-EConfigs[EC].TDrag > 0){
+        eTSpeed = (abs(eTSpeed)-EConfigs[EC].TDrag)*(abs(eTSpeed)/eTSpeed);
       } else {
         eTSpeed = 0;
       }
-      eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EC.Size*EC.HitboxScale-.5,EC.Size*EC.HitboxScale-.5);
+      
+      eTSpeed = min(EConfigs[EC].TSMax, max(-EConfigs[EC].TSMax, eTSpeed));
+      
+      eDir += eTSpeed*eSpeed/EConfigs[EC].SMax; //pTSpeed*pSpeed/pSMax
+      moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,EConfigs[EC].Size*EConfigs[EC].HitboxScale/2);
+
+      
       
       if(floor(eV.x) != floor(eVLast.x) || floor(eV.y) != floor(eVLast.y)){
         path.add(new PVector(eV.x, eV.y));
@@ -1730,71 +2224,99 @@ class Entity {
         tempPV.y = eV.y;
       }
       
-      if(isEntityNearGenreSpecial(eV, 0, EC.Size*EC.HitboxScale/3)) {
-        Entity te = entityNearGenreSpecial(eV, 0, EC.Size*EC.HitboxScale/3);
+      if(isEntityNearGenreSpecial(eV, 0, EConfigs[EC].Size*EConfigs[EC].HitboxScale/3)) {
+        Entity te = entityNearGenreSpecial(eV, 0, EConfigs[EC].Size*EConfigs[EC].HitboxScale/3);
         //tryCommand(StringReplaceAll(StringReplaceAll(te.EC.DeathCommand,"_x_",str(te.x)),"_y_",str(te.y)),"");
-        if(te.sourceID != ID){
+        if(EConfigs[te.EC].Team != EConfigs[EC].Team){
           te.destroy();
           eHealth--;
           
-          tryCommand(StringReplaceAll(StringReplaceAll(EC.HitCommand,"_x_",str(x)),"_y_",str(y)),"");
-          if(EC.HMax > -1 && eHealth <= 0){
-            particleEffect(x-.5,y-.5,1,1,30,EC.AltColor,EC.Color,.1);
+          tryCommand(StringReplaceAll(StringReplaceAll(EConfigs[EC].HitCommand,"_x_",str(x)),"_y_",str(y)),"");
+          if(EConfigs[EC].HMax > -1 && eHealth <= 0){
+            particleEffect(x-.5,y-.5,1,1,30,EConfigs[EC].AltColor,EConfigs[EC].Color,.1);
             //tryCommand(StringReplaceAll(StringReplaceAll(EC.DeathCommand,"_x_",str(x)),"_y_",str(y)),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+            
             destroy();
           }
         }
       }
-  
-    } else if(EC.Genre == 2){
-      x += EC.SMax*cos(eDir);
-      y += EC.SMax*sin(eDir);
-      eV = new PVector(x,y);
-      eFade += EC.FadeRate;
+      
+      if(eFireCooldown > 0){
+        eFireCooldown--;
+      }
+      if(eStamina > 110){
+        eStamina = 110;
+      }
+      if(eStamina < 0){
+        eStamina = 0;
+      }
+    } else if(EConfigs[EC].Genre == 2){ //particle effect genre ********************************************************************************************************
+      x += EConfigs[EC].SMax*cos(eDir);
+      y += EConfigs[EC].SMax*sin(eDir);
+      eV.x = x; eV.y = y; //eV = new PVector(x,y);
+      eFade += EConfigs[EC].FadeRate;
       if(eFade>1){
         destroy();
       }
+    } else if(EConfigs[EC].Genre == 3){ //item genre *******************************************************************************************************************
+      
+      //eSpeed += EConfigs[EC].Accel * distance to near player;
+      
+      
+      if(eSpeed > .01){
+        eSpeed = eSpeed*.95;
+        moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),0,0);
+        eDir = pointDir(eVLast,eV);
+      }
+    }
+    if(EConfigs[EC].Genre == 1 || EConfigs[EC].Genre == 3){
+      if(floor(eV.x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) != floor(eVLast.x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) || floor(eV.x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) != floor(eVLast.x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) || floor(eV.y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) != floor(eVLast.y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) || floor(eV.y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2) != floor(eVLast.y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2)){
+        removeEntityFromGridArea(eVLast.x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eVLast.y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eVLast.x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eVLast.y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,ID);
+        addEntityToGridArea(eV.x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eV.y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eV.x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eV.y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,this);
+      }
+      
+      eVLast = new PVector(eV.x,eV.y);
     }
     x = eV.x;
     y = eV.y;
   }
   
   void setAITarget(){
-    if(EC.AISearchMode == 0){
-      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,100);} else {AITargetPos = entityNearID(eV,EC.AITargetID,30,100);}
-    } else if(EC.AISearchMode == 1){
-      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);} else {AITargetPos = entityNearID(eV,EC.AITargetID,30,random(90)+10);}
-    } else if(EC.AISearchMode == 2){
-      AITargetPos = blockNearCasting(eV,EC.AITarget);
-      if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
-        AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+    if(EConfigs[EC].AISearchMode == 0){
+      if(EConfigs[EC].AITarget > -1){AITargetPos = blockNear(eV,EConfigs[EC].AITarget,100);} else {AITargetPos = entityNearID(eV,EConfigs[EC].AITargetID,30,100);}
+    } else if(EConfigs[EC].AISearchMode == 1){
+      if(EConfigs[EC].AITarget > -1){AITargetPos = blockNear(eV,EConfigs[EC].AITarget,random(90)+10);} else {AITargetPos = entityNearID(eV,EConfigs[EC].AITargetID,30,random(90)+10);}
+    } else if(EConfigs[EC].AISearchMode == 2){
+      AITargetPos = blockNearCasting(eV,EConfigs[EC].AITarget);
+      if(aGS(wU,AITargetPos.x,AITargetPos.y) != EConfigs[EC].AITarget){
+        AITargetPos = blockNear(eV,EConfigs[EC].AITarget,random(90)+10);
       }
-    } else if(EC.AISearchMode == 3){
+    } else if(EConfigs[EC].AISearchMode == 3){
       
-      if(aGS(wU,eV.x,eV.y) != EC.AITarget){
-        searchWorld(eV,EC.AITarget,(int)EC.Vision/10);
+      if(aGS(wU,eV.x,eV.y) != EConfigs[EC].AITarget){
+        searchWorld(eV,EConfigs[EC].AITarget,(int)EConfigs[EC].Vision/10);
         
         if(Apath.size()>0){
           AITargetPos = new PVector(((Node)Apath.get(0)).x,((Node)Apath.get(0)).y);
         }
       }
       
-    } else if(EC.AISearchMode == 11){
+    } else if(EConfigs[EC].AISearchMode == 11){
       //follow path (line of sight)
       //test line of sight, if none, change mode, call again
-      PVector tempTarget = rayCastAllPathsID(eV,EC.AITargetID,30);
+      PVector tempTarget = rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30);
       if(tempTarget != null){
         AITargetPos = tempTarget;
       } else {
-        EC.AISearchMode = 12;
+        EConfigs[EC].AISearchMode = 12;
         setAITarget();
         return;
       }
-    } else if(EC.AISearchMode == 12){
+    } else if(EConfigs[EC].AISearchMode == 12){
       //Strange (no line > 10)
       //test line of sight, change mode, call again
 
-      if(rayCastAllPathsID(eV,EC.AITargetID,30) == null){
+      if(rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30) == null){
         AITargetPos.x = floor(AITargetPos.x)+.5;
         AITargetPos.y = floor(AITargetPos.y)+.5;
         
@@ -1868,28 +2390,28 @@ class Entity {
           }
         }
       } else {
-        EC.AISearchMode = 11;
+        EConfigs[EC].AISearchMode = 11;
         setAITarget();
         return;
       }
       
-    } else if(EC.AISearchMode == 21){
+    } else if(EConfigs[EC].AISearchMode == 21){
       //follow path (line of sight)
       //test line of sight, if none, change mode, call again
-      PVector tempTarget = rayCastAllPathsID(eV,EC.AITargetID,30);
+      PVector tempTarget = rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30);
       if(tempTarget != null){
         AITargetPos = tempTarget;
         println("aa");
       } else {
-        EC.AISearchMode = 22;
+        EConfigs[EC].AISearchMode = 22;
         setAITarget();
         return;
       }
-    } else if(EC.AISearchMode == 22){
+    } else if(EConfigs[EC].AISearchMode == 22){
       //Strange (no line > 10)
       //test line of sight, change mode, call again
 
-      if(rayCastAllPathsID(eV,EC.AITargetID,30) == null){
+      if(rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30) == null){
         
         PVector[] tPoints = new PVector[30];
         for(int i = 0; i < 30; i++){
@@ -1907,7 +2429,7 @@ class Entity {
             }
           }
           tPoints[smallestIndex].z = 999;
-          if(rayCast((int)tPoints[smallestIndex].x,(int)tPoints[smallestIndex].y,(int)x,(int)y)){
+          if(rayCast((int)tPoints[smallestIndex].x,(int)tPoints[smallestIndex].y,(int)x,(int)y,true)){
             AITargetPos = new PVector(tPoints[smallestIndex].x,tPoints[smallestIndex].y);
             i = 1000;
           }
@@ -1921,82 +2443,123 @@ class Entity {
         
         println("cc");
       } else {
-        EC.AISearchMode = 21;
+        EConfigs[EC].AISearchMode = 21;
         setAITarget();
         return;
       }
       
     }
-    if(EC.AITarget > -1){
+    if(EConfigs[EC].AITarget > -1){
       AITargetPos = new PVector(AITargetPos.x+.5,AITargetPos.y+.5);
     }
     eD = new PVector(AITargetPos.x,AITargetPos.y);
   }
   
   void fire(PVector tempV){
-    float tempDir = pointDir(eV,tempV);
-    Entity tempEntity = new Entity(x+EC.Size/2*cos(tempDir),y+EC.Size/2*sin(tempDir),EC.myBulletEntity,tempDir);
-    tempEntity.sourceID = ID;
-    entities.add(tempEntity);
+    if(eFireCooldown == 0){
+      if(tryStaminaAction(5)){
+        float tempDir = pointDir(eV,tempV);
+        Entity tempEntity = new Entity(x+EConfigs[EC].Size/2*cos(tempDir),y+EConfigs[EC].Size/2*sin(tempDir),EConfigs[EC].myBulletEntity,tempDir);
+        tempEntity.sourceID = ID;
+        addEntity(tempEntity);
+        eFireCooldown += EConfigs[EC].FireDelay;
+      }
+    }
+  }
+  
+  boolean tryStaminaAction(float cost){
+    cost = cost*EConfigs[EC].StaminaRate;
+    if(eStamina > cost){
+      eStamina -= cost;
+      return true;
+    } else {
+      eStamina -= cost/5;
+      return false;
+    }
   }
   
   void display() {
     if(aGS(nmapShade,x,y) > 0){
       PVector tempV = pos2Screen(new PVector(x,y));
-      if(tempV.x > -gScale*EC.Size/2 && tempV.y > -gScale*EC.Size/2 && tempV.x < width+gScale*EC.Size/2 && tempV.y < height+gScale*EC.Size/2){
+      if(tempV.x > -gScale*EConfigs[EC].Size/2 && tempV.y > -gScale*EConfigs[EC].Size/2 && tempV.x < width+gScale*EConfigs[EC].Size/2 && tempV.y < height+gScale*EConfigs[EC].Size/2){
       
-        if(EC.Genre == 0){
+        if(EConfigs[EC].Genre == 0){
           //stroke(strokeColor);
           //strokeWeight(1);
           noStroke();
-          fill(EC.Color);
-          ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
-        } else if(EC.Genre == 1) {
+          fill(EConfigs[EC].Color);
+          ellipse(tempV.x,tempV.y,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+        } else if(EConfigs[EC].Genre == 1) {
           pushMatrix();
           translate(tempV.x,tempV.y);
           rotate(eDir+PI/2);
-          image(EC.Img,-gScale/2*EC.Size,-gScale/2*EC.Size,gScale*EC.Size,gScale*EC.Size);
+          image(EConfigs[EC].Img,-gScale/2*EConfigs[EC].Size,-gScale/2*EConfigs[EC].Size,gScale*EConfigs[EC].Size,gScale*EConfigs[EC].Size);
+          
+          
+          rotate(pointDir(eV,new PVector(eFireD.x,eFireD.y))-eDir);//
+          image(arrowImg,-gScale/2*(EConfigs[EC].Size+.5),-gScale/2*(EConfigs[EC].Size+.5),gScale*(EConfigs[EC].Size+.5),gScale*(EConfigs[EC].Size+.5));
           popMatrix();
           
-          if(eHealth > 0 && eHealth < EC.HMax && eHealth < 1000000 && EC.HMax > -1){
-            float tempFade = float(eHealth)/EC.HMax;
+          if(eHealth > 0 && eHealth < EConfigs[EC].HMax && eHealth < 1000000 && EConfigs[EC].HMax > -1){
+            float tempFade = float(eHealth)/EConfigs[EC].HMax;
             noFill();
             strokeWeight(gScale/15);
             stroke(255,255-tempFade*150);
-            arc(tempV.x,tempV.y,gScale*(EC.Size+.1),gScale*(EC.Size+.1),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
+            arc(tempV.x,tempV.y,gScale*(EConfigs[EC].Size+.1),gScale*(EConfigs[EC].Size+.1),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
             stroke((1-tempFade)*510,tempFade*510,0,255-tempFade*150);
-            arc(tempV.x,tempV.y,gScale*(EC.Size+.1),gScale*(EC.Size+.1),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
-          }
-        } else if(EC.Genre == 2){
+            arc(tempV.x,tempV.y,gScale*(EConfigs[EC].Size+.1),gScale*(EConfigs[EC].Size+.1),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
+          }         
+          
+          
+          //PVector tempV2 = pos2Screen(new PVector(eFireD.x,eFireD.y));
+          //stroke(255,0,0);
+          //ellipse(tempV2.x,tempV2.y,gScale*(EConfigs[EC].Size-.1),gScale*(EConfigs[EC].Size-.1));
+          //eFireD = new PVector(x,y);
+          
+          
+          
+          //Entity te = (Entity) entities.get(floor(random(entities.size())));
+          //if(){
+          //  eFireD = te.eV;
+          //}
+          
+        } else if(EConfigs[EC].Genre == 2){
           stroke(strokeColor,255-eFade*255);
           strokeWeight(2);
-          fill(EC.Color,255-eFade*255);
-          if(EC.Type == 0){
-            ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
-          } else if(EC.Type == 1) {
-            rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+          fill(EConfigs[EC].Color,255-eFade*255);
+          if(EConfigs[EC].Type == 0){
+            ellipse(tempV.x,tempV.y,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+          } else if(EConfigs[EC].Type == 1) {
+            rect(tempV.x-EConfigs[EC].Size*gScale/2,tempV.y-EConfigs[EC].Size*gScale/2,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
           } else {
-            rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+            rect(tempV.x-EConfigs[EC].Size*gScale/2,tempV.y-EConfigs[EC].Size*gScale/2,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
           }
+        } else if(EConfigs[EC].Genre == 3){
+          stroke(strokeColor,255);
+          strokeWeight(2);
+          fill(EConfigs[EC].Color,255);
+          
+          ellipse(tempV.x,tempV.y,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+          
         }
       }
     }
   }
   
   void destroy(){
-    tryCommand(StringReplaceAll(StringReplaceAll(EC.DeathCommand,"_x_",str(x)),"_y_",str(y)),"");
-    for (int i = 0; i < entities.size(); i++) {
-      Entity tempE = (Entity) entities.get(i);
-      if(tempE.ID == ID){
-        entities.remove(i);
-      }
+    if(EConfigs[EC].Genre == 1 || EConfigs[EC].Genre == 3){
+      removeEntityFromGridArea(eVLast.x-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eVLast.y-EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eVLast.x+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,eVLast.y+EConfigs[EC].Size*EConfigs[EC].HitboxScale/2,ID);
     }
+    tryCommand(StringReplaceAll(StringReplaceAll(EConfigs[EC].DeathCommand,"_x_",str(x)),"_y_",str(y)),"");
+    removeEntity(this,-1);
+    
   }
 }
 
 class EConfig {
   float ID = random(1000);
   int Genre = 0;
+  int Team = -2;//-1 = no team, -2 = bad mobs, -3 = good mobs
   
   color Color = color(0);
   color AltColor = color(255,0,0);
@@ -2008,6 +2571,8 @@ class EConfig {
   float Size = 1;
   float HitboxScale = 1;
   float SMax = .15;
+  float StaminaRate = 1;
+  float FireDelay = 5;
   
   float Accel = .040;
   float Drag = .008;
@@ -2025,32 +2590,102 @@ class EConfig {
   int AIDoorBlockClose = -1;
   int AIDoorWidth = 5;
   
+  int SuckRange = -1;
+  
   float FadeRate = .1;
   float Vision = 100; //100 is generaly a good number... be careful with this and AI mode 3+... if > 140 and no target is near lag is created
   float GoalDist = 3; //Want to get this close
   float ActDist = 10; //Will start acting at this dis
-  int FireDelay = 25;
+//  int FireDelay = 25;
   
-  EConfig myBulletEntity = bulletEntity;
+  int myBulletEntity = EC_BULLET;
   
-  EConfig() {}
+  EConfig() {
+    int goodness = 1;
+    SMax = .15; // - Speed based slider
+  
+    float moveTime = .3; //time to start - Agility based slider
+    float moveSpeed = SMax/(max(25*moveTime,1));
+    
+    float dragTime = 1; //time to stop - Agility based slider
+    float dragSpeed = SMax/(max(25*dragTime,1));
+    
+    Drag = dragSpeed;
+    Accel = dragSpeed+moveSpeed;
+    
+    
+    
+    //0 to 10 -> 0 is .02, 10 is 0.27;
+    float TtotSpeed = 5;
+    TSMax = TtotSpeed/25/2+.02;// - Speed based slider
+    
+    
+    float TsetSpeed = 5;//0 to 10 -> 0 is 1 seconds, 10 is 0 seconds 
+    float TmoveTime = (1-TsetSpeed/10)*1; //time to start - Agility based slider
+    float TmoveSpeed = TSMax/(max(25*TmoveTime,1));
+    
+    float TsetDrag = 5;//0 to 10 -> 0 is 1 seconds, 10 is 0 seconds 
+    float TdragTime = (1-TsetSpeed/10)*1/2; //time to stop - Agility based slider
+    float TdragSpeed = TSMax/(max(25*TdragTime,1));
+    
+    TDrag = TdragSpeed;
+    TAccel = TdragSpeed+TmoveSpeed;
+
+    //Fire rate - Speed based slider
+    //Sprint speed - Speed based slider
+    
+    //all movement takes away from endurance - based upon speed that is set to, so endurance limits all activities, distribute speed wisly to prevent exaustion where movement stops bacause there is no remaining endurance
+    //Endurance - limits all movment, agility - ability to make suddent movements, speed - ability to maintain a rate of movment
+  }
 }
 
 void particleEffect(float x, float y, float w, float h, int num, color c1, color c2, float ts){
-  for(int i = 0; i <num; i++){
-    EConfig ECParticle = new EConfig();
-    ECParticle.Genre = 2;
-    ECParticle.Size = .1;
-    ECParticle.FadeRate = random(.1)+.05;
-    ECParticle.Type = floor(random(3));
-    ECParticle.SMax = random(ts);
-    if(random(100)<50){
-      ECParticle.Color = c1;
-    } else {
-      ECParticle.Color = c2;
-    }
-    entities.add(new Entity(x+random(w),y+random(h),ECParticle,random(TWO_PI)));
+  if(particleCycle+3 != (particleCycle+3)%100){
+    particleCycle = 0;
   }
+  EConfigs[256+particleCycle] = new EConfig();
+  EConfigs[256+particleCycle].Genre = 2;
+  EConfigs[256+particleCycle].Size = .1;
+  EConfigs[256+particleCycle].FadeRate = random(.1)+.05;
+  EConfigs[256+particleCycle].Type = 0;
+  EConfigs[256+particleCycle].SMax = random(ts);
+  EConfigs[256+particleCycle].Color = c1;
+  particleCycle = (particleCycle+1)%100;
+  EConfigs[256+particleCycle] = new EConfig();
+  EConfigs[256+particleCycle].Genre = 2;
+  EConfigs[256+particleCycle].Size = .1;
+  EConfigs[256+particleCycle].FadeRate = random(.1)+.05;
+  EConfigs[256+particleCycle].Type = 1;
+  EConfigs[256+particleCycle].SMax = random(ts);
+  if(random(100)<50){
+    EConfigs[256+particleCycle].Color = c1;
+  } else {
+    EConfigs[256+particleCycle].Color = c2;
+  }
+  particleCycle = (particleCycle+1)%100;
+  EConfigs[256+particleCycle] = new EConfig();
+  EConfigs[256+particleCycle].Genre = 2;
+  EConfigs[256+particleCycle].Size = .1;
+  EConfigs[256+particleCycle].FadeRate = random(.1)+.05;
+  EConfigs[256+particleCycle].Type = 2;
+  EConfigs[256+particleCycle].SMax = random(ts);
+  EConfigs[256+particleCycle].Color = c2;
+  particleCycle = (particleCycle+1)%100;
+  
+  for(int i = 0; i <num; i++){
+    addEntity(new Entity(x+random(w),y+random(h),256+(particleCycle-3+floor(random(3))),random(TWO_PI)));
+  }
+  
+}
+
+Entity getEntityID(float tEID){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.ID == tEID){
+      return tempE;
+    }
+  }
+  return null;
 }
 
 PVector entityNearID(PVector eV,float tEID, float tDis, float tChance){
@@ -2058,7 +2693,7 @@ PVector entityNearID(PVector eV,float tEID, float tDis, float tChance){
   PVector tRV = new PVector(random(wSize),random(wSize),-1);
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.ID == tEID){
+    if(EConfigs[tempE.EC].ID == tEID){
       if(random(100)<tChance){
         if(pointDistance(eV, tempE.eV) < minDis){
           tRV = new PVector(tempE.x,tempE.y,0);
@@ -2073,7 +2708,7 @@ PVector entityNearID(PVector eV,float tEID, float tDis, float tChance){
 boolean isEntityNearID(PVector eV,float tEID, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.ID == tEID){
+    if(EConfigs[tempE.EC].ID == tEID){
       if(pointDistance(eV, tempE.eV) < tDis){
         return true;
       }
@@ -2120,7 +2755,7 @@ boolean isEntityNearIDSmell(PVector eV,float tEID, float tDis){
 boolean isEntityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.Genre == tEGenre){
+    if(EConfigs[tempE.EC].Genre == tEGenre){
       if(max(abs(eV.x-tempE.eV.x), abs(eV.y-tempE.eV.y)) < tDis){
         return true;
       }
@@ -2132,7 +2767,7 @@ boolean isEntityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
 Entity entityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.Genre == tEGenre){
+    if(EConfigs[tempE.EC].Genre == tEGenre){
       if(max(abs(eV.x-tempE.eV.x), abs(eV.y-tempE.eV.y)) < tDis){
         return tempE;
       }
@@ -2145,7 +2780,7 @@ Entity entityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
 PVector rayCastAllPathsID(PVector eV,float tEID, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.ID == tEID){
+    if(EConfigs[tempE.EC].ID == tEID){
       if(pointDistance(eV, tempE.eV) < tDis){
         int tempInt = rayCastPath(tempE.path, (int)eV.x, (int)eV.y);
         if(tempInt > -1){
@@ -2156,6 +2791,48 @@ PVector rayCastAllPathsID(PVector eV,float tEID, float tDis){
     }
   }
   return null;
+}
+
+void addEntity(Entity te){
+  entities.add(te);
+  if(EConfigs[te.EC].Genre == 1 && EConfigs[te.EC].Type == 1){
+    miniMapEntities.add(te);
+  }
+}
+void removeEntity(Entity te, int n){
+  if(n < 0){
+    Entity tempE;
+    for (int i = entities.size()-1; i >= 0; i--) {
+      tempE = (Entity) entities.get(i);
+      if(tempE.ID == te.ID){
+        n = i;
+        break;
+      }
+    }
+    if(n < 0){
+      return;
+    }
+  }
+  
+  entities.remove(n);
+  if(te.EC < 256){
+    segments.add(new Segment("=" + str(te.ID*100+playerID) + ";dead;1&", 3));
+  }
+  if(EConfigs[te.EC].Genre == 1 && EConfigs[te.EC].Type == 1){
+    n = -1;
+    Entity tempE;
+    for (int i = miniMapEntities.size()-1; i >= 0; i--) {
+      
+      tempE = (Entity) miniMapEntities.get(i);
+      if(tempE.ID == te.ID){
+        n = i;
+        break;
+      }
+    }
+    if(n > -1){
+      miniMapEntities.remove(n);
+    }
+  }
 }
 
 //STEM Phagescape API v(see above)
@@ -2176,15 +2853,117 @@ int HUDTstage = 0;
 float HUDTtextWidth = 0;
 float HUDTsubTextWidth = 0;
 
-
+float HUDStaminaSize = 12;
 
 int HUDSstage = 0;
 int HUDSfade = 10;
 float HUDSradius = float(1)/3;
 
+boolean showBars = true;
+boolean showMiniMap = true;
+boolean loadMiniMap = true;
+boolean lockMinimapToCamera = true;
+int[][] miniMap;
+ArrayList miniMapEntities = new ArrayList();
+int miniMapScale = 2;
+int miniMapZoomSmall = 6;
+int miniMapZoomLarge = 18; //18 is equal
+int miniMapZoom;
+int miniMapX = 30;
+int miniMapY = 30;
+int viewCX = 50;
+int viewCY = 50;
 
+void setupHUD(){
+  miniMapX = width-floor(HUDStaminaSize)-miniMapScale*wSize;
+  miniMapY = height-floor(HUDStaminaSize)-miniMapScale*wSize;
+}
 
 void drawHUD(){
+  
+  miniMapScale = 2;
+  
+  if(showBars){
+    noStroke();
+    fill(0);
+    rect(width-miniMapScale*wSize-HUDStaminaSize,HUDStaminaSize,miniMapScale*wSize,HUDStaminaSize);
+    float tFade = min(player.eStamina/100,1);
+    //fill(255-255*tFade,255,0);
+    fill((1-tFade)*(255*2),tFade*(255*2),0);
+    rect(width-miniMapScale*wSize-HUDStaminaSize,HUDStaminaSize,miniMapScale*wSize*tFade,HUDStaminaSize);
+    stroke(255);
+    strokeWeight(2);
+    noFill();
+    rect(width-miniMapScale*wSize-HUDStaminaSize,HUDStaminaSize,miniMapScale*wSize,HUDStaminaSize);
+  }
+  
+  if(showMiniMap){
+    if(keyPressed && key == 'm'){
+      miniMapScale = 6;
+      miniMapX = (width-miniMapScale*wSize)/2;
+      miniMapY = (height-miniMapScale*wSize)/2;
+      miniMapZoom = miniMapZoomLarge;
+    } else {
+      miniMapScale = 2;
+      miniMapX = width-floor(HUDStaminaSize)-miniMapScale*wSize;
+      miniMapY = height-floor(HUDStaminaSize)-miniMapScale*wSize;
+      miniMapZoom = miniMapZoomSmall;
+    }
+    
+    int wBlocks = ceil(float(miniMapScale)/(miniMapScale+miniMapZoom)*wSize);
+    if(lockMinimapToCamera){
+      viewCX = min(wSize-ceil(float(wBlocks)/2),max(floor(float(wBlocks)/2),floor(wViewCenter.x)));
+      viewCY = min(wSize-ceil(float(wBlocks)/2),max(floor(float(wBlocks)/2),floor(wViewCenter.y)));
+    }
+    
+    int tempScale = miniMapScale+miniMapZoom;
+    int tempOffX = viewCX-floor(float(wBlocks)/2);
+    int tempOffY = viewCY-floor(float(wBlocks)/2);
+    int tempX = miniMapX-tempScale*wBlocks+wSize*miniMapScale;
+    int tempY = miniMapY-tempScale*wBlocks+wSize*miniMapScale;
+    
+    noStroke();
+    fill(red(gBColor[0]),green(gBColor[0]),blue(gBColor[0]));
+    if(keyPressed && key == 'm'){ //if large scale mini map
+      rect(tempX,tempY,6*wSize,6*wSize);
+    } else {
+      rect(tempX,tempY,2*wSize,2*wSize);
+    }
+    
+    noStroke();
+    for(int i = 0; i < wBlocks; i++){
+      for(int j = 0; j < wBlocks; j++){
+        fill(miniMap[tempOffX+i][tempOffY+j]);
+        rect(tempX+tempScale*i,tempY+tempScale*j,tempScale,tempScale);
+      }
+    }
+  
+    
+    Entity tempE;
+    float tx, ty;
+    for (int i = miniMapEntities.size()-1; i >= 0; i--) {
+      tempE = (Entity) miniMapEntities.get(i);
+      tx = tempE.x-tempOffX;
+      ty = tempE.y-tempOffY;
+      if(tx > .5 && ty > .5 && tx < wBlocks-.5 && ty < wBlocks-.5){ // is on map
+        fill(EConfigs[tempE.EC].Color);
+        ellipse(tempX+(tx)*tempScale,tempY+(ty)*tempScale,tempScale,tempScale);
+      }
+    }
+    fill(255);
+    ellipse(tempX+((int)player.x-tempOffX+.5)*tempScale+.5,tempY+((int)player.y-tempOffY+.5)*tempScale+.5,tempScale,tempScale);
+    
+    noFill();
+    stroke(255);
+    if(keyPressed && key == 'm'){ //if large scale mini map
+      rect(tempX,tempY,6*wSize,6*wSize);
+    } else {
+      rect(tempX,tempY,2*wSize,2*wSize);
+    }
+  
+    miniMapScale = 2;
+  }
+  
   if(drawHUDSoftEdge){
     image(HUDImage,0,0);
   }
@@ -2253,9 +3032,15 @@ void drawHUD(){
 }
 
 void refreshHUD(){
-  HUDAddLight(int(player.x),int(player.y),1);
   if(shadows == true){
     HUDAddLight(int(player.x),int(player.y),lightStrength);
+  } else {
+    nmapShade = new int[wSize][wSize];
+    for(int i = 0; i < 100; i++){
+      for(int j = 0; j < 100; j++){
+        nmapShade[i][j] = 10;
+      }
+    }
   }
 }
 
@@ -2413,6 +3198,461 @@ void drawQuestion(float fade){
   stroke(255);
   strokeWeight(3);
 }
+String serverURL = "http://harvway.com/BetaBox/STEMPhagescape/testing.php?id=";
+ArrayList segments = new ArrayList<Segment>();
+ArrayList packets = new ArrayList<Packet>();
+ArrayList packetThreads = new ArrayList<PacketThread>();
+int packetCycle = 0;
+int packetIDCycle = 1;
+AudioPlayer serverCastAP;
+AudioMetaData serverCastMeta;
+int[] buildups = new int[10];
+int eventIDCycle = 0;
+Boolean[][] eventIDs = new Boolean[100][0];
+int maxEventID = 0;
+
+
+int Rplayers = 0;
+int Rhost = 1;
+int Rgenerated = 0;
+
+boolean worldDownloaded = false;
+
+boolean online = false;
+boolean offline = false;
+boolean sentPackets = false;
+
+void setupServer(){
+  
+  try{
+    serverCastAP = minim.loadFile("block-solid1.mp3");
+    serverCastMeta = serverCastAP.getMetaData();
+  } catch(Throwable e){}
+  
+  
+  updateWorldColumn(0);
+  buildPackets();
+  
+  /*
+  String builtString = serverURL;
+  for(int k = 0; k < 20; k++){
+    builtString = serverURL;
+    for(int i = 0; i < 5; i++){
+      builtString = builtString + "LWC" + str(i) + "=" + str(k*5+i) + ";";
+      for(int j = 0; j < 100; j++){
+        if(j > 0){
+          builtString = builtString + "|";
+        }
+        builtString = builtString + wU[k*5+i][j];
+      }
+      builtString = builtString + "&";
+    }
+    println(builtString.length());
+    //loadStrings(builtString);
+  }
+  */
+}
+
+void updateWorldColumn(int i){
+  String worldC = "=" + str(i) + ";";
+  int running = 0;
+  for(int j = 0; j < 100; j++){
+    if(j == 99 || wU[i][min(j+1,100)] != wU[i][j]){
+      if(running > 0){
+        worldC = worldC + "|";
+      }
+      if(j-running == 0){
+        worldC = worldC + wU[i][j];//print one value
+      } else {
+        worldC = worldC + wU[i][j] + "x" + str(j-running+1);//print multiple value
+      }
+      running = j+1;
+    }
+  }
+  worldC = worldC + "&";
+  segments.add(new Segment(worldC, 1));
+}
+
+void updateEntityData(){
+  String entityD;
+  for(Entity tempE: (ArrayList<Entity>)entities){ //each entity
+    if(tempE.EC < 256){
+      entityD = "=" + str(tempE.ID*100+playerID) + ";x;"+str(tempE.x)+"&";
+      segments.add(new Segment(entityD, 3));
+      entityD = "=" + str(tempE.ID*100+playerID) + ";y;"+str(tempE.y)+"&";
+      segments.add(new Segment(entityD, 3));
+      entityD = "=" + str(tempE.ID*100+playerID) + ";dir;"+str(tempE.eDir)+"&";
+      segments.add(new Segment(entityD, 3));
+      entityD = "=" + str(tempE.ID*100+playerID) + ";EC;"+str(tempE.EC)+"&";
+      segments.add(new Segment(entityD, 3));
+    }
+  }
+  
+}
+
+void updateServer(){
+  
+  try{
+    String packetResponse = serverCastMeta.fileName(); //*checkPacketCallbacks* 
+    if(!packetResponse.equals("")){
+      
+      String[] response = split(packetResponse,"<br>");
+      println(response);
+      packetRecievedCallback(response);
+
+    }
+  } catch(Throwable e){}
+  
+  if(fn % 10 == 0){
+    
+    if(packets.size() == 0){
+      if(online){
+        //updateWorldColumn(packetCycle % 100);
+        //sometimes request a world update
+        
+        //updateEntityData();
+        if(worldDownloaded){
+          updateEntityData();
+        } else if(Rgenerated == 1){
+          segments.add(new Segment("GETW=1&", 0));
+        } else if(playerID == Rhost){
+          for(int k = 1; k < 100; k++){
+            updateWorldColumn(k);
+          }
+          segments.add(new Segment("GETW=1&", 0));
+        } else {
+          segments.add(new Segment("PING", 0));
+        }
+        
+      }
+      buildPackets();
+      
+    } else if((sentPackets == true && online == false) && offline==false) {
+      packets.clear();
+    }
+    println(str(packets.size())+" packets");
+    if(packets.size() > 0){
+      sentPackets = true;
+      Packet tempPacket = (Packet)packets.get(packetCycle % packets.size());
+      println(tempPacket.content);
+      
+      try {
+        PacketThread tempPacketThread = new PacketThread(this,tempPacket.content);
+        tempPacketThread.start();
+        packetThreads.add(tempPacketThread);
+      } catch(Throwable e) {
+        //println("FAIL");
+        try {
+          minim.loadSample(tempPacket.content); //*requestPacket*
+          println("called load sample on "+tempPacket.content);
+        } catch(Throwable ee) {
+          println("ERROR");
+        }
+      }
+      if(offline){
+        packets.clear();
+      }
+    }
+    packetCycle++;
+  }
+  
+}
+
+void packetRecievedCallback(String[] response){
+  Packet tempPacket;
+  println(response[0]);
+  if(int(response[0]) > 0){
+    if(int(response[0]) == 100){
+      processResponse(response);
+    } else {
+      for(int i = packets.size()-1; i >= 0; i--){
+        tempPacket = (Packet)packets.get(i);
+        if(tempPacket.id == int(response[0])){
+          packets.remove(i);
+          processResponse(response);
+          break;
+        }
+      }
+    }
+  }
+}
+
+void processResponse(String[] response){
+  int mode = -1;
+  int submode = -1;
+  
+  String tKey = "";
+  int tPlayer = 0;
+  Mimic tMimic = null;
+  
+  segments.add(new Segment("="+response[0]+"&", 4));
+  
+  String[] tempStrA;
+  for(int i = 1; i < response.length; i++){
+    if(response[i].equals("{[END]}")){mode = -1; submode=-1;} else
+    if(response[i].equals("{[BREAK]}")){submode = -1; tKey="";} else
+    if(mode == 0){
+      tempStrA = split(response[i],";");
+      if(tempStrA.length == 3){
+        if(aGS(wU,int(tempStrA[0]),int(tempStrA[1])) != int(tempStrA[2])){
+          aSS(wU,int(tempStrA[0]),int(tempStrA[1]),int(tempStrA[2]));
+          wViewLast.x = -1;
+        }
+      }
+    } else
+    if(mode == 1){
+      tempStrA = split(response[i],";");
+      if(tempStrA.length == 2){
+        if(tempStrA[0].equals("PID")){
+          online = true;
+          packets.clear();
+          playerID = int(tempStrA[1]);
+        } else
+        if(tempStrA[0].equals("WGET")){
+          worldDownloaded = true;
+        } else
+        if(tempStrA[0].equals("P#")){Rplayers = int(tempStrA[1]);} else
+        if(tempStrA[0].equals("HOST")){Rhost = int(tempStrA[1]);} else
+        if(tempStrA[0].equals("GENERATED")){Rgenerated = int(tempStrA[1]);}
+      }
+    } else if(mode == 2){
+      if(submode == -1){
+        submode = int(response[i]);
+        tPlayer = submode % 100;
+        if(tPlayer == playerID){
+          submode = -2;
+        } else {
+          submode = floor(submode/100);
+          if(maxMimicID < submode){
+            maxMimicID = submode;
+            reloadMimicIDs();
+            tMimic = new Mimic(submode, tPlayer);
+            mimicIDs[tPlayer-1][submode] = tMimic;
+            mimics.add(tMimic);
+          } else if(mimicIDs[tPlayer-1][submode] == null){
+            if(response[i+1].equals("dead") || response[i+1].equals("exp")){
+              submode = -2;
+            } else {
+              tMimic = new Mimic(submode, tPlayer);
+              mimicIDs[tPlayer-1][submode] = tMimic;
+              mimics.add(tMimic);
+            }
+          } else {
+            tMimic = mimicIDs[tPlayer-1][submode];
+          }
+          println("MIMIC REGISTERED" + submode*100+tPlayer);
+        }
+      } else if(submode != -2) {
+        if(tKey.equals("")){
+          tKey = response[i];
+        } else {
+          if(tKey.equals("x")){
+            tMimic.x = float(response[i]);
+          } else if(tKey.equals("y")){
+            tMimic.y = float(response[i]);
+          } else if(tKey.equals("dir")){
+            tMimic.eDir = float(response[i]);
+          } else if(tKey.equals("EC")){
+            tMimic.EC = int(response[i]);
+          } else if(tKey.equals("dead") || tKey.equals("exp")){
+            Mimic ttMimic;
+            for(int j = 0; j < mimics.size(); j++){
+              ttMimic = (Mimic)mimics.get(j);
+              if(ttMimic.ID == tMimic.ID && ttMimic.playerID == tMimic.playerID){
+                mimics.remove(j);
+                break;
+              }
+            }
+            reloadMimicIDs();
+          }
+          tKey = "";
+        }
+      }
+    } else
+    if(mode == 3){
+      tempStrA = split(response[i],",");
+      if(tempStrA.length > 1){
+        tPlayer = int(tempStrA[0])%100;
+        if(tPlayer != playerID){
+          submode = floor(int(tempStrA[0])/100);
+          if(submode >= eventIDs[tPlayer].length){
+            eventIDs[tPlayer] = (Boolean[])expand(eventIDs[tPlayer],submode+1);
+            for(int k = 0; k < eventIDs.length; k++){
+              for(int j = 0; j < eventIDs[k].length; j++){
+                if(eventIDs[k][j] == null){
+                  eventIDs[k][j] = false;
+                }
+              }
+            }
+          }
+          if(eventIDs[tPlayer][submode] == false){
+            eventIDs[tPlayer][submode] = true;
+            if(tempStrA[1].equals("HB")){
+              if(aGS(wU,int(tempStrA[2]),int(tempStrA[3])) == int(tempStrA[4])){
+                hitBlock(int(tempStrA[2]),int(tempStrA[3]),int(tempStrA[5]),true);
+              }
+            } else
+            if(tempStrA[1].equals("HE")){
+              
+            } //end else
+          }
+        }
+      }
+    } else
+    if(response[i].equals("{[WORLD_UPDATES]}")){mode = 0;} else
+    if(response[i].equals("{[GLOBAL_VARS]}")){mode = 1;} else
+    if(response[i].equals("{[ENTITY_DATA]}")){mode = 2;} else 
+    if(response[i].equals("{[UPDATE_DATA]}")){mode = 3;}
+  }
+}
+
+void buildPackets(){
+  if(segments.size() > 0){
+    buildups = new int[buildups.length];
+    Segment tempSeg = (Segment)segments.get(0);
+    String builtString = tempSeg.buildSegment();
+    buildups[tempSeg.type]++;
+    if(segments.size() > 1){
+      for(int i = 1; i < segments.size(); i++){
+        tempSeg = (Segment)segments.get(i);
+        if(builtString.length() + (tempSeg.buildSegment()).length() < 2080){
+          builtString = builtString + tempSeg.buildSegment();
+          buildups[tempSeg.type]++;
+        } else {
+          packets.add(new Packet(builtString));
+          buildups = new int[buildups.length];
+          builtString = tempSeg.buildSegment();
+          buildups[tempSeg.type]++;
+        }
+      }
+    }
+    packets.add(new Packet(builtString));
+    eventIDCycle += buildups[5];
+  }
+  segments.clear();
+}
+
+class Packet {
+  String content;
+  int id;
+  Packet(String tContent) {
+    id = packetIDCycle*100+playerID;
+    packetIDCycle++;
+    content = serverURL + str(id) + "&" + "rand=" + str(floor(random(1000))) + "&" + tContent;
+  }
+}
+
+class Segment {
+  String content;
+  int type;
+  Segment(String tContent, int tType) {
+    content = tContent;
+    type = tType;
+  }
+  String buildSegment(){
+    if(type == 0){ //general
+      return content;
+    }
+    if(type == 1){ //load world column
+      return "LWC"+str(buildups[type])+content;
+    }
+    if(type == 2){ //load world unit
+      return "WU"+str(buildups[type])+content;
+    }
+    if(type == 3){ //load entity data
+      return "MOB"+str(buildups[type])+content;
+    }
+    if(type == 4){ //packet reciept
+      return "GOT"+str(buildups[type])+content;
+    }
+    if(type == 5){ //packet reciept
+      return "EV"+str(buildups[type])+"="+str((eventIDCycle+buildups[type])*100+playerID)+";"+content+"&";
+    }
+    return "";
+  }
+}
+
+
+
+public class PacketThread implements Runnable {
+  Thread thread;
+  String packetContent;
+  
+  public PacketThread(PApplet parent, String tPacketContent){
+    parent.registerDispose(this);
+    packetContent = tPacketContent;
+  }
+
+  public void start(){
+    thread = new Thread(this);
+    thread.start();
+  }
+
+  public void run(){
+    String[] primaryResponse = loadStrings(packetContent);
+    String[] response = split(primaryResponse[0],"<br>");
+    println(response);
+    packetRecievedCallback(response);
+  }
+
+  public void stop(){
+    thread = null;
+  }
+
+  // this will magically be called by the parent once the user hits stop 
+  // this functionality hasn't been tested heavily so if it doesn't work, file a bug 
+  public void dispose() {
+    stop();
+  }
+} 
+
+
+
+
+
+
+
+
+
+class Mimic {
+  float x = -100;
+  float y = -100;
+  float eDir = 0;
+  int EC = EC_BULLET;
+  int ID;
+  int playerID;
+  boolean expired = false;
+  boolean dead = false;
+  
+  Mimic(int tID, int tPlayerID) {
+    ID = tID;
+    playerID = tPlayerID;
+  }
+  
+  void update(){
+    x+=random(.1)-.05;
+    y+=random(.1)-.05;
+  }
+  
+  void display(){
+    PVector tempV = pos2Screen(new PVector(x,y));
+    //println(ID*100+playerID);
+    noStroke();
+    fill(0,255,0);
+    if(expired){fill(255,200,0);}
+    if(dead){fill(255,0,0);}
+    ellipse(tempV.x,tempV.y,gScale/2,gScale/2);
+  }
+  
+}
+
+void disconnect(){
+  online = false;
+  offline = true;
+  packets.clear();
+  segments.add(new Segment("DIS", 5));
+  buildPackets();
+}
 
 ArrayList sL = new ArrayList<Sound>();
 
@@ -2445,9 +3685,7 @@ class Sound {
   float offX;
   float offY;
   float wallMult = 1;
-  
   Sound(float tx, float ty, SoundConfig tconfig, int tindex) {
-    
     x = tx;
     y = ty;
     index = tindex;
@@ -2459,7 +3697,7 @@ class Sound {
     //if there is a path     - 0 = loud 200 = no sound scales
     //if completely seperate - 0 to 100 scales -> 100 to 200 no sound
     if(config.wallEffect > 0){
-      if(rayCast((int) x, (int) y, (int) wViewCenter.x, (int) wViewCenter.y)){
+      if(rayCast((int) x, (int) y, (int) wViewCenter.x, (int) wViewCenter.y,true)){
         wallMult = (100-max(config.wallEffect-100,0))/100;
       } else if(genTestPathExists( x, y, wViewCenter.x, wViewCenter.y)){
         wallMult = (200-config.wallEffect)/200;
@@ -2468,21 +3706,15 @@ class Sound {
       }
       wallMult = max(min(wallMult,1),0);
     }
-    
     if(index == 0){
-      
       if(wallMult > 0 && pointDistance(wViewCenter, new PVector(x,y)) < config.rMax*wallMult){
         AudioPlayer tempAP = (AudioPlayer)config.sound.get(floor(random(config.sound.size())));
         tempAP.setGain((1-pointDistance(wViewCenter, new PVector(x,y))/(config.rMax*wallMult))*35-35); //-35 to 0 dB
         tempAP.rewind();
         tempAP.play();
-        //
-        
       }
     }
-    
   }
-  
   void display() {
     if(config.drawWave){
       posV = pos2Screen(new PVector(x+offX,y+offY));
@@ -2497,16 +3729,13 @@ class Sound {
     if(config.drawWave == false){
       return true;
     }
-    
     r+=config.rSpeed;
-    
     if(index < config.waveCount-1){
       if(r > config.waveLength){
         sL.add(new Sound(x,y,config,index+1));
         index = 999;
       }
     }
-    
     if(r>config.rMax*wallMult){
       return true;
     } else {
@@ -2968,7 +4197,7 @@ class Wave {
     //gridBuffer.stroke(strokeColor);
     
     int strokeWe = ceil((gScale/15-3)/2);
-    rectL.add(new RectObj(int(ta.x)+ceil(gScale)-strokeWe,int(ta.y)+ceil(gScale)-strokeWe,int(tb.x)+ceil(gScale)-int(ta.x+ceil(gScale))+strokeWe,int(tb.y)+ceil(gScale)-int(ta.y+ceil(gScale))+strokeWe,color(255)));
+    rectL.add(new RectObj(ceil(ta.x)+ceil(gScale)-strokeWe,ceil(ta.y)+ceil(gScale)-strokeWe,ceil(tb.x)+ceil(gScale)-ceil(ta.x+ceil(gScale))+strokeWe,int(tb.y)+ceil(gScale)-int(ta.y+ceil(gScale))+strokeWe,color(255)));
     
     //gridBuffer.line(ta.x+ceil(gScale),ta.y+ceil(gScale),tb.x+ceil(gScale),tb.y+ceil(gScale));
     //gridBuffer.noStroke();
@@ -3069,26 +4298,63 @@ void waveFromImage(float tx, float ty, int tI, boolean tDir){
 
 ArrayList updates = new ArrayList<PVector>();
 
+int[][] gU; //Grid unit - contains all blocks being drawn to the screen
+boolean[][] gUHUD;
+int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
+int[][] wU; //World Unit - contains all blocks in the world
+
+
+int[][] wUDamage;
+boolean[][] wUText; //
+int[][] wUUpdate; //
+ArrayList<Entity>[][] wUEntities; //new ArrayList()[][];
+float gScale; //the width and height of blocks being drawn to the screen in pixels
+
 PGraphics gridBuffer;
 PImage gridBufferImage;
 PVector gridBufferPos = new PVector(0,0);
 int[][] gUShade;
 int[][] nmapShade;
 ArrayList rectL = new ArrayList<RectObj>();
+ArrayList damageL = new ArrayList<DamageObj>();
+ArrayList textL = new ArrayList<TextObj>();
+
+//searching around for entities
+ArrayList eSearchResults;
+int aSearchPointer;
+int aSearchPointer2;
+int aSearchX;
+int aSearchY;
+int aSearchR;
+
 
 class RectObj {
-  int x;
-  int y;
-  int w;
-  int h;
-  int col;
-  
+  int x, y, w, h, col;
   RectObj(int tx, int ty, int tw, int th, int tcol) {
-    x = tx;
-    y = ty;
-    w = tw;
-    h = th;
-    col = tcol;
+    x = tx; y = ty; w = tw; h = th; col = tcol;
+  }
+  void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
+class DamageObj {
+  int x, y, d, posx, posy;
+  float maxstage;
+  DamageObj(int tx, int ty, int td, int tposx, int tposy) {
+    x = tx; y = ty; d = td; posx = tposx; posy = tposy;
+    maxstage = aGS1D(gBStrength,aGS(wU,posx,posy))-.01;
+  }
+  void display(float offx, float offy) {
+    arc(offx+x,offy+y,d,d,HALF_PI,HALF_PI+TWO_PI*(float(aGS(wUDamage,posx,posy))/maxstage));
+  }
+}
+
+class TextObj {
+  int x, y, w, h, col;
+  TextObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx; y = ty; w = tw; h = th; col = tcol;
   }
   void display(float offx, float offy) {
     fill(col);
@@ -3106,6 +4372,14 @@ void setupWorld(){
   gU = new int[ceil(gSize)][ceil(gSize)];
   gUHUD = new boolean[ceil(gSize)][ceil(gSize)];
   wUUpdate = new int[wSize][wSize];
+  wUEntities = new ArrayList[wSize][wSize];
+  miniMap = new int[wSize][wSize];
+  
+  for(int i = 0; i < wSize; i++){
+    for(int j = 0; j < wSize; j++){
+      wUEntities[i][j] = new ArrayList(0);
+    }
+  }
 }
 
 void refreshWorld(){
@@ -3122,11 +4396,10 @@ void refreshWorld(){
     }
   }
   waveGrid();
-  
-  //gridBuffer.beginDraw();
-  //gridBuffer.background(0);
-  //gridBufferImage.loadPixels();
+
   rectL.clear();
+  damageL.clear();
+  
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       //gridBuffer.noStroke();
@@ -3135,23 +4408,41 @@ void refreshWorld(){
       
       int tempColor = aGS1D(gBColor,thisBlock);
       
-      float tempShade = float(gUShade[i][j]+0)/5;
+      float tempShade = float(gUShade[i][j])/5;
+      
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
       
       if(tempShade > 1){
         tempShade = 1;
       }
       
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        if(aGS1D(gBStrength,thisBlock) > -1){
+          if(aGS(gUShade,i,j) > 0){
+            if(aGS1D(gBStrength,thisBlock) > -1){
+              damageL.add(new DamageObj(floor(tempV.x)+ceil(gScale*1.5),floor(tempV.y)+ceil(gScale*1.5),ceil(gScale*2/3),int(i+wView.x),int(j+wView.y)));
+            }
+          }
+        }
+      }
       //gridBuffer.fill(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade);
-      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
+      if(tempShade > 0){
+        if(loadMiniMap){
+          aSS(miniMap,i+wView.x,j+wView.y,tempColor);
+        }
+      }
+      
       
       //gridBufferImage = toughRect(gridBufferImage, floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade));
       //gridBufferImage.set(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),airMonster.Img);
       if(tempColor != gBColor[0] || tempShade != 1){
-        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
+        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale+.1),ceil(gScale+.1), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
       }
       //gridBuffer.rect(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale)); //-pV.x*gScale
       
-      
+      /*
       if(sBHasImage[thisBlock]){
         float tScale;
         if(sBImageDrawType[thisBlock] == 0){
@@ -3162,7 +4453,7 @@ void refreshWorld(){
           tScale = width/sBImage[thisBlock].width;
           //gridBuffer.image(sBImage[thisBlock].get(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)),floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
         }
-      }
+      }*/
     }
   }
   
@@ -3171,22 +4462,10 @@ void refreshWorld(){
       w.display();
     }
   }
-  //gridBuffer.endDraw();
   
+  gridBufferPos = new PVector(wViewCenter.x,wViewCenter.y);
   
-  //gridBufferImage = gridBuffer.get();
-  //gridBuffer.loadPixels();
-  //gridBufferImage.pixels = gridBuffer.pixels;
-  
-  //gridBufferImage.loadPixels();
-  //for(int i = 0; i < gridBufferImage.pixels.length; i++){
-  //  gridBufferImage.pixels[i] = 1;
-  //}
-  //gridBufferImage.updatePixels();
-  
-  //gridBufferImage = gridBuffer.get();
-  //gridBufferImage.updatePixels();
-  gridBufferPos = new PVector(player.x,player.y);
+  updateSpecialBlocks();
   
 }
 
@@ -3229,6 +4508,7 @@ void addGeneralBlockBreak(int tIndex, int tBreakType, String tBreakCommand){
   }
 }
 
+/*
 void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
   sBHasImage[tIndex] = true;
   if(tImageDrawType == 0){
@@ -3241,12 +4521,15 @@ void addImageSpecialBlock(int tIndex, PImage tImage, int tImageDrawType){
   sBImage[tIndex] = tImage;
   sBImageDrawType[tIndex] = tImageDrawType;
 }
+*/
 
+/*
 void addTextSpecialBlock(int tIndex, String tText, int tTextDrawType){
   sBHasText[tIndex] = true;
   sBText[tIndex] = tText;
   sBTextDrawType[tIndex] = tTextDrawType;
 }
+*/
 
 void addActionSpecialBlock(int tIndex, int tAction){
   sBHasAction[tIndex] = true;
@@ -3256,13 +4539,10 @@ void addActionSpecialBlock(int tIndex, int tAction){
 void centerView(float ta, float tb){
   wViewCenter = new PVector(ta,tb,gSize);
   wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
-  if(floor(wViewLast.x) != floor(wView.x)){
+  if(floor(wViewLast.x) != floor(wView.x) || floor(wViewLast.y) != floor(wView.y)){
     refreshWorld();
     wPhase -= PI;
-  }
-  if(floor(wViewLast.y) != floor(wView.y)){
-    refreshWorld();
-    wPhase -= PI;
+    debugLog(color(0,255,255));
   }
   wViewLast = new PVector(wView.x,wView.y);
 }
@@ -3293,7 +4573,7 @@ void updateWorld(){
           if(!updateExists(update.x,update.y+1)){updates.add(new PVector(update.x,update.y+1,21));}
           if(!updateExists(update.x,update.y-1)){updates.add(new PVector(update.x,update.y-1,21));}
         }
-        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++;}
+        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++; /*segments.add(new Segment("="+str(int(update.x))+";"+str(int(update.y))+";"+str(aGS(wU,update.x,update.y))+"&", 2));*/}
       }
     }
     refreshWorld();
@@ -3312,7 +4592,7 @@ boolean updateBlock(int x, int y){
       }
       if(tAction == 46){
         //if(aGS(wUP,x,y) == tempBT){
-          hitBlock(x,y,10000);
+          hitBlock(x,y,10000,false);
           return true;
         //}
       }
@@ -3338,14 +4618,14 @@ void updateSpecialBlocks(){
           
           if(tAction >= 1 && tAction <= 10){
             if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
-              hitBlock(i,j,10000);
+              hitBlock(i,j,10000,false);
               updateAgain = true;
             }
           }
           if(tAction >= 11 && tAction <= 20){
             if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
               if(genTestPathExists(player.x,player.y,i,j)){
-                hitBlock(i,j,10000);
+                hitBlock(i,j,10000,false);
                 updateAgain = true;
               }
             }
@@ -3353,8 +4633,8 @@ void updateSpecialBlocks(){
           if(tAction >= 21 && tAction < 30){
             if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
               if(genTestPathExists(player.x,player.y,i,j)){
-                if(rayCast(i,j,(int)player.x,(int)player.y)){
-                  hitBlock(i,j,10000);
+                if(rayCast(i,j,(int)player.x,(int)player.y,true)){
+                  hitBlock(i,j,10000,false);
                   updateAgain = true;
                 }
               }
@@ -3411,7 +4691,6 @@ void updateSpawners(){
         if(tempAction >= 31 && tempAction <= 45){
           if(nmapShade[i][j] > 0){
             particleEffect(i-.25,j-.25,1.5,1.5,3,aGS1DC(gBColor,aGS(wU,i,j)),color(255),0.03);
-            //particles
             
             if(tempAction < 45){
               if(random(100) < 25){
@@ -3427,19 +4706,14 @@ void updateSpawners(){
               for(int k = 0; k < 5; k++){
                 tempX = random(5)-2.5;
                 tempY = random(5)-2.5;
-                if(aGS(nmapShade,i,j) > 0){
+                if(aGS(nmapShade,i+tempX+.5,j+tempY+.5) > 0){
                   if(boxHitsBlocks(i+tempX+.5,j+tempY+.5,.6,.6) == false){ //add enemy size
-                    //entities.add(new Entity(i+tempX+.5,j+tempY+.5, airMonster,random(TWO_PI)));
-                    tempAction = 31+floor(random(10));
-                    
-                    //spawn an enemey, poof
+                    //addEntity(new Entity(i+tempX+.5,j+tempY+.5, EC_AIR_MONSTER,random(TWO_PI)));
+                    aSS1D(sBAction,tempBlock,31+floor(random(10)));
                   }
                 }
               }
             }
-              
-            //println(tempAction-31);
-            aSS1D(sBAction,tempBlock,tempAction);
           }
         }
       }
@@ -3448,44 +4722,26 @@ void updateSpawners(){
 }
 
 void drawWorld(){
+  if(alpha(gBColor[0]) == 255){
+    background(gBColor[0]);
+  }
   
-  //image(gridBufferImage,(gridBufferPos.x-player.x)*gScale-gScale,(gridBufferPos.y-player.y)*gScale-gScale);
-  
-  background(gBColor[0]);
-  int tempSize = rectL.size();
-  RectObj tempRect;
   noStroke();
-  for(int i = 0; i < tempSize; i++){
-    tempRect = (RectObj) rectL.get(i);
-    tempRect.display(int((gridBufferPos.x-player.x)*gScale-gScale),int((gridBufferPos.y-player.y)*gScale-gScale));
+  int baseDrawX = int((gridBufferPos.x-wViewCenter.x)*gScale-gScale);
+  int baseDrawY = int((gridBufferPos.y-wViewCenter.y)*gScale-gScale);
+  for(RectObj tempObj : (ArrayList<RectObj>) rectL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-  
   noFill();
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      
-      int thisBlock = aGS(wU,i+wView.x,j+wView.y);
-      
-      if(aGS1DB(gBIsSolid,thisBlock)){
-        PVector tempV2 = grid2Pos(new PVector(i,j));
-        if(aGS1D(gBStrength,thisBlock) > -1){
-          if(aGS(nmapShade,tempV2.x,tempV2.y) > 0){
-            if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
-              stroke(strokeColor);
-              strokeWeight(gScale/15);
-              float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y))/(aGS1D(gBStrength,thisBlock)-.01);
-              //line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
-              //line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
-              //println(Crumble);
-              PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-              arc(tempV.x+gScale/2,tempV.y+gScale/2,gScale*2/3,gScale*2/3,HALF_PI,HALF_PI+TWO_PI*Crumble);
-            }
-          }
-        }
-      }
-    }
+  stroke(strokeColor);
+  strokeWeight(gScale/15);
+  for(DamageObj tempObj : (ArrayList<DamageObj>) damageL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-
+  for(TextObj tempObj : (ArrayList<TextObj>) textL) {
+    tempObj.display(baseDrawX,baseDrawY);
+  }
+  /*
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       int thisBlock = gU[i][j];
@@ -3511,6 +4767,7 @@ void drawWorld(){
       }
     }
   }
+  */
 }
 
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
@@ -3521,43 +4778,33 @@ PVector grid2Pos(PVector tA){tA.add(new PVector(floor(wView.x),floor(wView.y)));
 
 //PVector pos2Grid(PVector tA){tA.sub(new PVector(floor(wView.x),floor(wView.y))); return tA;}
 
-PVector moveInWorld(PVector tV, PVector tS, float tw, float th){
-  PVector tV2 = new PVector(tV.x,tV.y);
+void moveInWorld(PVector tV, PVector tS, float tw, float th){
   if(tS.x > 0){
-    if(floor(tV.x+tw/2) != floor(tV.x+tw/2+tS.x)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2))){
-        tS = new PVector(0,tS.y);
-        tV2 = new PVector(floor(tV.x+tw/2+tS.x)+.999-tw/2,tV2.y);
-      }
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2+tS.x,tV.y-th/2))){
+      tS = new PVector(0,tS.y);
+      
+      tV.x = floor(tV.x+tw/2+tS.x)+.999-tw/2;
     }
-  } else {
-    if(floor(tV.x-tw/2) != floor(tV.x-tw/2+tS.x)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2))){
-        tS = new PVector(0,tS.y);
-        tV2 = new PVector(floor(tV.x-tw/2+tS.x)+tw/2,tV2.y);
-      }
+  } else if(tS.x < 0) {
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y+th/2)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2+tS.x,tV.y-th/2))){
+      tS = new PVector(0,tS.y);
+      tV.x = floor(tV.x-tw/2+tS.x)+tw/2;
     }
   }
-  tV2 = new PVector(tV2.x+tS.x,tV2.y);
+  tV.x += tS.x;
   
   if(tS.y > 0){
-    if(floor(tV.y+th/2) != floor(tV.y+th/2+tS.y)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y))){
-        tS = new PVector(tS.x,0);
-        tV2 = new PVector(tV2.x,floor(tV.y+th/2+tS.y)+.999-th/2);
-      }
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y+th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y+th/2+tS.y))){
+      tS = new PVector(tS.x,0);
+      tV.y = floor(tV.y+th/2+tS.y)+.999-th/2;
     }
-  } else {
-    if(floor(tV.y-th/2) != floor(tV.y-th/2+tS.y)){
-      if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y))){
-        tS = new PVector(tS.x,0);
-        tV2 = new PVector(tV2.x,floor(tV.y-th/2+tS.y)+th/2);
-      }
+  } else if(tS.y < 0){
+    if(aGS1DB(gBIsSolid,aGS(wU,tV.x+tw/2,tV.y-th/2+tS.y)) || aGS1DB(gBIsSolid,aGS(wU,tV.x-tw/2,tV.y-th/2+tS.y))){
+      tS = new PVector(tS.x,0);
+      tV.y = floor(tV.y-th/2+tS.y)+th/2;
     }
   }
-  tV2 = new PVector(tV2.x,tV2.y+tS.y);
-  
-  return tV2;
+  tV.y += tS.y;
 }
 
 boolean[] getSolidAround(PVector pos, int dir, boolean clockwise){ //array get safe
@@ -3610,7 +4857,7 @@ PVector blockNearCasting(PVector eV,int tBlock){
     for(int j = 0; j < wSize; j++){
       if(wU[i][j] == tBlock){
         if(pointDistance(eV, new PVector(i,j)) < minDis){
-          if(rayCast(i,j,(int) eV.x,(int) eV.y)){
+          if(rayCast(i,j,(int) eV.x,(int) eV.y,true)){
             tRV = new PVector(i,j);
             minDis = mDis(eV.x,eV.y, i,j);
           }
@@ -3621,19 +4868,27 @@ PVector blockNearCasting(PVector eV,int tBlock){
   return tRV;
 }
 
-boolean rayCast(int x0, int y0, int x1, int y1){
+boolean rayCast(float x0, float y0, float x1, float y1, boolean ignoreEnds){
   boolean tClear = true;
   int itts = ceil(mDis(x0,y0,x1,y1)*5);
-  float tempDispX = float(x1-x0)/itts;
-  float tempDispY = float(y1-y0)/itts;
+  float tempDispX = (x1-x0)/itts;
+  float tempDispY = (y1-y0)/itts;
+  
+  PVector res = pos2Screen(new PVector(x0,y0));
+  PVector res1 = pos2Screen(new PVector(x1,y1));
+  
+  
   for(int i = 0; i < itts; i++){
-    if((round(x0+tempDispX*i) != round(x0) || round(y0+tempDispY*i+.105) != round(y0)) && (round(x0+tempDispX*i) != round(x1) || round(y0+tempDispY*i+.105) != round(y1))){
-      if(gBIsSolid[aGS(wU,round(x0+tempDispX*i),round(y0+tempDispY*i+.105))]){
+    if(ignoreEnds == false || ((floor(x0+tempDispX*i) != floor(x0) || floor(y0+tempDispY*i) != floor(y0)) && (floor(x0+tempDispX*i) != floor(x1) || floor(y0+tempDispY*i) != floor(y1)))){
+      if(gBIsSolid[aGS(wU,floor(x0+tempDispX*i),floor(y0+tempDispY*i))]){
+        stroke(255,0,0);
+        line(res.x,res.y,res1.x,res1.y);
         return false;
       }
     }
   }
-  //println(tClear);
+  stroke(0,255,0);
+  line(res.x,res.y,res1.x,res1.y);
   return true;
 }
 
@@ -3641,16 +4896,17 @@ int rayCastPath(ArrayList a, int x1, int y1){
   PVector tempPV;
   for(int i = a.size()-1; i >= 0; i--){
     tempPV = (PVector)a.get(i);
-    if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1)){
+    if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1,true)){
       return i;
     }
   }
   return -1;
 }
 
-void hitBlock(float x, float y, int hardness){
+void hitBlock(float x, float y, int hardness, boolean sent){
   if(aGS1D(gBStrength,aGS(wU,x,y)) >= 0 || hardness >= 999){
     aSS(wUDamage,x,y,aGS(wUDamage,x,y)+hardness);
+    if(sent == false){segments.add(new Segment("HB,"+str(int(x))+","+str(int(y))+","+str(aGS(wU,x,y))+","+str(hardness), 5));}
     
     if(aGS(wUDamage,x,y) > aGS1D(gBStrength,aGS(wU,x,y))){
       
@@ -3680,6 +4936,240 @@ boolean updateExists(float x, float y){
     }
   }
   return false;
+}
+
+PVector findBreakableNear(float x, float y, int searchR){
+  int tX = (int) x;
+  int tY = (int) y;
+  int iN, iX, iY, i = 0, tB;
+  PVector myReturn = new PVector(-1,-1);
+  boolean looping = true;
+  while(looping){
+    iN = max(i*4,1);
+    for(int j = 0; j < iN; j++){
+      iX = tX+min(j,i)-min(2*i,max(0,(j-i)))+max(0,(j-i*3));
+      iY = tY-i+min(2*i,j)-max(0,(j-2*i));
+      if(iX >= 0 && iY >= 0 && iX < wSize && iY < wSize){
+        tB = wU[iX][iY];
+        if(tB != 0){
+          if(gBIsSolid[tB]){
+            if(gBStrength[tB] >= 0){
+              myReturn = new PVector(iX,iY);
+              looping = false;
+              if(j != 0 && j != i && j != i*2 & j != i*3){
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    i++;
+    if(i > searchR){
+      looping = false;
+    }
+  }
+  return myReturn;
+}
+
+void resetSearches(float x, float y, int r){
+  aSearchPointer = 0;
+  aSearchPointer2 = 0;
+  
+  aSearchX = (int) x;
+  aSearchY = (int) y;
+  aSearchR = r;
+}
+
+ArrayList findEntityGrid(){
+  int iN, iX, iY;
+  ArrayList eL, tempReturn;
+  boolean looping = true;
+  tempReturn = new ArrayList<Entity>();
+  while(looping){
+    iN = max(aSearchPointer*4,1);
+    while(aSearchPointer2 < iN){
+      iX = aSearchX+min(aSearchPointer2,aSearchPointer)-min(2*aSearchPointer,max(0,(aSearchPointer2-aSearchPointer)))+max(0,(aSearchPointer2-aSearchPointer*3));
+      iY = aSearchY-aSearchPointer+min(2*aSearchPointer,aSearchPointer2)-max(0,(aSearchPointer2-2*aSearchPointer));
+      if(iX >= 0 && iY >= 0 && iX < wSize && iY < wSize){
+        
+        if(wUEntities[iX][iY].size() > 0){
+          
+          eL = wUEntities[iX][iY];
+          for(int i = eL.size()-1; i >= 0; i--){
+            tempReturn.add(eL.get(i));
+          }
+          aSearchPointer2++;
+          return tempReturn;
+        }
+      }
+      aSearchPointer2++;
+    }
+    aSearchPointer2 = 0;
+    aSearchPointer++;
+    if(aSearchPointer > aSearchR){
+      looping = false;
+    }
+  }
+  return null;
+}
+
+PVector findNonAirWU(){
+  int iN, iX, iY;
+  boolean looping = true;
+  while(looping){
+    iN = max(aSearchPointer*4,1);
+    while(aSearchPointer2 < iN){
+      iX = aSearchX+min(aSearchPointer2,aSearchPointer)-min(2*aSearchPointer,max(0,(aSearchPointer2-aSearchPointer)))+max(0,(aSearchPointer2-aSearchPointer*3));
+      iY = aSearchY-aSearchPointer+min(2*aSearchPointer,aSearchPointer2)-max(0,(aSearchPointer2-2*aSearchPointer));
+      if(iX >= 0 && iY >= 0 && iX < wSize && iY < wSize){
+        if(wU[iX][iY] != 0){
+          aSearchPointer2++;
+          return new PVector(iX,iY);
+        }
+      }
+      aSearchPointer2++;
+    }
+    aSearchPointer2 = 0;
+    aSearchPointer++;
+    if(aSearchPointer > aSearchR){
+      looping = false;
+    }
+  }
+  return null;
+}
+
+/*
+Entity getGridEntity(ArrayList eL, int tTeam){
+  if(eL.size() > 0){
+    if(eL.size() == 1){
+      if(EConfigs[((Entity)eL.get(0)).EC].Team == tTeam){
+        return (Entity)eL.get(0);
+      }
+    } else {
+      for(int i = eL.size()-1; i >= 0; i--){
+        if(EConfigs[((Entity)eL.get(i)).EC].Team == tTeam){
+          return (Entity)eL.get(i);
+        }
+      }
+    }
+  }
+  return null;
+}
+*/
+
+void removeEntityFromGridPos(ArrayList eL, int tID){
+  if(eL.size() == 0){
+    return;
+  } else if(eL.size() == 1){
+    if(((Entity)eL.get(0)).ID == tID){
+      eL.remove(0);
+      return;
+    }
+  } else {
+    for(int i = eL.size()-1; i >= 0; i--){
+      if(((Entity)eL.get(i)).ID == tID){
+        eL.remove(i);
+      }
+    }
+    return;
+  }
+}
+
+void addEntityToGridPos(ArrayList eL, Entity tE){
+  if(eL.size() == 0){
+    eL.add(tE);
+    return;
+  } else if(eL.size() == 1){
+    if(((Entity)eL.get(0)).ID != tE.ID){
+      eL.add(tE);
+      return;
+    }
+  } else {
+    boolean foundSelf = false;
+    for(int i = eL.size()-1; i >= 0; i--){
+      if(((Entity)eL.get(i)).ID == tE.ID){
+        foundSelf = true;
+      }
+    }
+    if(foundSelf == false){
+      eL.add(tE);
+      return;
+    }
+  }
+}
+
+void removeEntityFromGridArea(float x1, float y1, float tx2, float ty2, int tID){
+  int x2 = min(max((int) tx2,0),wSize-1);
+  int y2 = min(max((int) ty2,0),wSize-1);
+  for(int i = min(max((int) x1,0),wSize-1); i <= x2; i++){
+    for(int j = min(max((int) y1,0),wSize-1); j <= y2; j++){
+      removeEntityFromGridPos(aGSAL(wUEntities,i,j),tID);
+    }
+  }
+}
+
+void addEntityToGridArea(float x1, float y1, float tx2, float ty2, Entity tE){
+  int x2 = min(max((int) tx2,0),wSize-1);
+  int y2 = min(max((int) ty2,0),wSize-1);
+  for(int i = min(max((int) x1,0),wSize-1); i <= x2; i++){
+    for(int j = min(max((int) y1,0),wSize-1); j <= y2; j++){
+      addEntityToGridPos(aGSAL(wUEntities,i,j),tE);
+    }
+  }
+}
+
+ArrayList getEntitiesFromGridAreaOther(float x1, float y1, float tx2, float ty2, int tID){
+  ArrayList myReturn = new ArrayList();
+  ArrayList tempAL;
+  int x2 = min(max((int) tx2,0),wSize-1);
+  int y2 = min(max((int) ty2,0),wSize-1);
+  for(int i = min(max((int) x1,0),wSize-1); i <= x2; i++){
+    for(int j = min(max((int) y1,0),wSize-1); j <= y2; j++){
+      tempAL = aGSAL(wUEntities,i,j);
+      switch(tempAL.size()){
+        case 0:
+          break;
+        case 1:
+          if(((Entity)tempAL.get(0)).ID != tID){
+            addUniqueEntityAL(myReturn,(Entity)tempAL.get(0));
+          }
+          break;
+        default:
+          for(int k = tempAL.size()-1; k >= 0; k--){
+            if(((Entity)tempAL.get(k)).ID != tID){
+              addUniqueEntityAL(myReturn,(Entity)tempAL.get(k));
+            }
+          }
+          break;
+      }
+    }
+  }
+  return myReturn;
+}
+
+void addUniqueEntityAL(ArrayList Tal, Entity Te){
+  switch(Tal.size()){
+    case 0:
+      Tal.add(Te);
+      return;
+    case 1:
+      if(((Entity)Tal.get(0)).ID != Te.ID){
+        Tal.add(Te);
+        return;
+      }
+      break;
+    default:
+      for(int i = Tal.size()-1; i >= 0; i--){
+        //println(str(i)+"ESCAPE "+str(((Entity)Tal.get(i)).ID)+" "+Te.ID);
+        if(((Entity)Tal.get(i)).ID == Te.ID){
+          //println("EQ");
+          return;
+        }
+      }
+      Tal.add(Te);
+      return;
+  }
 }
 
 //STEM Phagescape API v(see above)

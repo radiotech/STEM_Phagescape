@@ -3,6 +3,8 @@ import processing.data.*;
 import processing.event.*; 
 import processing.opengl.*; 
 
+import ddf.minim.*; 
+
 import java.util.HashMap; 
 import java.util.ArrayList; 
 import java.io.File; 
@@ -14,147 +16,114 @@ import java.io.IOException;
 
 public class MS_Bacteria_2 extends PApplet {
 
-/* @pjs preload="face.png"; */
+/* @pjs preload="face.png, map5.png"; */
 
 Entity testEntity;
-SoundConfig doorSound = new SoundConfig( 3, 200, 255, color(100,100,255), 10, 1, 15, 2, 0);
-SoundConfig entitySound = new SoundConfig( .2f, 55, 100, color(0), -1, 3, 2, 0, 90);
+int EC_AIR_MONSTER = EC_NEXT();
+int EC_ENEMY_BULLET = EC_NEXT();
 
 /*LOCK*/public void setup(){
   size(700,700); //must be square
 /*LOCK*/  M_Setup(); //call API setup
 /*LOCK*/}
 
-/*LOCK*/public void safePreSetup(){} //first function called, in case you need to set some variables before anything else starts
+/*LOCK*/public void safePreSetup(){
+  EConfigs[EC_AIR_MONSTER] = new EConfig();
+  EConfigs[EC_AIR_MONSTER].Genre = 1;
+  EConfigs[EC_AIR_MONSTER].Img = loadImage("face.png");
+  EConfigs[EC_AIR_MONSTER].AISearchMode = 11;
+  EConfigs[EC_AIR_MONSTER].AITarget = -1;
+  EConfigs[EC_AIR_MONSTER].SMax = .05f;
+  EConfigs[EC_AIR_MONSTER].TSMax = .1f;
+  EConfigs[EC_AIR_MONSTER].TAccel = .03f;
+  EConfigs[EC_AIR_MONSTER].TDrag = .01f;
+  EConfigs[EC_AIR_MONSTER].Type = 1;
+  EConfigs[EC_AIR_MONSTER].GoalDist = 3; //Want to get this close
+  EConfigs[EC_AIR_MONSTER].ActDist = 10;
+  EConfigs[EC_AIR_MONSTER].HMax = 1;
+  EConfigs[EC_AIR_MONSTER].myBulletEntity = EC_ENEMY_BULLET;
+  EConfigs[EC_ENEMY_BULLET] = new EConfig();
+  EConfigs[EC_ENEMY_BULLET].Size = .13f;
+  EConfigs[EC_ENEMY_BULLET].SMax = .1f;
+  EConfigs[EC_ENEMY_BULLET].Color = color(0,100);
+  EConfigs[EC_ENEMY_BULLET].BirthCommand = "sound _x_ _y_ 2";
+  EConfigs[EC_ENEMY_BULLET].DeathCommand = "sound _x_ _y_ 2";
+  EConfigs[EC_AIR_MONSTER].BirthCommand = "sound _x_ _y_ 3";
+  EConfigs[EC_AIR_MONSTER].DeathCommand = "sound _x_ _y_ 1";
+  EConfigs[EC_AIR_MONSTER].FireDelay = 15;
+  EConfigs[EC_AIR_MONSTER].AltColor = color(0,100);
+} //first function called, in case you need to set some variables before anything else starts
 
 /*LOCK*/public void safeSetup(){ //called when world generation and entity placement is ready to begin
-  
-  //shadows = true;
-  
-  
-  bulletEntity.Size = .1f;
-  
-  for(int i = 0; i < 1; i++){
-    testEntity = new Entity(51,51,new EConfig(),0);
-    testEntity.EC.Genre = 1;
-    testEntity.EC.Img = loadImage("face.png");
-    testEntity.EC.AISearchMode = 11;
-    testEntity.EC.AITarget = -1;
-    testEntity.EC.AITargetID = player.EC.ID;
-    testEntity.EC.AIDoorBlock = 8;
-    testEntity.AITargetPos = new PVector(wSize/2,wSize/2);
-    testEntity.EC.SMax = .15f;
-    testEntity.EC.TSMax = .31f;
-    testEntity.EC.TAccel = .300f;
-    testEntity.EC.TDrag = 8;
-    testEntity.EC.Type = 1;
-    testEntity.EC.GoalDist = 0; //Want to get this close
-    testEntity.EC.ActDist = 1;
-    entities.add(testEntity);
-    
-  }
-  
-  CFuns.add(new CFun(0,"door",2,false)); //add a function that adds a number, n, to the goal number for a type of bacteria, type, (id, function, argument #, can be used by the user directly? true/false)
-  
-  //genReplace(0,1);
-  //genReplace(2,1);
-  //genReplace(3,2);
-  //genReplace(4,1);
-  
-  //wU[50][48] = 4;
-  
-  /*
-  genReplace(0,1);
-  for(int i = 1; i < 10; i++){
-    genRing(50,50,i*10,i*10,0,3);
-  }
-  
-  int[] blocksArg = { 3, 5}; //create a set of blocks
-  float[] probArg = { 20, 4 }; //create a list of probabilities for these blocks
-  genRandomProb(3, blocksArg, probArg); //place these blocks in the world with their respective probabilities (the world, by default is all 0 and these random blocks replace 0 here)
-  
-  
-  
-  scaleView(10); //scale the view to fit the entire map
-  centerView(wSize/2,wSize/2); //center the view in the middle of the world
-  */
-  
-  
-  
-  addGeneralBlock(0,color(120,12,0),false,0); //inside
-  addGeneralBlock(5,color(120,12,0),false,0); //inside
-  addGeneralBlock(6,color(120,12,0),false,0); //inside
-  
-  
-  addGeneralBlock(1,color(100,100,120),false,0); //outside
-  
-  addGeneralBlock(2,color(100,100,120),false,1); //safety
-  
-  addGeneralBlock(3,color(50,0,0),true,-1); //wall
-  
-  addGeneralBlock(4,color(255,30,30),true,-1); //door closed
-  addActionSpecialBlock(4,46);
-  addGeneralBlockBreak(4,7,"door _x_ _y_");
-  addGeneralBlock(7,color(120,12,0),false,-1); //door open
-  addActionSpecialBlock(7,46);
-  addGeneralBlockBreak(7,4,"door _x_ _y_");
-  
-  addGeneralBlock(8,color(200,180,30),true,0); //door frame
-  addActionSpecialBlock(8,46);
-  addGeneralBlockBreak(8,9,"door _x_ _y_");
-  addGeneralBlock(9,color(0,180,30),true,0); //door frame2
-  addActionSpecialBlock(9,46);
-  addGeneralBlockBreak(9,8,"door _x_ _y_");
-  
-  addGeneralBlock(30,color(200,180,30),true,0); //door frame (closet)
-  addActionSpecialBlock(30,46);
-  addGeneralBlockBreak(30,31,"door _x_ _y_");
-  addGeneralBlock(31,color(200,180,30),true,0); //door frame2 (closet)
-  addActionSpecialBlock(31,46);
-  addGeneralBlockBreak(31,30,"door _x_ _y_");
-  
-  addGeneralBlock(10,color(0,0,0),true,0); //block
-  
-  /*
-  addImageSpecialBlock(7,loadImage("planks_birch.png"),0);
-  addImageSpecialBlock(0,loadImage("planks_birch.png"),0);
-  addImageSpecialBlock(5,loadImage("planks_birch.png"),0);
-  addImageSpecialBlock(6,loadImage("planks_birch.png"),0);
-  addImageSpecialBlock(3,loadImage("a.png"),0); //
-  addImageSpecialBlock(8,loadImage("log_birch_top.png"),0); //
-  addImageSpecialBlock(9,loadImage("log_birch_top.png"),0); //
-  addImageSpecialBlock(4,loadImage("log_birch.png"),0); //
-  */
-  
-  //addTextSpecialBlock(4,"Hello World",11); //make block four display text when the player is near
-  
-  //int[] blocksArg = { 0, 1, 2, 3, 4 }; //create a set of blocks
-  //float[] probArg = { 20, 14, 3, 2, 1 }; //create a list of probabilities for these blocks
-  //genRandomProb(0, blocksArg, probArg); //place these blocks in the world with their respective probabilities (the world, by default is all 0 and these random blocks replace 0 here)
+  EConfigs[EC_AIR_MONSTER].AITargetID = EConfigs[EC_PLAYER].ID;
 
+  EConfigs[EC_BULLET].Size = .1f;
   
-  genLoadMap(loadImage("map.png"));
+  for(int i = 0; i < 5; i++){
+    //testEntity = new Entity(51,51,airMonster,0);
+    //entities.add(testEntity);
+  }
+  
+  
+  addGeneralBlock(0,color(100,0,0),false,0); //background
+  //addImageSpecialBlock(0,loadImage("a.png"),0);
+  
+  addGeneralBlock(1,color(255,255,190),true,-1); //bone
+  
+  addGeneralBlock(2,color(150,250,100),true,5); //door closed
+  addActionSpecialBlock(2,46);
+  addGeneralBlockBreak(2,0,"reset_Spawners");
+
+  addGeneralBlock(3,color(200,0,0),true,0); //flesh //strength 10
+  
+  addGeneralBlock(4,color(100,100,100),true,50); //norm spawner
+  //addActionSpecialBlock(4,45);
+  ///////////////////////////////////////////////////////////////////spawn
+  
+  addGeneralBlock(5,color(0),true,0); //boss egg
+  addGeneralBlockBreak(5,0,"spawn _x_ _y_ boss");
+  addActionSpecialBlock(5,18);
+  
+  
+  addGeneralBlock(6,color(255,165,0),true,25); //Protein
+  addGeneralBlock(7,color(0,255,255),true,15); //Lipids
+  addGeneralBlock(8,color(205,0,205),true,20); //Nucleotides
+  addGeneralBlock(9,color(225,225,255),true,35); //Sugar
+  
+  for(int i = 0; i < 8; i++){
+    addGeneralBlock(10+i,color(20,200,20),true,0); //key
+    addGeneralBlockBreak(10+i,0,"key");
+    addActionSpecialBlock(10+i,21);
+  }
+  
+  genLoadMap(loadImage("map5.png"));
+
+  genSpread(307, 4, 60); //eliminate 80% of spawners
+
+  for(int i = 0; i < 4; i++){
+    genSpread(1, 50+i, 10+i); //spread keys in the rooms
+    genSpread(5, 50+i, 5); //spread bosses
+    genReplace(50+i, 4); //spread spawners
+  }
+
+  int[] toArray = {0,1,6,7,8,9,3};
+  float[] probArray = {60,30,2,3,4,5,100};
+  genRandomProb(60,toArray,probArray);
   
   scaleView(100); //scale the view to fit the entire map
+  shadows = false;
   centerView(wSize/2,wSize/2); //center the view in the middle of the world
-  //player.y = -3;
   
   //entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
-  
-  
   
   //entities.remove(player); //remove the player from the list of known entities so that it is not drawn on the screen and we only see the world
   //testEntity.destroy();
 }
 
-/*LOCK*/public void safeAsync(int n){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
-  if(n%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
-    println(frameRate); //display the game FPS
+/*LOCK*/public void safeAsync(){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
+  if(fn % 25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
+    //println(frameRate); //display the game FPS
   }
-  if(n%150 == 1){
-    sL.add(new Sound(testEntity.eV.x,testEntity.eV.y,entitySound,0));
-  }
-  if(n%250 == 0){} //every ten seconds (similar idea applies here)
 }
 
 /*LOCK*/public void safeUpdate(){ //called before anything has been drawn to the screen (update the world before it is drawn)
@@ -163,25 +132,18 @@ SoundConfig entitySound = new SoundConfig( .2f, 55, 100, color(0), -1, 3, 2, 0, 
   //PVector tempV2 = new PVector(maxAbs(0,float(mouseX-width/2)/50)+width/2,maxAbs(0,float(mouseY-height/2)/50)+height/2); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y); //move the view in the direction of the mouse
   //if(mousePressed){PVector tempV2 = new PVector(width/2+(pmouseX-mouseX),height/2+(pmouseY-mouseY)); tempV2 = screen2Pos(tempV2); centerView(tempV2.x,tempV2.y);} //drag the view around
 }
-
-/*LOCK*/public void safeDraw(){
-  ellipse(testEntity.eV.x/100*width,testEntity.eV.y/100*width,10,10);
-  
-  
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      if(testEntity.AIMap[i][j] > 0){
-        fill(0,0,255,testEntity.AIMap[i][j]*40);
-      } else {
-        fill(0,255,0,-testEntity.AIMap[i][j]*40);
-      }
-      noStroke();
-      rect(i*width/wSize-wView.x*gScale,j*height/wSize-wView.y*gScale,width/wSize,height/wSize);
-    }
+/*LOCK*/public void safePostUpdate(){}
+/*LOCK*/public void safeDraw(){} //called after everything else has been drawn on the screen (draw things on the game)
+/*LOCK*/public void safePostDraw(){
+  if(chatPush != 0){
+    stroke(255,chatPush*500);
+    strokeWeight(2);
+    fill(0,chatPush*500);
+    rect(-10,height-chatHeight-2,width+20,100);
+    //textMarkup(chatKBS,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
   }
   
-} //called after everything else has been drawn on the screen (draw things on the game)
-public void safePostDraw(){};
+} //called after everything else has been drawn on the screen (draw things on the screen)
 /*LOCK*/public void safeKeyPressed(){} //called when a key is pressed
 /*LOCK*/public void safeKeyReleased(){} //called when a key is released
 /*LOCK*/public void safeMousePressed(){
@@ -191,12 +153,13 @@ public void safePostDraw(){};
   }
   
 } //called when the mouse is pressed
-public void chatEvent(String source){};
-public void executeCommand(int index,String[] commands){
+
+/*LOCK*/public void chatEvent(String source){
+} //called when a chat message is created
+
+public void executeCommand(int index, String[] commands){
   switch(index){
-    case 0:
-      sL.add(new Sound(PApplet.parseInt(commands[1])+.5f,PApplet.parseInt(commands[2])+.5f,doorSound,0));
-      break;
+    
   }
 }
 
@@ -205,7 +168,6 @@ public void executeCommand(int index,String[] commands){
 /*LOCK*/public void safeMouseClicked(){} //may be added in the future
 /*LOCK*/public void safeMouseMoved(){} //may be added in the future
 /*LOCK*/public void safeMouseDragged(){} //may be added in the future
-
 //STEM Phagescape API v(see above)
 
 public void nodeWorld(PVector startV, int targetBlock, int vision){
@@ -506,12 +468,15 @@ maxAbs(_NUM_1_,_NUM_2_)
 minAbs(_NUM_1_,_NUM_2_)
 */
 //These variables should not be changed
+
+Minim minim;
+
 int[][] gU; //Grid unit - contains all blocks being drawn to the screen
 boolean[][] gUHUD;
 int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
 int[][] wU; //World Unit - contains all blocks in the world
-int[][] wUP; //past
-int[][] wUC; //current
+
+int playerID = 0;
 int[][] wUDamage;
 boolean[][] wUText; //
 int[][] wUUpdate; //
@@ -523,7 +488,9 @@ PVector wViewLast = new PVector(0,0); //previous world position of the center of
 int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
-ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+
+ArrayList mimics = new ArrayList<Mimic>();
+int strokeColor = color(255);
 int[] gBColor = new int[256];
 boolean[] gBIsSolid = new boolean[256];
 int[] gBStrength = new int[256];
@@ -546,60 +513,80 @@ PFont fontBold;
 int[][] distanceMatrix = new int[300][300];
 boolean shadows = false; //are there shadows?
 int lightStrength = 10;
-boolean registeredMouseClick = false;
 boolean mouseClicked = false;
+boolean drawHUDSoftEdge = false;
+int fn = 0;
+int frameRateGoal = 45;
+
+boolean clicking = true;
+PVector clickPos = new PVector(-1,-1);
 
 public void M_Setup(){
-  fontNorm = loadFont("Monospaced.norm-23.vlw");
-  fontBold = loadFont("Monospaced.bold-23.vlw");
-  frameRate(60);
+  minim = new Minim(this);
+  fontNorm = createFont("monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
+  fontBold = createFont("monofonto.ttf",18);//"Monospaced.bold-23.vlw"
+  HUDImage = loadImage("shadowHUD.png");
+  frameRate(frameRateGoal);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
   safePreSetup();
 
   setupWorld();
+  setupDebug();
   setupEntities();
   scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUP[i][j] = wU[i][j];
-    }
-  }
+  
   refreshWorld();
+  
+  setupServer();
 }
 
 
 public void draw(){
-  if(mouseClicked == true) {registeredMouseClick = true;}
+  if(clicking){
+    if(pointDistance(clickPos,new PVector(mouseX,mouseY)) > 5){
+      clicking = false;
+    } else if(mousePressed == false){
+      mouseClicked = true;
+      safeMouseClicked();
+      clicking = false;
+    }
+  }
   
-  animate();
-  //drawWorld();//
-  nodeDraw();
-  //if(!menu){
-    
-  //}
+    clickQuestion();
+  
+    animate();
+  
+    nodeDraw();
   
   manageAsync();
   
   safeUpdate();
   
-  
   drawWorld();
+  
+    safePostUpdate();
   
   drawEntities();
   
+    drawSound();
+  
   safeDraw();
   
-  drawChat();
+    drawHUD();
   
-  updateSound();
+    drawChat();
   
-  safePostDraw();
+    safePostDraw();
   
-  if(registeredMouseClick == true){mouseClicked = false; registeredMouseClick=false;}
+  mouseClicked = false;
+  
+  
+  updateDebug();
+  
 }
 
 public void keyPressed(){
@@ -613,21 +600,30 @@ public void keyPressed(){
     player.moveEvent(0);
   }
   
+  if(key == 'F' || key == 'f') {
+    if(HUDSstage == 0){
+      HUDSstage = 1;
+      disconnect();
+    } else {
+      HUDSstage = -HUDSstage;
+    }
+  }
+  
   safeKeyPressed();
 }
 
 public void keyReleased(){
   player.moveEvent(1);
   safeKeyReleased();
+  
+  
 }
 
 public void mousePressed(){
+  clicking = true;
+  clickPos = new PVector(mouseX,mouseY);
+  
   safeMousePressed();
-}
-
-public void mouseClicked(){
-  mouseClicked = true;
-  safeMouseClicked();
 }
 
 public float pointDir(PVector v1,PVector v2){
@@ -703,6 +699,11 @@ public int aGS1D(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
+public void aSS1D(int[] tMat, float tA, int tValue){ //array set safe
+  //println(tValue);
+  tMat[max(0,min(tMat.length-1,(int)tA))] = tValue;
+}
+
 public boolean aGS1DB(boolean[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
@@ -739,6 +740,10 @@ public float minAbs(float tA, float tB){
   }
 }
 
+public float runAvg(float curAvg, float newVal, int pastValNum){
+  return (curAvg*pastValNum+newVal)/PApplet.parseFloat(pastValNum+1);
+}
+
 public int mode(int[] array) {
     int[] modeMap = new int [255];
     int maxEl = array[0];
@@ -761,6 +766,23 @@ public int mode(int[] array) {
     return maxEl;
 }
 
+public boolean boxHitsBlocks(float x, float y, float w, float h){
+  if(gBIsSolid[aGS(wU,x-w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x-w/2,y+h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y+h/2)]){
+    return true;
+  }
+  return false;
+}
+
+
 public PImage resizeImage(PImage tImg, int tw, int th){
   PImage tImgNew = createImage(tw,th,ARGB);
   //tImgNew.loadPixels();
@@ -776,22 +798,26 @@ public PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
-int asyncC = 0;
+int lastMillis = 0;
 int asyncT = 1000;
 public void manageAsync(){
   while(millis()-40>asyncT){
+    if(millis()-1000 > asyncT){ asyncT = millis(); }
     asyncT += 40;
-    asyncC++;
-    safeAsync(asyncC);
+    fn++;
+    safeAsync();
+    debugLog(color(0,255,0));
     updateWorld();
-    updateEntities(asyncC);
-    if(asyncC % 25 == 0){
-      updateSpecialBlocks();
+    updateEntities();
+    updateSound();
+    updateHUD();
+    if(fn % 13 == 0){
       updateSpawners();
     }
-    if(asyncC % 125 == 0){
+    if(fn % 125 == 0){
       healEntities();
     }
+    updateServer();
   }
 }
 
@@ -799,9 +825,29 @@ public float mDis(float x1,float y1,float x2,float y2) {
   return abs(y2-y1)+abs(x2-x1);
 }
 
-//STEM Phagescape API v(see above)
+public String StringReplaceAll(String str, String from, String to){
+  int index = str.indexOf(from);
+  while(index != -1){
+    str = str.substring(0,index) + to + str.substring(index+from.length(),str.length());
+    index = str.indexOf(from);
+  }
+  return str;
+}
+
+public PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
+  int xCap = min(max(x+w,0),canvas.width-1);
+  int yCap = min(max(y+h,0),canvas.width-1);
+  for(int i = min(max(x,0),canvas.width-1); i < xCap; i++){
+    for(int j = min(max(y,0),canvas.width-1); j < yCap; j++){
+      canvas.pixels[j*canvas.width+i] = col;
+    }
+  }
+  return canvas;
+}
+
 //STEM Phagescape API v(see above)
 
+float charWidth = 9;
 boolean isHoverText = false;
 String hoverText = "";
 
@@ -814,9 +860,7 @@ int totalChatWidth = 0;
 int lastChatCount = 0;
 ArrayList cL = new ArrayList<Chat>();
 
-
 ArrayList CFuns = new ArrayList<CFun>();
-
 
 public void drawChat(){
   
@@ -848,13 +892,13 @@ public void drawChat(){
   
   if(chatPush > 0){
     textAlign(LEFT,CENTER);
-    textSize(20);
+    textSize(18);
     stroke(255,220*chatPush);
     strokeWeight(3);
     fill(0,200*chatPush);
     rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
-    totalChatWidth = textMarkup(chatKBS,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
-    //text(chatKBS,chatHeight/5,height-chatHeight/2);
+    totalChatWidth = textMarkup(chatKBS,18,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
+    simpleText(chatKBS,chatHeight/5,height-chatHeight/2);
   }
   
   if(isHoverText){
@@ -863,8 +907,16 @@ public void drawChat(){
   }
 }
 
-public int textMarkup(String text, float x, float y, int defCol, float alpha, boolean showMarks){
-  textFont(fontBold,23);
+public void simpleText(String a, float x, float y){
+  text(a,x,y);
+}
+
+public int textMarkup(String text, float size, float x, float y, int defCol, float alpha, boolean showMarks){
+  size = size/18;
+  
+  textFont(fontBold);
+  
+  textSize(size*18);
   fill(defCol,alpha);
   noStroke();
   int pointer = 0;
@@ -873,41 +925,50 @@ public int textMarkup(String text, float x, float y, int defCol, float alpha, bo
   boolean tST = false;
   boolean rURL = false;
   String tREF = "";
+  String tempStr;
+  String tempStr2;
   for(int i = 0; i < text.length(); i++){
-    if(text.charAt(i) == '*'){
+    //println(text.charAt(i));
+    tempStr = text.charAt(i)+"";
+    if(tempStr.equals("*")){
       if(showMarks){
         fill(200,0,255,alpha);
-        text(text.charAt(i),x+pointer*14,y);
+        simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
         pointer++;
       }
       if(text.length() > i+1){
         if(showMarks){
-          text(text.charAt(i+1),x+pointer*14,y);
+          simpleText(text.charAt(i+1)+"",x+pointer*charWidth*size,y);
           pointer++;
         }
-        if(text.charAt(i+1) == 'r'){fill(255,0,0,alpha); lastColor=color(255,0,0);}  
-        if(text.charAt(i+1) == 'o'){fill(255,150,0,alpha); lastColor=color(255,150,0);}
-        if(text.charAt(i+1) == 'y'){fill(255,255,0,alpha); lastColor=color(255,255,0);}
-        if(text.charAt(i+1) == 'g'){fill(0,255,0,alpha); lastColor=color(0,255,0);}
-        if(text.charAt(i+1) == 'c'){fill(0,255,255,alpha); lastColor=color(0,255,255);}
-        if(text.charAt(i+1) == 'b'){fill(0,0,255,alpha); lastColor=color(0,0,255);}
-        if(text.charAt(i+1) == 'p'){fill(225,0,255,alpha); lastColor=color(225,0,255);}  
-        if(text.charAt(i+1) == 'm'){fill(255,0,255,alpha); lastColor=color(255,0,255);}
-        if(text.charAt(i+1) == 'w'){fill(255,255,255,alpha); lastColor=color(255,255,255);}
-        if(text.charAt(i+1) == 'k'){fill(0,0,0,alpha); lastColor=color(0,0,0);}
-        if(text.charAt(i+1) == 'i'){textFont(fontNorm,23);}
-        if(text.charAt(i+1) == 'n'){fill(defCol,alpha); lastColor=defCol; textFont(fontBold,23); tUL = false; tST = false;}
-        if(text.charAt(i+1) == 'u'){tUL = true;}
-        if(text.charAt(i+1) == 's'){tST = true;}
-        if(text.charAt(i+1) == 'a'){
+        tempStr = text.charAt(i+1)+"";
+        if(tempStr.equals("r")){fill(255,0,0,alpha); lastColor=color(255,0,0);}  
+        if(tempStr.equals("o")){fill(255,150,0,alpha); lastColor=color(255,150,0);}
+        if(tempStr.equals("y")){fill(255,255,0,alpha); lastColor=color(255,255,0);}
+        if(tempStr.equals("g")){fill(0,255,0,alpha); lastColor=color(0,255,0);}
+        if(tempStr.equals("c")){fill(0,255,255,alpha); lastColor=color(0,255,255);}
+        if(tempStr.equals("b")){fill(0,0,255,alpha); lastColor=color(0,0,255);}
+        if(tempStr.equals("p")){fill(225,0,255,alpha); lastColor=color(225,0,255);}  
+        if(tempStr.equals("m")){fill(255,0,255,alpha); lastColor=color(255,0,255);}
+        if(tempStr.equals("w")){fill(255,255,255,alpha); lastColor=color(255,255,255);}
+        if(tempStr.equals("k")){fill(0,0,0,alpha); lastColor=color(0,0,0);}
+        if(tempStr.equals("i")){/*textFont(fontNorm);*/}
+        if(tempStr.equals("n")){fill(defCol,alpha); lastColor=defCol; /*textFont(fontBold);*/ tUL = false; tST = false;}
+        if(tempStr.equals("u")){tUL = true;}
+        if(tempStr.equals("s")){tST = true;}
+        if(tempStr.equals("a")){
           tREF = "";
-          while(text.length() > i+2 && (text.charAt(i+1) != '!' || text.charAt(i) != '!')){
+          tempStr = text.charAt(i+1)+"";
+          tempStr2 = text.charAt(i)+"";
+          while(text.length() > i+2 && ((!tempStr.equals("!")) || (!tempStr2.equals("!")))){
             if(showMarks){
-              text(text.charAt(i+2),x+pointer*14,y);
+              simpleText(text.charAt(i+2)+"",x+pointer*charWidth*size,y);
               pointer++;
             }
             tREF = tREF + text.charAt(i+2);
             i++;
+            tempStr = text.charAt(i+1)+"";
+            tempStr2 = text.charAt(i)+"";
           }
           if(tREF.indexOf("!!") > -1){
             tREF = tREF.substring(0,tREF.length()-2);
@@ -915,11 +976,10 @@ public int textMarkup(String text, float x, float y, int defCol, float alpha, bo
               String[] tREF2 = split(tREF,"::");
               if(tREF2.length == 2){
                 for(int j = 0; j < tREF2[1].length(); j++){
-                  text(tREF2[1].charAt(j),x+pointer*14,y);
+                  simpleText(tREF2[1].charAt(j)+"",x+pointer*charWidth*size,y);
                   pointer++;
                 }
-                //rect(,y-chatHeight/4,tREF2[1].length()*14,chatHeight/2);
-                if(mouseX > x+(pointer-tREF2[1].length())*14 && mouseX < x+pointer*14){
+                if(mouseX > x+(pointer-tREF2[1].length())*charWidth*size && mouseX < x+pointer*charWidth*size){
                   if(mouseY > y-chatHeight/4 && mouseY < y+chatHeight/4){
                     if(tREF2[0].indexOf("\"\"") > -1){
                       String[] tREF3 = split(tREF2[0],"\"\"");
@@ -938,21 +998,76 @@ public int textMarkup(String text, float x, float y, int defCol, float alpha, bo
             fill(lastColor,alpha);
           }
         }
+        tempStr = text.charAt(i+1)+"";
+        if(tempStr.equals("#")){ textMarkup(text.substring(i+2,text.length()), size*18, x, y+size*18, defCol, alpha, showMarks); i = text.length(); }
       }
       i++;
     } else {
-      text(text.charAt(i),x+pointer*14,y);
+      simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
       pointer++;
       if(tUL){
-        rect(x+pointer*14-14,y+10,14,1);
+        rect(x+pointer*charWidth*size-charWidth*size,y+10,charWidth*size,1);
       }
       if(tST){
-        rect(x+pointer*14-14,y,14,1);
+        rect(x+pointer*charWidth*size-charWidth*size,y,charWidth*size,1);
       }
     }
     
   }
   return pointer;
+}
+
+public float simpleTextWidth(String str, float size){
+  if(str.indexOf("*#") == -1){
+    return str.length()*charWidth*size/18;
+  } else {
+    int pos = str.indexOf("*#");
+    return max(pos*charWidth*size/18,simpleTextWidth(str.substring(pos+2,str.length()),size));
+  }
+}
+
+public float simpleTextHeight(String str, float size){
+  int lines = 1;
+  int nextIndex = str.indexOf("*#");
+  while(nextIndex != -1){
+    lines++;
+    nextIndex = str.indexOf("*#",nextIndex+1);
+  }
+  return lines*size;
+}
+
+public String simpleTextCrush(String str, float size, float w){
+  String[] lines = new String[100];
+  int nextLine = 1;
+  int pointer = 0;
+  String tempStr;
+  lines[0] = StringReplaceAll(str,"*#"," ");
+  
+  while(nextLine < 99 && simpleTextWidth(lines[nextLine-1],size) > w){
+    pointer = floor(w/(charWidth*size/18));
+    tempStr = lines[nextLine-1].charAt(pointer) + "";
+    while(pointer > 0 && !tempStr.equals(" ")){
+      pointer--;
+      tempStr = lines[nextLine-1].charAt(pointer) + "";
+    }
+    if(pointer > 0){
+      lines[nextLine] = lines[nextLine-1].substring(pointer+1,lines[nextLine-1].length());
+    } else {
+      pointer = ceil(w/(charWidth*size/18));
+      lines[nextLine] = lines[nextLine-1].substring(pointer,lines[nextLine-1].length());
+    }
+    lines[nextLine-1] = lines[nextLine-1].substring(0,pointer);
+    if(nextLine > 1){
+      str = str + "*#" + lines[nextLine-1];
+    } else {
+      str = lines[0];
+    }
+    nextLine++;
+  }
+  if(nextLine > 1){
+    str = str + "*#" + lines[nextLine-1];
+  }
+  return str;
 }
 
 class Chat{
@@ -979,8 +1094,8 @@ class Chat{
         noStroke();
       
         fill(0,100+100*chatPush-255*fadeOut);
-        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,14*totalChatWidthL+chatHeight,chatHeight,0,100,100,0);
-        totalChatWidthL = textMarkup(content,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush,color(255),100+100*chatPush-255*fadeOut,false);
+        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,charWidth*totalChatWidthL+chatHeight,chatHeight,0,100,100,0);
+        totalChatWidthL = textMarkup(content,18,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush,color(255),100+100*chatPush-255*fadeOut,false);
       }
     }
   }
@@ -991,7 +1106,7 @@ public void drawTextBubble(float tx, float ty, String tText, float opacity){
     String[] textFragments = split(tText,"##");
     float tw = 0;
     for(int i = 0; i < textFragments.length; i++){
-      tw = max(textFragments[i].length()*14+chatHeight,tw);
+      tw = max(textFragments[i].length()*charWidth+chatHeight,tw);
     }
     
     float td = chatHeight+(textFragments.length-1)*chatHeight*2/3;
@@ -1016,12 +1131,14 @@ public void drawTextBubble(float tx, float ty, String tText, float opacity){
     rect(tx2-tw/2-chatHeight/10,ty2-chatHeight/2-chatHeight*2/3*(textFragments.length-1)/2,tw+chatHeight/5,td,chatHeight/10);
     
     for(int i = 0; i < textFragments.length; i++){
-      textMarkup(textFragments[i],tx2-tw/2+chatHeight/2,ty2-chatHeight*2/3*(textFragments.length-1)/2+chatHeight*2/3*i,color(0),opacity*2,false);
+      textMarkup(textFragments[i],18,tx2-tw/2+chatHeight/2,ty2-chatHeight*2/3*(textFragments.length-1)/2+chatHeight*2/3*i,color(0),opacity*2,false);
     }
   }
 }
 
 public void keyPressedChat(){
+  println(key);
+  println(keyCode);
   if(chatPushing){
     if(key != CODED){
       if(keyCode == BACKSPACE){
@@ -1043,8 +1160,8 @@ public void keyPressedChat(){
           chatPush = 0;
         }
       } else {
-        if(14*totalChatWidth < width/5*4-chatHeight/5*2){
-          chatKBS = chatKBS+key;
+        if(charWidth*totalChatWidth < width/5*4-chatHeight/5*2){
+          chatKBS = chatKBS+str(key);
         }
       }
     }
@@ -1056,7 +1173,6 @@ public void keyPressedChat(){
 }
 
 public void tryCommand(String command, String source) {
-  
   String[] commands = split(command," ");
   int args = commands.length-1;
   commands[0] = commands[0].toLowerCase();
@@ -1064,6 +1180,7 @@ public void tryCommand(String command, String source) {
   Boolean didNone = true;
   for(int i = 0; i < CFuns.size(); i++){
     CFun tempFun = (CFun)CFuns.get(i);
+    
     if(tempFun.name.toLowerCase().equals(commands[0])){
       didNone = false;
       if(source.equals("") || tempFun.free){
@@ -1076,6 +1193,7 @@ public void tryCommand(String command, String source) {
         cL.add(new Chat("*oYou need permission to use /*i*o"+commands[0]+"*n"));
       }
     }
+    
 
   }
   
@@ -1105,43 +1223,137 @@ class CFun{
 
 
 //STEM Phagescape API v(see above)
+//String[] effects = {""}
+PImage debugGraph;
+ArrayList debugWave = new ArrayList<PVector>();
+ArrayList debugEvents = new ArrayList<PVector>();
+
+public void setupDebug(){
+  debugGraph = new PImage(width/2,height/3);
+  debugWave.add(new PVector(width/2-1,0));
+}
+
+public void debugLog(int argColor){
+  debugEvents.add(new PVector(argColor,0));
+}
+
+public void updateDebug(){
+  
+  int bar = PApplet.parseInt(height/3-(1000/frameRateGoal));
+  
+  PVector tempPointer = (PVector)debugWave.get(debugWave.size()-1);
+  debugWave.add(new PVector((tempPointer.x+1)%(width/2),min(millis()-lastMillis,height/3-1-15*debugEvents.size())));
+  if(debugWave.size() > 10){
+    debugWave.remove(0);
+  }
+  tempPointer = (PVector)debugWave.get(debugWave.size()-1);
+  
+  debugGraph.loadPixels();
+  for(int i = 0; i < height/3; i++){
+    if(i == bar){
+      debugGraph.pixels[PApplet.parseInt(tempPointer.x)+i*(width/2)] = color(0,255,0);
+    } else {
+      debugGraph.pixels[PApplet.parseInt(tempPointer.x)+i*(width/2)] = color(0);
+    }
+  }
+  for(int j = debugEvents.size()-1; j >= 0; j--){
+    PVector eventColor = (PVector) debugEvents.get(j);
+    for(int i = 1; i < 16; i++){
+      debugGraph.pixels[PApplet.parseInt(min(tempPointer.x,width/2-1))+(min(i+15*j,height/3-1))*(width/2)] = PApplet.parseInt(eventColor.x);
+    }
+  }
+  debugEvents.clear();
+  for(int i = floor((height/3)-tempPointer.y); i < height/3; i++){
+    if(i == bar){
+      debugGraph.pixels[PApplet.parseInt(tempPointer.x)+i*(width/2)] = color(0,255,0);
+    } else {
+      debugGraph.pixels[PApplet.parseInt(tempPointer.x)+i*(width/2)] = color(255,0,0);
+    }
+  }
+  for(int j = debugWave.size()-2; j >= 0; j--){
+    tempPointer = (PVector)debugWave.get(j);
+    for(int i = floor((height/3)-tempPointer.y); i < height/3; i++){
+      if(i == bar){
+        debugGraph.pixels[PApplet.parseInt(tempPointer.x)+i*(width/2)] = color(0,255,0);
+      } else {
+        debugGraph.pixels[PApplet.parseInt(tempPointer.x)+i*(width/2)] = color(150+j*10,0,0);
+      }
+      
+    }
+  }
+  debugGraph.updatePixels();
+  image(debugGraph,width/2,height/3*2);
+  
+  lastMillis = millis();
+}
 //STEM Phagescape API v(see above)
 
-boolean[][] smap;
+EConfig[] EConfigs = new EConfig[356];
 
-EConfig bulletEntity = new EConfig();
+boolean[][] smap;
+int entityIDCycle = 0;
+int maxMimicID = -1;
+ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+Mimic[][] mimicIDs = new Mimic[100][0];
+
+int EC_PLAYER = 0;
+int EC_BULLET = 1;
+public int EC_NEXT(){return ecCycleNext++;}
+int ecCycleNext = 2;
+
+int particleCycle = 0;
+
+//EConfig bulletEntity = new EConfig();
+
+
 
 public void setupEntities(){
   
-  bulletEntity.Size = .1f; //TO BE REMOVED
-  player = new Entity(wSize/2,wSize/2,new EConfig(),0);
-  player.EC.Genre = 1;
-  player.EC.Img = loadImage("player.png");
+  EConfigs[1] = new EConfig();
+  
+  EConfigs[1].Size = .13f; //TO BE REMOVED
+  EConfigs[EC_PLAYER] = new EConfig();
+  EConfigs[EC_PLAYER].Genre = 1;
+  EConfigs[EC_PLAYER].Img = loadImage("player.png");
+  player = new Entity(wSize/2,wSize/2,EC_PLAYER,0);
   entities.add(player);
 }
 
-public void updateEntities(int cycle){
+public void reloadMimicIDs(){
+  mimicIDs = new Mimic[100][maxMimicID+1];
+  for (int i = mimics.size()-1; i >= 0; i--) {
+    Mimic tempM = (Mimic) mimics.get(i);
+    mimicIDs[tempM.playerID-1][tempM.ID] = tempM;
+  }
+}
+
+public void updateEntities(){
+  /*for (int i = 0; i < mimics.size(); i++) {
+    Mimic tempM = (Mimic) mimics.get(i);
+    tempM.update();
+  }*/
   for (int i = entities.size()-1; i >= 0; i--) {
     Entity tempE = (Entity) entities.get(i);
-    tempE.moveAI(cycle);
-  }
-  if((floor(player.eV.x) != floor(player.eVLast.x)) || (floor(player.eV.y) != floor(player.eVLast.y))){
-    updateSpecialBlocks();
+    tempE.moveAI();
   }
 }
 
 public void healEntities(){
   for (int i = entities.size()-1; i >= 0; i--) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.eHealth < tempE.EC.HMax){
+    if(tempE.eHealth < EConfigs[tempE.EC].HMax){
       tempE.eHealth++;
     } else {
-      tempE.eHealth = tempE.EC.HMax;
+      tempE.eHealth = EConfigs[tempE.EC].HMax;
     }
   }
 }
 
 public void drawEntities(){
+  for (int i = 0; i < mimics.size(); i++) {
+    Mimic tempM = (Mimic) mimics.get(i);
+    tempM.display();
+  }
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
     tempE.display();
@@ -1149,19 +1361,19 @@ public void drawEntities(){
 }
 
 class Entity {
-  float ID = random(1000);
+  int ID;
   
   int trail = 20;
   ArrayList path = new ArrayList<PVector>();
   
   int thisI;
-  EConfig EC;
+  int EC;
   float x;
   float y;
   PVector eV;
   float eDir = 0;
   PVector eD;
-  int eHealth;
+  int eHealth = 1;
   float eSpeed = 0; //Player speed
   float eTSpeed = 0; //Player turn speed
   boolean eMove = false;
@@ -1171,13 +1383,20 @@ class Entity {
   float eFade = 0; //Particle fade
   
   int eID;
+  float sourceID = -1;
+  
   
   PVector AITargetPos = new PVector(-1,-1);
   int AIDir = 1;
   boolean AIFollowSide = false;
   int[][] AIMap = new int[100][100];
   
-  Entity(float tx, float ty, EConfig tEC, float tDir) {
+  int timeOff = floor(random(100));
+  
+  Entity(float tx, float ty, int tEC, float tDir) {
+    ID = entityIDCycle;
+    entityIDCycle++;
+    //println("ID "+str(ID));
     x = tx;
     y = ty;
     eDir = tDir;
@@ -1186,8 +1405,10 @@ class Entity {
     eVLast = new PVector(x,y);
     eV = new PVector(x,y);
     eID = floor(random(2147483.647f))*1000;
-    eHealth = EC.HMax;
+    eHealth = EConfigs[EC].HMax;
     path.add(new PVector(eV.x, eV.y));
+    
+    tryCommand(StringReplaceAll(StringReplaceAll(EConfigs[EC].BirthCommand,"_x_",str(x)),"_y_",str(y)),"");
   }
   
   public void moveEvent(int eventID){
@@ -1198,19 +1419,14 @@ class Entity {
         tempTo = 0;
       }
       if(key == CODED){
-        switch(keyCode){
-          case UP:
+        if(keyCode == UP){
             pKeys[0] = tempTo;
-            break;
-          case DOWN:
+        } else if(keyCode == DOWN){
             pKeys[1] = tempTo;
-            break;
-          case LEFT:
+        } else if(keyCode == LEFT){
             pKeys[2] = tempTo;
-            break;
-          case RIGHT:
+        } else if(keyCode == RIGHT){
             pKeys[3] = tempTo;
-            break;
         }
       } else {
         switch(key){
@@ -1235,24 +1451,82 @@ class Entity {
     }
   }
   
-  public void moveAI(int cycle){
+  public void moveAI(){
     eV = new PVector(x,y);
-    if(EC.Genre == 0){
-      if(x>wSize || x<0 || y>wSize || y<0 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
+    if(EConfigs[EC].Genre == 0){
+      if(x>wSize+5 || x<-5 || y>wSize+5 || y<-5 || aGS1DB(gBIsSolid,aGS(wU,x,y))){
         if(aGS1DB(gBIsSolid,aGS(wU,x,y))){
           EConfig tempConfig;
-          particleEffect(x-.5f,y-.5f,1,1,5,aGS1DC(gBColor,aGS(wU,x,y)),EC.Color,EC.SMax/5);
-          aSS(wUDamage,x,y,aGS(wUDamage,x,y)+1);
+          particleEffect(x-.5f,y-.5f,1,1,5,aGS1DC(gBColor,aGS(wU,x,y)),EConfigs[EC].Color,EConfigs[EC].SMax/5);
+          hitBlock(x,y,1,false);
         }
+        
         destroy();
+        
       } else {
-        x += EC.SMax*cos(eDir);
-        y += EC.SMax*sin(eDir);
+        x += EConfigs[EC].SMax*cos(eDir);
+        y += EConfigs[EC].SMax*sin(eDir);
         eV = new PVector(x,y);
       }
-    } else if(EC.Genre == 1){
+    } else if(EConfigs[EC].Genre == 1){
       eMove = false;
-      if(EC.Type == 0){
+      if(EConfigs[EC].Type == 0 || EConfigs[EC].Type == 1){
+        if(fn % 15 == 0){
+          if(EConfigs[EC].AIDoorBlock > -1 || EConfigs[EC].AIDoorBlockClose > -1){
+            PVector doorCenter = new PVector(0,0);
+            int pastFrames = 0;
+            boolean isClosed = false;
+            boolean isOpen = false;
+            for(int i = -EConfigs[EC].AIDoorWidth; i <= EConfigs[EC].AIDoorWidth; i++){
+              for(int j = -EConfigs[EC].AIDoorWidth; j <= EConfigs[EC].AIDoorWidth; j++){
+                if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlock || aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlockClose){
+                  if(pastFrames == 0){
+                    doorCenter = new PVector(x+i,y+j);
+                  } else if(pastFrames == 1){
+                    doorCenter = new PVector((x+i+doorCenter.x)/2,(y+j+doorCenter.y)/2);
+                  }
+                  if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlock){
+                    isClosed = true;
+                  } else {
+                    isOpen = true;
+                  }
+                  pastFrames++;
+                }
+              }
+            }
+            
+            if(isOpen != isClosed){
+              if(pastFrames > 0 && pastFrames < 3){
+                boolean changeDoorState = false;
+                if(pointDistance(doorCenter,new PVector(eV.x+cos(eDir)/20,eV.y+sin(eDir)/20)) < pointDistance(doorCenter,eV)){
+                  if(isOpen == false){
+                    changeDoorState = true;
+                  }
+                }
+              
+                if(pointDistance(doorCenter,new PVector(eV.x+cos(eDir)/20,eV.y+sin(eDir)/20)) > pointDistance(doorCenter,eV)){
+                  if(isOpen){
+                    changeDoorState = true;
+                  }
+                }
+                
+                if(changeDoorState){
+                  for(int i = -EConfigs[EC].AIDoorWidth; i <= EConfigs[EC].AIDoorWidth; i++){
+                    for(int j = -EConfigs[EC].AIDoorWidth; j <= EConfigs[EC].AIDoorWidth; j++){
+                      if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlock){
+                        aSS(wU,x+i,y+j,gBBreakType[EConfigs[EC].AIDoorBlock]);
+                      } else if(aGS(wU,x+i,y+j)==EConfigs[EC].AIDoorBlockClose){
+                        aSS(wU,x+i,y+j,gBBreakType[EConfigs[EC].AIDoorBlockClose]);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      if(EConfigs[EC].Type == 0){
         if(mousePressed || max(pKeys) == 1){
           if(!mousePressed){
             eD = new PVector(eV.x+(-pKeys[2]+pKeys[3]),eV.y+(-pKeys[0]+pKeys[1]));
@@ -1262,35 +1536,39 @@ class Entity {
           eMove = true;
         }
       }
-      if(EC.Type == 1){
-        if(EC.AISearchMode > -1){
-          if(EC.AISearchMode < 10){
-            if(cycle % 25 == 0){
-              if(pointDistance(eV,AITargetPos)<EC.ActDist){
+      if(EConfigs[EC].Type == 1){
+        if(EConfigs[EC].AISearchMode > -1){
+          
+
+          
+          
+          if(EConfigs[EC].AISearchMode < 10){
+            if(fn % EConfigs[EC].FireDelay == timeOff % EConfigs[EC].FireDelay){
+              if(pointDistance(eV,AITargetPos)<EConfigs[EC].ActDist){
                 if(rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))){
                   fire(AITargetPos);
                 }
               }
             }
-            if(EC.AITarget > -1){
-              if(cycle % 125 == 0){
+            if(EConfigs[EC].AITarget > -1){
+              if(fn % 125 == 0){
               
-                if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
+                if(aGS(wU,AITargetPos.x,AITargetPos.y) != EConfigs[EC].AITarget){
                   setAITarget();
                 }
               }
             } else {
-              if(cycle % 10 == 0){ 
-                if(pointDistance(entityNearID(AITargetPos,EC.AITargetID,30,100),AITargetPos)>.2f){
+              if(fn % 10 == 0){ 
+                if(pointDistance(entityNearID(AITargetPos,EConfigs[EC].AITargetID,30,100),AITargetPos)>.2f){
                   //println("HEY, YOU MOVED!");
                   setAITarget();
                 }
               }
             }
-            if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
-              if(EC.AISearchMode == 1 || EC.AISearchMode == 2){
-                if(cycle % 25 == 0){
-                  if(pointDistance(eVLast,eV)<EC.Drag){
+            if(pointDistance(eV,AITargetPos)>EConfigs[EC].GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y)) == false){
+              if(EConfigs[EC].AISearchMode == 1 || EConfigs[EC].AISearchMode == 2){
+                if(fn % EConfigs[EC].FireDelay == timeOff % EConfigs[EC].FireDelay){
+                  if(pointDistance(eVLast,eV)<EConfigs[EC].Drag){
                     setAITarget();
                   }
                 }
@@ -1298,8 +1576,8 @@ class Entity {
               }
               eMove = true;
               
-              if(EC.AISearchMode == 3){
-                if(cycle % 125 == 0){
+              if(EConfigs[EC].AISearchMode == 3){
+                if(fn % 125 == 0){
                   setAITarget();
                 }
                 if(floor(eVLast.x) != floor(eV.x) || floor(eVLast.y) != floor(eV.y)){
@@ -1308,34 +1586,31 @@ class Entity {
                 if(Apath.size()>0){
                   eD = new PVector(((Node)Apath.get(Apath.size()-1)).x+.5f,((Node)Apath.get(Apath.size()-1)).y+.5f);
                 } else {
-                  if(cycle % 25 == 0){
-                    if(pointDistance(eVLast,eV)<EC.Drag){
-                      AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+                  if(fn % 25 == 0){
+                    if(pointDistance(eVLast,eV)<EConfigs[EC].Drag){
+                      AITargetPos = blockNear(eV,EConfigs[EC].AITarget,random(90)+10);
                     }
                   }
                 }
               }
             }
-          } else {
-            if(EC.AISearchMode == 11 || EC.AISearchMode == 12){
-              if(EC.AIDoorBlock > -1){
-                for(int i = -4; i < 5; i++){
-                  for(int j = -4; j < 5; j++){
-                    if(aGS(wU,x+i,y+j)==EC.AIDoorBlock){aSS(wU,x+i,y+j,gBBreakType[EC.AIDoorBlock]);}
-                  }
-                }
+          } else if(EConfigs[EC].AISearchMode < 30) {
+            if(fn % EConfigs[EC].FireDelay == timeOff % EConfigs[EC].FireDelay){
+              PVector tempTarget = entityNearID(eV,EConfigs[EC].AITargetID,EConfigs[EC].ActDist,100);
+              if(tempTarget.z != -1){
+                fire(AITargetPos);
               }
             }
-            if(EC.AISearchMode == 11){
-              if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
+            if(EConfigs[EC].AISearchMode == 11){
+              if(pointDistance(eV,AITargetPos)>EConfigs[EC].GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
                 eMove = true;
               }
-              if(cycle % 25 == 0){
+              if(fn % 25 == 0){
                 setAITarget();
               }
-            } else if(EC.AISearchMode == 12){
+            } else if(EConfigs[EC].AISearchMode == 12){
               eMove = true;
-              if(cycle % 250 == 0){
+              if(fn % 250 == 0){
                 AITargetPos = new PVector(eV.x,eV.y);
               }
               if(pointDistance(eV,AITargetPos) < .5f){
@@ -1343,25 +1618,16 @@ class Entity {
               }
             }
             
-            if(EC.AISearchMode == 21 || EC.AISearchMode == 22){
-              if(EC.AIDoorBlock > -1){
-                for(int i = -4; i < 5; i++){
-                  for(int j = -4; j < 5; j++){
-                    if(aGS(wU,x+i,y+j)==EC.AIDoorBlock){aSS(wU,x+i,y+j,gBBreakType[EC.AIDoorBlock]);}
-                  }
-                }
-              }
-            }
-            if(EC.AISearchMode == 21){
-              if(pointDistance(eV,AITargetPos)>EC.GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
+            if(EConfigs[EC].AISearchMode == 21){
+              if(pointDistance(eV,AITargetPos)>EConfigs[EC].GoalDist || rayCast(floor(AITargetPos.x),floor(AITargetPos.y),floor(eV.x),floor(eV.y))==false){
                 eMove = true;
               }
-              if(cycle % 35 == 0){
+              if(fn % 35 == 0){
                 setAITarget();
               }
-            } else if(EC.AISearchMode == 22){
+            } else if(EConfigs[EC].AISearchMode == 22){
               eMove = true;
-              if(cycle % 300 == 0){
+              if(fn % 300 == 0){
                 for(int i = 0; i < wSize; i++){
                   for(int j = 0; j < wSize; j++){
                     if(aGS(AIMap,i,j) > 1){aSS(AIMap,i,j,aGS(AIMap,i,j)-1);}
@@ -1369,7 +1635,7 @@ class Entity {
                   }
                 }
               }
-              if(cycle % 10 == 0){
+              if(fn % 10 == 0){
                 for(int i = -6; i < 7; i++){
                   for(int j = -6; j < 7; j++){
                     aSS(AIMap,x+i,y+j,min(aGS(AIMap,x+i,y+j)+1,6));
@@ -1378,7 +1644,7 @@ class Entity {
                 
                 for (int k = 0; k < entities.size(); k++) {
                   Entity tempE = (Entity) entities.get(k);
-                  if(tempE.EC.ID == EC.AITargetID){
+                  if(EConfigs[tempE.EC].ID == EConfigs[EC].AITargetID){
                     for(int i = -6; i < 7; i++){
                       for(int j = -6; j < 7; j++){
                         aSS(AIMap,tempE.x+i,tempE.y+j,max(aGS(AIMap,tempE.x+i,tempE.y+j)-1,-6));
@@ -1388,11 +1654,20 @@ class Entity {
                 }
                 
               }
-              if(cycle % 25 == 0){
+              if(fn % 25 == 0){
                 AITargetPos = new PVector(eV.x,eV.y);
               }
               if(pointDistance(eV,AITargetPos) < 1.5f){
                 setAITarget();
+              }
+            }
+          } else {
+            if(EConfigs[EC].AISearchMode == 30){
+              eDir = pointDir(eV,AITargetPos);
+              if(pointDistance(eV,AITargetPos) < EConfigs[EC].SMax){
+                eV = new PVector(AITargetPos.x,AITargetPos.y);
+              } else {
+                eV = new PVector(eV.x+cos(eDir)*EConfigs[EC].SMax,eV.y+sin(eDir)*EConfigs[EC].SMax);
               }
             }
           }
@@ -1404,27 +1679,27 @@ class Entity {
       eVLast = new PVector(eV.x,eV.y);
       
       if(eMove){
-        if(eSpeed+EC.Accel < EC.SMax){
-          eSpeed += EC.Accel;
+        if(eSpeed+EConfigs[EC].Accel < EConfigs[EC].SMax){
+          eSpeed += EConfigs[EC].Accel;
         } else {
-          eSpeed = EC.SMax;
+          eSpeed = EConfigs[EC].SMax;
         }
       }
-      if(eSpeed-EC.Drag > 0){
-        eSpeed -= EC.Drag;
+      if(eSpeed-EConfigs[EC].Drag > 0){
+        eSpeed -= EConfigs[EC].Drag;
       } else {
         eSpeed = 0;
       }
-      if(abs(eTSpeed)+EC.TAccel < EC.TSMax){
-        eTSpeed += angleDir(eDir,pointDir(eV, eD))*EC.TAccel;
+      if(abs(eTSpeed)+EConfigs[EC].TAccel < EConfigs[EC].TSMax){
+        eTSpeed += angleDir(eDir,pointDir(eV, eD))*EConfigs[EC].TAccel;
       }
-      eDir += eTSpeed*eSpeed/EC.SMax; //pTSpeed*pSpeed/pSMax
-      if(abs(eTSpeed)-EC.TDrag > 0){
-        eTSpeed = (abs(eTSpeed)-EC.TDrag)*abs(eTSpeed)/eTSpeed;
+      eDir += eTSpeed*eSpeed/EConfigs[EC].SMax; //pTSpeed*pSpeed/pSMax
+      if(abs(eTSpeed)-EConfigs[EC].TDrag > 0){
+        eTSpeed = (abs(eTSpeed)-EConfigs[EC].TDrag)*abs(eTSpeed)/eTSpeed;
       } else {
         eTSpeed = 0;
       }
-      eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EC.Size-.5f,EC.Size-.5f);
+      eV = moveInWorld(eV, new PVector(eSpeed*cos(eDir),eSpeed*sin(eDir)),EConfigs[EC].Size*EConfigs[EC].HitboxScale-.5f,EConfigs[EC].Size*EConfigs[EC].HitboxScale-.5f);
       
       if(floor(eV.x) != floor(eVLast.x) || floor(eV.y) != floor(eVLast.y)){
         path.add(new PVector(eV.x, eV.y));
@@ -1437,24 +1712,27 @@ class Entity {
         tempPV.y = eV.y;
       }
       
-      if(isEntityNearGenreSpecial(eV, 0, EC.Size/3)) {
-        Entity te = entityNearGenreSpecial(eV, 0, EC.Size/3);
-        te.destroy();
-        eHealth--;
-        if(eHealth <= 0){
-          destroy();
-          particleEffect(x-.5f,y-.5f,1,1,30,color(0,0,255),color(0,255,255),.1f);
-          if(EC.DeathCommand != ""){
-            tryCommand((EC.DeathCommand).replaceAll("_x_",str(x)).replaceAll("_y_",str(y)),"");
+      if(isEntityNearGenreSpecial(eV, 0, EConfigs[EC].Size*EConfigs[EC].HitboxScale/3)) {
+        Entity te = entityNearGenreSpecial(eV, 0, EConfigs[EC].Size*EConfigs[EC].HitboxScale/3);
+        //tryCommand(StringReplaceAll(StringReplaceAll(te.EC.DeathCommand,"_x_",str(te.x)),"_y_",str(te.y)),"");
+        if(te.sourceID != ID){
+          te.destroy();
+          eHealth--;
+          
+          tryCommand(StringReplaceAll(StringReplaceAll(EConfigs[EC].HitCommand,"_x_",str(x)),"_y_",str(y)),"");
+          if(EConfigs[EC].HMax > -1 && eHealth <= 0){
+            particleEffect(x-.5f,y-.5f,1,1,30,EConfigs[EC].AltColor,EConfigs[EC].Color,.1f);
+            //tryCommand(StringReplaceAll(StringReplaceAll(EC.DeathCommand,"_x_",str(x)),"_y_",str(y)),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+            destroy();
           }
         }
       }
   
-    } else if(EC.Genre == 2){
-      x += EC.SMax*cos(eDir);
-      y += EC.SMax*sin(eDir);
+    } else if(EConfigs[EC].Genre == 2){
+      x += EConfigs[EC].SMax*cos(eDir);
+      y += EConfigs[EC].SMax*sin(eDir);
       eV = new PVector(x,y);
-      eFade += EC.FadeRate;
+      eFade += EConfigs[EC].FadeRate;
       if(eFade>1){
         destroy();
       }
@@ -1464,42 +1742,41 @@ class Entity {
   }
   
   public void setAITarget(){
-    if(EC.AISearchMode == 0){
-      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,100);} else {AITargetPos = entityNearID(eV,EC.AITargetID,30,100);}
-    } else if(EC.AISearchMode == 1){
-      if(EC.AITarget > -1){AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);} else {AITargetPos = entityNearID(eV,EC.AITargetID,30,random(90)+10);}
-    } else if(EC.AISearchMode == 2){
-      AITargetPos = blockNearCasting(eV,EC.AITarget);
-      if(aGS(wU,AITargetPos.x,AITargetPos.y) != EC.AITarget){
-        AITargetPos = blockNear(eV,EC.AITarget,random(90)+10);
+    if(EConfigs[EC].AISearchMode == 0){
+      if(EConfigs[EC].AITarget > -1){AITargetPos = blockNear(eV,EConfigs[EC].AITarget,100);} else {AITargetPos = entityNearID(eV,EConfigs[EC].AITargetID,30,100);}
+    } else if(EConfigs[EC].AISearchMode == 1){
+      if(EConfigs[EC].AITarget > -1){AITargetPos = blockNear(eV,EConfigs[EC].AITarget,random(90)+10);} else {AITargetPos = entityNearID(eV,EConfigs[EC].AITargetID,30,random(90)+10);}
+    } else if(EConfigs[EC].AISearchMode == 2){
+      AITargetPos = blockNearCasting(eV,EConfigs[EC].AITarget);
+      if(aGS(wU,AITargetPos.x,AITargetPos.y) != EConfigs[EC].AITarget){
+        AITargetPos = blockNear(eV,EConfigs[EC].AITarget,random(90)+10);
       }
-    } else if(EC.AISearchMode == 3){
+    } else if(EConfigs[EC].AISearchMode == 3){
       
-      if(aGS(wU,eV.x,eV.y) != EC.AITarget){
-        searchWorld(eV,EC.AITarget,(int)EC.Vision/10);
+      if(aGS(wU,eV.x,eV.y) != EConfigs[EC].AITarget){
+        searchWorld(eV,EConfigs[EC].AITarget,(int)EConfigs[EC].Vision/10);
         
         if(Apath.size()>0){
           AITargetPos = new PVector(((Node)Apath.get(0)).x,((Node)Apath.get(0)).y);
         }
       }
       
-    } else if(EC.AISearchMode == 11){
+    } else if(EConfigs[EC].AISearchMode == 11){
       //follow path (line of sight)
       //test line of sight, if none, change mode, call again
-      PVector tempTarget = rayCastAllPathsID(eV,EC.AITargetID,30);
+      PVector tempTarget = rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30);
       if(tempTarget != null){
         AITargetPos = tempTarget;
-        println("a");
       } else {
-        EC.AISearchMode = 12;
+        EConfigs[EC].AISearchMode = 12;
         setAITarget();
         return;
       }
-    } else if(EC.AISearchMode == 12){
+    } else if(EConfigs[EC].AISearchMode == 12){
       //Strange (no line > 10)
       //test line of sight, change mode, call again
 
-      if(rayCastAllPathsID(eV,EC.AITargetID,30) == null){
+      if(rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30) == null){
         AITargetPos.x = floor(AITargetPos.x)+.5f;
         AITargetPos.y = floor(AITargetPos.y)+.5f;
         
@@ -1572,33 +1849,29 @@ class Entity {
             AITargetPos.x--;
           }
         }
-        
-        
-            
-        println("c");
       } else {
-        EC.AISearchMode = 11;
+        EConfigs[EC].AISearchMode = 11;
         setAITarget();
         return;
       }
       
-    } else if(EC.AISearchMode == 21){
+    } else if(EConfigs[EC].AISearchMode == 21){
       //follow path (line of sight)
       //test line of sight, if none, change mode, call again
-      PVector tempTarget = rayCastAllPathsID(eV,EC.AITargetID,30);
+      PVector tempTarget = rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30);
       if(tempTarget != null){
         AITargetPos = tempTarget;
         println("aa");
       } else {
-        EC.AISearchMode = 22;
+        EConfigs[EC].AISearchMode = 22;
         setAITarget();
         return;
       }
-    } else if(EC.AISearchMode == 22){
+    } else if(EConfigs[EC].AISearchMode == 22){
       //Strange (no line > 10)
       //test line of sight, change mode, call again
 
-      if(rayCastAllPathsID(eV,EC.AITargetID,30) == null){
+      if(rayCastAllPathsID(eV,EConfigs[EC].AITargetID,30) == null){
         
         PVector[] tPoints = new PVector[30];
         for(int i = 0; i < 30; i++){
@@ -1630,13 +1903,13 @@ class Entity {
         
         println("cc");
       } else {
-        EC.AISearchMode = 21;
+        EConfigs[EC].AISearchMode = 21;
         setAITarget();
         return;
       }
       
     }
-    if(EC.AITarget > -1){
+    if(EConfigs[EC].AITarget > -1){
       AITargetPos = new PVector(AITargetPos.x+.5f,AITargetPos.y+.5f);
     }
     eD = new PVector(AITargetPos.x,AITargetPos.y);
@@ -1644,51 +1917,65 @@ class Entity {
   
   public void fire(PVector tempV){
     float tempDir = pointDir(eV,tempV);
-    entities.add(new Entity(x+EC.Size/2*cos(tempDir),y+EC.Size/2*sin(tempDir),bulletEntity,tempDir));
+    Entity tempEntity = new Entity(x+EConfigs[EC].Size/2*cos(tempDir),y+EConfigs[EC].Size/2*sin(tempDir),EConfigs[EC].myBulletEntity,tempDir);
+    tempEntity.sourceID = ID;
+    entities.add(tempEntity);
   }
   
   public void display() {
-    PVector tempV = pos2Screen(new PVector(x,y));
-    if(EC.Genre == 0){
-      stroke(255);
-      strokeWeight(4);
-      fill(EC.Color);
-      ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
-    } else if(EC.Genre == 1) {
-      pushMatrix();
-      translate(tempV.x,tempV.y);
-      rotate(eDir+PI/2);
-      image(EC.Img,-gScale/2*EC.Size,-gScale/2*EC.Size,gScale*EC.Size,gScale*EC.Size);
-      popMatrix();
+    if(aGS(nmapShade,x,y) > 0){
+      PVector tempV = pos2Screen(new PVector(x,y));
+      if(tempV.x > -gScale*EConfigs[EC].Size/2 && tempV.y > -gScale*EConfigs[EC].Size/2 && tempV.x < width+gScale*EConfigs[EC].Size/2 && tempV.y < height+gScale*EConfigs[EC].Size/2){
       
-      if(eHealth < EC.HMax && eHealth < 1000000){
-        float tempFade = PApplet.parseFloat(eHealth)/EC.HMax;
-        noFill();
-        strokeWeight(gScale/15);
-        stroke(255,255-tempFade*150);
-        arc(tempV.x,tempV.y,gScale*(EC.Size+.1f),gScale*(EC.Size+.1f),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
-        stroke((1-tempFade)*510,tempFade*510,0,255-tempFade*150);
-        arc(tempV.x,tempV.y,gScale*(EC.Size+.1f),gScale*(EC.Size+.1f),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
-      }
-    } else if(EC.Genre == 2){
-      stroke(255,255-eFade*255);
-      strokeWeight(2);
-      fill(EC.Color,255-eFade*255);
-      if(EC.Type == 0){
-        ellipse(tempV.x,tempV.y,EC.Size*gScale,EC.Size*gScale);
-      } else if(EC.Type == 1) {
-        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
-      } else {
-        rect(tempV.x-EC.Size*gScale/2,tempV.y-EC.Size*gScale/2,EC.Size*gScale,EC.Size*gScale);
+        if(EConfigs[EC].Genre == 0){
+          //stroke(strokeColor);
+          //strokeWeight(1);
+          noStroke();
+          fill(EConfigs[EC].Color);
+          ellipse(tempV.x,tempV.y,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+        } else if(EConfigs[EC].Genre == 1) {
+          pushMatrix();
+          translate(tempV.x,tempV.y);
+          rotate(eDir+PI/2);
+          image(EConfigs[EC].Img,-gScale/2*EConfigs[EC].Size,-gScale/2*EConfigs[EC].Size,gScale*EConfigs[EC].Size,gScale*EConfigs[EC].Size);
+          popMatrix();
+          
+          if(eHealth > 0 && eHealth < EConfigs[EC].HMax && eHealth < 1000000 && EConfigs[EC].HMax > -1){
+            float tempFade = PApplet.parseFloat(eHealth)/EConfigs[EC].HMax;
+            noFill();
+            strokeWeight(gScale/15);
+            stroke(255,255-tempFade*150);
+            arc(tempV.x,tempV.y,gScale*(EConfigs[EC].Size+.1f),gScale*(EConfigs[EC].Size+.1f),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
+            stroke((1-tempFade)*510,tempFade*510,0,255-tempFade*150);
+            arc(tempV.x,tempV.y,gScale*(EConfigs[EC].Size+.1f),gScale*(EConfigs[EC].Size+.1f),-HALF_PI,-HALF_PI+TWO_PI*tempFade);
+          }
+        } else if(EConfigs[EC].Genre == 2){
+          stroke(strokeColor,255-eFade*255);
+          strokeWeight(2);
+          fill(EConfigs[EC].Color,255-eFade*255);
+          if(EConfigs[EC].Type == 0){
+            ellipse(tempV.x,tempV.y,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+          } else if(EConfigs[EC].Type == 1) {
+            rect(tempV.x-EConfigs[EC].Size*gScale/2,tempV.y-EConfigs[EC].Size*gScale/2,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+          } else {
+            rect(tempV.x-EConfigs[EC].Size*gScale/2,tempV.y-EConfigs[EC].Size*gScale/2,EConfigs[EC].Size*gScale,EConfigs[EC].Size*gScale);
+          }
+        }
       }
     }
   }
   
   public void destroy(){
+    tryCommand(StringReplaceAll(StringReplaceAll(EConfigs[EC].DeathCommand,"_x_",str(x)),"_y_",str(y)),"");
     for (int i = 0; i < entities.size(); i++) {
       Entity tempE = (Entity) entities.get(i);
       if(tempE.ID == ID){
+        println(str(tempE.ID)+" = "+str(ID));
         entities.remove(i);
+        if(tempE.EC < 256){
+          segments.add(new Segment("=" + str(ID*100+playerID) + ";dead;1&", 3));
+        }
+        break;
       }
     }
   }
@@ -1699,10 +1986,14 @@ class EConfig {
   int Genre = 0;
   
   int Color = color(0);
+  int AltColor = color(255,0,0);
   String DeathCommand = "";
+  String BirthCommand = "";
+  String HitCommand = "";
   
   int HMax = 20;
   float Size = 1;
+  float HitboxScale = 1;
   float SMax = .15f;
   
   float Accel = .040f;
@@ -1718,41 +2009,78 @@ class EConfig {
   float AITargetID = -1;
   float AIActionMode = -1;
   int AIDoorBlock = -1;
+  int AIDoorBlockClose = -1;
+  int AIDoorWidth = 5;
   
   float FadeRate = .1f;
   float Vision = 100; //100 is generaly a good number... be careful with this and AI mode 3+... if > 140 and no target is near lag is created
   float GoalDist = 3; //Want to get this close
   float ActDist = 10; //Will start acting at this dis
+  int FireDelay = 25;
+  
+  int myBulletEntity = 1;
   
   EConfig() {}
 }
 
 public void particleEffect(float x, float y, float w, float h, int num, int c1, int c2, float ts){
-  for(int i = 0; i <num; i++){
-    EConfig ECParticle = new EConfig();
-    ECParticle.Genre = 2;
-    ECParticle.Size = .1f;
-    ECParticle.FadeRate = random(.1f)+.05f;
-    ECParticle.Type = floor(random(3));
-    ECParticle.SMax = random(ts);
-    if(random(100)<50){
-      ECParticle.Color = c1;
-    } else {
-      ECParticle.Color = c2;
-    }
-    entities.add(new Entity(x+random(w),y+random(h),ECParticle,random(TWO_PI)));
+  if(particleCycle+3 != (particleCycle+3)%100){
+    particleCycle = 0;
   }
+  EConfigs[256+particleCycle] = new EConfig();
+  EConfigs[256+particleCycle].Genre = 2;
+  EConfigs[256+particleCycle].Size = .1f;
+  EConfigs[256+particleCycle].FadeRate = random(.1f)+.05f;
+  EConfigs[256+particleCycle].Type = 0;
+  EConfigs[256+particleCycle].SMax = random(ts);
+  EConfigs[256+particleCycle].Color = c1;
+  particleCycle = (particleCycle+1)%100;
+  EConfigs[256+particleCycle] = new EConfig();
+  EConfigs[256+particleCycle].Genre = 2;
+  EConfigs[256+particleCycle].Size = .1f;
+  EConfigs[256+particleCycle].FadeRate = random(.1f)+.05f;
+  EConfigs[256+particleCycle].Type = 1;
+  EConfigs[256+particleCycle].SMax = random(ts);
+  if(random(100)<50){
+    EConfigs[256+particleCycle].Color = c1;
+  } else {
+    EConfigs[256+particleCycle].Color = c2;
+  }
+  particleCycle = (particleCycle+1)%100;
+  EConfigs[256+particleCycle] = new EConfig();
+  EConfigs[256+particleCycle].Genre = 2;
+  EConfigs[256+particleCycle].Size = .1f;
+  EConfigs[256+particleCycle].FadeRate = random(.1f)+.05f;
+  EConfigs[256+particleCycle].Type = 2;
+  EConfigs[256+particleCycle].SMax = random(ts);
+  EConfigs[256+particleCycle].Color = c2;
+  particleCycle = (particleCycle+1)%100;
+  
+  for(int i = 0; i <num; i++){
+    entities.add(new Entity(x+random(w),y+random(h),256+(particleCycle-3+floor(random(3))),random(TWO_PI)));
+  }
+  
+}
+
+public Entity getEntityID(float tEID){
+  for (int i = 0; i < entities.size(); i++) {
+    Entity tempE = (Entity) entities.get(i);
+    if(tempE.ID == tEID){
+      return tempE;
+    }
+  }
+  return null;
 }
 
 public PVector entityNearID(PVector eV,float tEID, float tDis, float tChance){
   float minDis = tDis;
-  PVector tRV = new PVector(random(wSize),random(wSize));
+  PVector tRV = new PVector(random(wSize),random(wSize),-1);
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.ID == tEID){
+    if(EConfigs[tempE.EC].ID == tEID){
       if(random(100)<tChance){
         if(pointDistance(eV, tempE.eV) < minDis){
-          tRV = new PVector(tempE.x,tempE.y);
+          tRV = new PVector(tempE.x,tempE.y,0);
           minDis = pointDistance(eV, tRV);
         }
       }
@@ -1764,7 +2092,7 @@ public PVector entityNearID(PVector eV,float tEID, float tDis, float tChance){
 public boolean isEntityNearID(PVector eV,float tEID, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.ID == tEID){
+    if(EConfigs[tempE.EC].ID == tEID){
       if(pointDistance(eV, tempE.eV) < tDis){
         return true;
       }
@@ -1811,7 +2139,7 @@ boolean isEntityNearIDSmell(PVector eV,float tEID, float tDis){
 public boolean isEntityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.Genre == tEGenre){
+    if(EConfigs[tempE.EC].Genre == tEGenre){
       if(max(abs(eV.x-tempE.eV.x), abs(eV.y-tempE.eV.y)) < tDis){
         return true;
       }
@@ -1823,7 +2151,7 @@ public boolean isEntityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
 public Entity entityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.Genre == tEGenre){
+    if(EConfigs[tempE.EC].Genre == tEGenre){
       if(max(abs(eV.x-tempE.eV.x), abs(eV.y-tempE.eV.y)) < tDis){
         return tempE;
       }
@@ -1836,7 +2164,7 @@ public Entity entityNearGenreSpecial(PVector eV,float tEGenre, float tDis){
 public PVector rayCastAllPathsID(PVector eV,float tEID, float tDis){
   for (int i = 0; i < entities.size(); i++) {
     Entity tempE = (Entity) entities.get(i);
-    if(tempE.EC.ID == tEID){
+    if(EConfigs[tempE.EC].ID == tEID){
       if(pointDistance(eV, tempE.eV) < tDis){
         int tempInt = rayCastPath(tempE.path, (int)eV.x, (int)eV.y);
         if(tempInt > -1){
@@ -1851,25 +2179,119 @@ public PVector rayCastAllPathsID(PVector eV,float tEID, float tDis){
 
 //STEM Phagescape API v(see above)
 
+PImage HUDImage;
+
+String HUDTtext = "";
+String HUDTsubText = "";
+float HUDTtextSize = 10;
+float HUDTsubTextSize = 10;
+int HUDTtextColor = 0;
+int HUDTsubTextColor = 0;
+int HUDTfadeIn = 0;
+int HUDTfadeOut = 0;
+int HUDTsubTextDelay = 0;
+int HUDTdisplayTime = 0;
+int HUDTstage = 0;
+float HUDTtextWidth = 0;
+float HUDTsubTextWidth = 0;
+
+
+
+int HUDSstage = 0;
+int HUDSfade = 10;
+float HUDSradius = PApplet.parseFloat(1)/3;
+
+
+
 public void drawHUD(){
+  if(drawHUDSoftEdge){
+    image(HUDImage,0,0);
+  }
   
+  if(HUDTstage < HUDTfadeIn+HUDTdisplayTime+HUDTfadeOut){
+    float tempAlpha = 255;
+    float tempAlpha2 = 255;
+    float mainOffset = height/15;
+    if(HUDTstage < HUDTfadeIn){
+      tempAlpha = PApplet.parseFloat(HUDTstage)/HUDTfadeIn*255;
+    }
+    if(HUDTstage < HUDTfadeIn+HUDTsubTextDelay){
+      tempAlpha2 = PApplet.parseFloat(HUDTstage-HUDTsubTextDelay)/HUDTfadeIn*255;
+    }
+    if(HUDTstage > HUDTfadeIn+HUDTdisplayTime){
+      tempAlpha = 255-PApplet.parseFloat(HUDTstage-(HUDTfadeIn+HUDTdisplayTime))/HUDTfadeOut*255;
+      tempAlpha2 = min(tempAlpha2,tempAlpha);
+    }
+    
+    if(HUDTsubText.equals("")){
+      mainOffset = +HUDTtextSize/2;
+    }
+    textMarkup(HUDTtext, HUDTtextSize, (width-HUDTtextWidth)/2, height/2-mainOffset, HUDTtextColor, tempAlpha, false);
+    if(!HUDTsubText.equals("")){
+      textMarkup(HUDTsubText, HUDTsubTextSize, (width-HUDTsubTextWidth)/2, height/2+mainOffset, HUDTsubTextColor, tempAlpha2, false);
+    }
+  }
+  
+  if(HUDSstage != 0){
+    
+    int items = 35;
+    float tempFade = PApplet.parseFloat(abs(HUDSstage))/HUDSfade*255;
+    float sliceSize = TWO_PI/items;
+    
+    if(mouseX != width/2 && pointDistance(new PVector(width/2,height/2), new PVector(mouseX,mouseY)) < width*HUDSradius){
+      fill(0,255,0,tempFade*4/5);
+      noStroke();
+      float mousePlace = PApplet.parseFloat(floor((pointDir(new PVector(width/2,height/2), new PVector(mouseX,mouseY))+PI/2)/sliceSize)+0)*sliceSize-PI/2;
+      arc(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2,mousePlace,mousePlace+sliceSize);
+    }
+    
+    stroke(255,tempFade);
+    strokeWeight(width*HUDSradius/30);
+    fill(200,tempFade*4/5);
+    ellipse(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2);
+    ellipse(width/2,height/2,width*HUDSradius/30,width*HUDSradius/30);
+    float dir = -PI/2;
+    fill(100,tempFade);
+    
+    for(int i = 0; i < items; i++){
+      line(width/2,height/2,width/2+width*HUDSradius*cos(dir),height/2+width*HUDSradius*sin(dir));
+      
+      textAlign(CENTER,CENTER);
+      textSize(20);
+      if(i < 10){
+        text(str((i+1)%10),width/2+(width*HUDSradius-18)*cos(dir+.08f),height/2+(width*HUDSradius-18)*sin(dir+.08f));
+      }
+      textAlign(CENTER,LEFT);
+      
+      dir += sliceSize;
+    }
+    
+    stroke(0,255,0);
+    
+  }
 }
 
 public void refreshHUD(){
-  HUDAddLight(PApplet.parseInt(player.x),PApplet.parseInt(player.y),1);
   if(shadows == true){
     HUDAddLight(PApplet.parseInt(player.x),PApplet.parseInt(player.y),lightStrength);
+  } else {
+    nmapShade = new int[wSize][wSize];
+    for(int i = 0; i < 100; i++){
+      for(int j = 0; j < 100; j++){
+        nmapShade[i][j] = 10;
+      }
+    }
   }
 }
 
 public void HUDAddLight(int x1, int y1, int strength){
-  nmap = new int[wSize][wSize];
-  HUDAddLightLoop(x1,y1,strength);
+  nmapShade = new int[wSize][wSize];
+  HUDAddLightLoop(max(0,min(wSize,x1)),max(0,min(wSize,y1)),strength);
 }
 
 public void HUDAddLightLoop(int x, int y, int dist){
-  if(aGS(nmap,x,y) < dist){
-    aSS(nmap,x,y,dist);
+  if(aGS(nmapShade,x,y) < dist){
+    aSS(nmapShade,x,y,dist);
     if(aGS1DB(gBIsSolid,aGS(wU,x,y)) == false){
       HUDAddLightLoop(x+1,y,dist-1);
       HUDAddLightLoop(x-1,y,dist-1);
@@ -1879,16 +2301,617 @@ public void HUDAddLightLoop(int x, int y, int dist){
   }
 }
 
+public void updateHUD(){
+  if(HUDTstage < HUDTfadeIn+HUDTdisplayTime+HUDTfadeOut){
+    HUDTstage++;
+  }
+  
+  if(HUDSstage != 0){
+    if(HUDSstage > 0 && HUDSstage < HUDSfade){
+      HUDSstage++;
+    }
+    if(HUDSstage < 0 && HUDSstage < 0){
+      HUDSstage++;
+    }
+    
+    noStroke();
+    fill(255,PApplet.parseFloat(abs(HUDSstage))/HUDSfade*255);
+    ellipse(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2);
+  }  
+}
+
+public void HUDText(String ttext, String tsubText, float ttextSize, float tsubTextSize, int ttextColor, int tsubTextColor, int tfadeIn, int tfadeOut, int tsubTextDelay, int tdisplayTime){
+  HUDTtext = ttext;
+  HUDTsubText = tsubText;
+  HUDTtextSize = ttextSize;
+  HUDTsubTextSize = tsubTextSize;
+  HUDTtextColor = ttextColor;
+  HUDTsubTextColor = tsubTextColor;
+  HUDTfadeIn = tfadeIn;
+  HUDTfadeOut = tfadeOut;
+  HUDTsubTextDelay = tsubTextDelay;
+  HUDTdisplayTime = tdisplayTime;
+  HUDTstage = 0;
+  
+  HUDTtextWidth = simpleTextWidth(HUDTtext, HUDTtextSize);
+  HUDTsubTextWidth =simpleTextWidth(HUDTsubText, HUDTsubTextSize);
+}
+
+String qText = "";
+String[] qAnswerLabels = {"a. ", "b. ", "c. ", "d. ", "e. ", "f. ", "g. ", "h. ", "i. ", "J. "};
+String[] qAnswers = new String[4];
+int qCorrectAnswer = 0;
+float qSize;
+float qAnswerSize;
+float qWidth;
+float qHeight;
+float qHoverPad = 7;
+float qHover = -1;
+String qGoodCallback;
+String qBadCallback;
+float qLastFade = -1;
+
+public void newQuestion(String goodCallback, String badCallback){
+  qHover = -1;
+  qSize = 45.5f;
+  qAnswerSize = 40;
+  qWidth = width/10*9;
+  qHeight = height/10*9;
+  
+  qCorrectAnswer = 2;
+  
+  String qTText = "Did you know, if you cut off your left arm, your right arm would be left? Don't worry though, you will (JUSTIN WAS HERE) be all right. [insert question here] The quick brown fox jumped over the lazy dog! When does 1+1 equal three? ";
+  String qTAnswers_0 = "One pluse one equals three when you read 1984 by George Orwell";
+  String qTAnswers_1 = "One pluse one equals three for large values of 1";
+  String qTAnswers_2 = "One pluse one doesn't equal three";
+  String qTAnswers_3 = "One pluse one equals three when a cop says it does. Stop resisting! I'm-a light you up!";
+  
+  boolean resize = true;
+  while(resize){
+    qText = simpleTextCrush(qTText,qSize,qWidth);
+    qAnswers[0] = simpleTextCrush(qAnswerLabels[0]+qTAnswers_0,qAnswerSize,qWidth);
+    qAnswers[1] = simpleTextCrush(qAnswerLabels[1]+qTAnswers_1,qAnswerSize,qWidth);
+    qAnswers[2] = simpleTextCrush(qAnswerLabels[2]+qTAnswers_2,qAnswerSize,qWidth);
+    qAnswers[3] = simpleTextCrush(qAnswerLabels[3]+qTAnswers_3,qAnswerSize,qWidth);
+    
+    float tempH = simpleTextHeight(qText, qSize) + qSize + qAnswerSize*PApplet.parseFloat(qAnswers.length-1);
+    for(int i = 0; i < qAnswers.length; i++){
+      tempH += simpleTextHeight(qAnswers[i], qAnswerSize);
+    }
+    if(tempH > qHeight){
+      qSize-=.5f;
+      qAnswerSize = qSize/5*4;
+    } else {
+      resize = false;
+    }
+  }
+  
+  qGoodCallback = goodCallback;
+  qBadCallback = badCallback;
+}
+
+public void clickQuestion(){
+  if(mouseClicked){
+    if(qHover > -1){
+      if(qLastFade >= 255){
+        if(qHover == qCorrectAnswer){
+          tryCommand(qGoodCallback,"");
+        } else {
+          tryCommand(qBadCallback,"");
+        }
+        mouseClicked = false;
+        qHover = -1;
+      }
+    }
+  }
+  
+  
+}
+
+public void drawQuestion(float fade){
+  qLastFade = fade;
+  float yPointer = (height-qHeight)/2 + qSize/2;
+  
+  textMarkup(qText, qSize, (width-qWidth)/2, yPointer, 255, fade, false);
+  
+  yPointer += simpleTextHeight(qText, qSize) + qSize/2 + qAnswerSize/2;
+  
+  qHover = -1;
+  for(int i = 0; i < qAnswers.length; i++){
+    if(mouseY > yPointer-qAnswerSize/2+qAnswerSize/5-qHoverPad){
+      if(mouseY < yPointer-qAnswerSize/2+qAnswerSize/5+simpleTextHeight(qAnswers[i], qAnswerSize)+qHoverPad){
+        if(mouseX > (width-qWidth)/2-qHoverPad){
+          if(mouseX < (width-qWidth)/2+simpleTextWidth(qAnswers[i], qAnswerSize)+qHoverPad){
+            qHover = i;
+            fill(0,100);
+            noStroke();
+            rect((width-qWidth)/2-qHoverPad,yPointer-qAnswerSize/2+qAnswerSize/15-qHoverPad,simpleTextWidth(qAnswers[i], qAnswerSize)+qHoverPad*2,simpleTextHeight(qAnswers[i], qAnswerSize)+qHoverPad*2,qHoverPad);
+          }
+        }
+      }
+    }
+    textMarkup(qAnswers[i], qAnswerSize, (width-qWidth)/2, yPointer, 255, fade, false);
+    yPointer += simpleTextHeight(qAnswers[i], qAnswerSize) + qAnswerSize;
+  }
+  
+  noFill();
+  stroke(255);
+  strokeWeight(3);
+}
+String serverURL = "http://harvway.com/BetaBox/STEMPhagescape/testing.php?id=";
+ArrayList segments = new ArrayList<Segment>();
+ArrayList packets = new ArrayList<Packet>();
+ArrayList packetThreads = new ArrayList<PacketThread>();
+int packetCycle = 0;
+int packetIDCycle = 1;
+AudioPlayer serverCastAP;
+AudioMetaData serverCastMeta;
+int[] buildups = new int[10];
+int eventIDCycle = 0;
+Boolean[][] eventIDs = new Boolean[100][0];
+int maxEventID = 0;
+
+
+int Rplayers = 0;
+int Rhost = 1;
+int Rgenerated = 0;
+
+boolean worldDownloaded = false;
+
+boolean online = false;
+boolean offline = false;
+boolean sentPackets = false;
+
+public void setupServer(){
+  
+  try{
+    serverCastAP = minim.loadFile("block-solid1.mp3");
+    serverCastMeta = serverCastAP.getMetaData();
+  } catch(Throwable e){}
+  
+  
+  updateWorldColumn(0);
+  buildPackets();
+  
+  /*
+  String builtString = serverURL;
+  for(int k = 0; k < 20; k++){
+    builtString = serverURL;
+    for(int i = 0; i < 5; i++){
+      builtString = builtString + "LWC" + str(i) + "=" + str(k*5+i) + ";";
+      for(int j = 0; j < 100; j++){
+        if(j > 0){
+          builtString = builtString + "|";
+        }
+        builtString = builtString + wU[k*5+i][j];
+      }
+      builtString = builtString + "&";
+    }
+    println(builtString.length());
+    //loadStrings(builtString);
+  }
+  */
+}
+
+public void updateWorldColumn(int i){
+  String worldC = "=" + str(i) + ";";
+  int running = 0;
+  for(int j = 0; j < 100; j++){
+    if(j == 99 || wU[i][min(j+1,100)] != wU[i][j]){
+      if(running > 0){
+        worldC = worldC + "|";
+      }
+      if(j-running == 0){
+        worldC = worldC + wU[i][j];//print one value
+      } else {
+        worldC = worldC + wU[i][j] + "x" + str(j-running+1);//print multiple value
+      }
+      running = j+1;
+    }
+  }
+  worldC = worldC + "&";
+  segments.add(new Segment(worldC, 1));
+}
+
+public void updateEntityData(){
+  String entityD;
+  for(Entity tempE: (ArrayList<Entity>)entities){ //each entity
+    if(tempE.EC < 256){
+      entityD = "=" + str(tempE.ID*100+playerID) + ";x;"+str(tempE.x)+"&";
+      segments.add(new Segment(entityD, 3));
+      entityD = "=" + str(tempE.ID*100+playerID) + ";y;"+str(tempE.y)+"&";
+      segments.add(new Segment(entityD, 3));
+      entityD = "=" + str(tempE.ID*100+playerID) + ";dir;"+str(tempE.eDir)+"&";
+      segments.add(new Segment(entityD, 3));
+      entityD = "=" + str(tempE.ID*100+playerID) + ";EC;"+str(tempE.EC)+"&";
+      segments.add(new Segment(entityD, 3));
+    }
+  }
+  
+}
+
+public void updateServer(){
+  
+  try{
+    String packetResponse = serverCastMeta.fileName(); //*checkPacketCallbacks* 
+    if(!packetResponse.equals("")){
+      
+      String[] response = split(packetResponse,"<br>");
+      println(response);
+      packetRecievedCallback(response);
+
+    }
+  } catch(Throwable e){}
+  
+  if(fn % 10 == 0){
+    
+    if(packets.size() == 0){
+      if(online){
+        //updateWorldColumn(packetCycle % 100);
+        //sometimes request a world update
+        
+        //updateEntityData();
+        if(worldDownloaded){
+          updateEntityData();
+        } else if(Rgenerated == 1){
+          segments.add(new Segment("GETW=1&", 0));
+        } else if(playerID == Rhost){
+          for(int k = 1; k < 100; k++){
+            updateWorldColumn(k);
+          }
+          segments.add(new Segment("GETW=1&", 0));
+        } else {
+          segments.add(new Segment("PING", 0));
+        }
+        
+      }
+      buildPackets();
+      
+    } else if((sentPackets == true && online == false) && offline==false) {
+      packets.clear();
+    }
+    println(str(packets.size())+" packets");
+    if(packets.size() > 0){
+      sentPackets = true;
+      Packet tempPacket = (Packet)packets.get(packetCycle % packets.size());
+      println(tempPacket.content);
+      
+      try {
+        PacketThread tempPacketThread = new PacketThread(this,tempPacket.content);
+        tempPacketThread.start();
+        packetThreads.add(tempPacketThread);
+      } catch(Throwable e) {
+        //println("FAIL");
+        try {
+          minim.loadSample(tempPacket.content); //*requestPacket*
+          println("called load sample on "+tempPacket.content);
+        } catch(Throwable ee) {
+          println("ERROR");
+        }
+      }
+      if(offline){
+        packets.clear();
+      }
+    }
+    packetCycle++;
+  }
+  
+}
+
+public void packetRecievedCallback(String[] response){
+  Packet tempPacket;
+  println(response[0]);
+  if(PApplet.parseInt(response[0]) > 0){
+    if(PApplet.parseInt(response[0]) == 100){
+      processResponse(response);
+    } else {
+      for(int i = packets.size()-1; i >= 0; i--){
+        tempPacket = (Packet)packets.get(i);
+        if(tempPacket.id == PApplet.parseInt(response[0])){
+          packets.remove(i);
+          processResponse(response);
+          break;
+        }
+      }
+    }
+  }
+}
+
+public void processResponse(String[] response){
+  int mode = -1;
+  int submode = -1;
+  
+  String tKey = "";
+  int tPlayer = 0;
+  Mimic tMimic = null;
+  
+  segments.add(new Segment("="+response[0]+"&", 4));
+  
+  String[] tempStrA;
+  for(int i = 1; i < response.length; i++){
+    if(response[i].equals("{[END]}")){mode = -1; submode=-1;} else
+    if(response[i].equals("{[BREAK]}")){submode = -1; tKey="";} else
+    if(mode == 0){
+      tempStrA = split(response[i],";");
+      if(tempStrA.length == 3){
+        if(aGS(wU,PApplet.parseInt(tempStrA[0]),PApplet.parseInt(tempStrA[1])) != PApplet.parseInt(tempStrA[2])){
+          aSS(wU,PApplet.parseInt(tempStrA[0]),PApplet.parseInt(tempStrA[1]),PApplet.parseInt(tempStrA[2]));
+          wViewLast.x = -1;
+        }
+      }
+    } else
+    if(mode == 1){
+      tempStrA = split(response[i],";");
+      if(tempStrA.length == 2){
+        if(tempStrA[0].equals("PID")){
+          online = true;
+          packets.clear();
+          playerID = PApplet.parseInt(tempStrA[1]);
+        } else
+        if(tempStrA[0].equals("WGET")){
+          worldDownloaded = true;
+        } else
+        if(tempStrA[0].equals("P#")){Rplayers = PApplet.parseInt(tempStrA[1]);} else
+        if(tempStrA[0].equals("HOST")){Rhost = PApplet.parseInt(tempStrA[1]);} else
+        if(tempStrA[0].equals("GENERATED")){Rgenerated = PApplet.parseInt(tempStrA[1]);}
+      }
+    } else if(mode == 2){
+      if(submode == -1){
+        submode = PApplet.parseInt(response[i]);
+        tPlayer = submode % 100;
+        if(tPlayer == playerID){
+          submode = -2;
+        } else {
+          submode = floor(submode/100);
+          if(maxMimicID < submode){
+            maxMimicID = submode;
+            reloadMimicIDs();
+            tMimic = new Mimic(submode, tPlayer);
+            mimicIDs[tPlayer-1][submode] = tMimic;
+            mimics.add(tMimic);
+          } else if(mimicIDs[tPlayer-1][submode] == null){
+            if(response[i+1].equals("dead") || response[i+1].equals("exp")){
+              submode = -2;
+            } else {
+              tMimic = new Mimic(submode, tPlayer);
+              mimicIDs[tPlayer-1][submode] = tMimic;
+              mimics.add(tMimic);
+            }
+          } else {
+            tMimic = mimicIDs[tPlayer-1][submode];
+          }
+          println("MIMIC REGISTERED" + submode*100+tPlayer);
+        }
+      } else if(submode != -2) {
+        if(tKey.equals("")){
+          tKey = response[i];
+        } else {
+          if(tKey.equals("x")){
+            tMimic.x = PApplet.parseFloat(response[i]);
+          } else if(tKey.equals("y")){
+            tMimic.y = PApplet.parseFloat(response[i]);
+          } else if(tKey.equals("dir")){
+            tMimic.eDir = PApplet.parseFloat(response[i]);
+          } else if(tKey.equals("EC")){
+            tMimic.EC = PApplet.parseInt(response[i]);
+          } else if(tKey.equals("dead") || tKey.equals("exp")){
+            Mimic ttMimic;
+            for(int j = 0; j < mimics.size(); j++){
+              ttMimic = (Mimic)mimics.get(j);
+              if(ttMimic.ID == tMimic.ID && ttMimic.playerID == tMimic.playerID){
+                mimics.remove(j);
+                break;
+              }
+            }
+            reloadMimicIDs();
+          }
+          tKey = "";
+        }
+      }
+    } else
+    if(mode == 3){
+      tempStrA = split(response[i],",");
+      if(tempStrA.length > 1){
+        tPlayer = PApplet.parseInt(tempStrA[0])%100;
+        if(tPlayer != playerID){
+          submode = floor(PApplet.parseInt(tempStrA[0])/100);
+          if(submode >= eventIDs[tPlayer].length){
+            eventIDs[tPlayer] = (Boolean[])expand(eventIDs[tPlayer],submode+1);
+            for(int k = 0; k < eventIDs.length; k++){
+              for(int j = 0; j < eventIDs[k].length; j++){
+                if(eventIDs[k][j] == null){
+                  eventIDs[k][j] = false;
+                }
+              }
+            }
+          }
+          if(eventIDs[tPlayer][submode] == false){
+            eventIDs[tPlayer][submode] = true;
+            if(tempStrA[1].equals("HB")){
+              if(aGS(wU,PApplet.parseInt(tempStrA[2]),PApplet.parseInt(tempStrA[3])) == PApplet.parseInt(tempStrA[4])){
+                hitBlock(PApplet.parseInt(tempStrA[2]),PApplet.parseInt(tempStrA[3]),PApplet.parseInt(tempStrA[5]),true);
+              }
+            } else
+            if(tempStrA[1].equals("HE")){
+              
+            } //end else
+          }
+        }
+      }
+    } else
+    if(response[i].equals("{[WORLD_UPDATES]}")){mode = 0;} else
+    if(response[i].equals("{[GLOBAL_VARS]}")){mode = 1;} else
+    if(response[i].equals("{[ENTITY_DATA]}")){mode = 2;} else 
+    if(response[i].equals("{[UPDATE_DATA]}")){mode = 3;}
+  }
+}
+
+public void buildPackets(){
+  if(segments.size() > 0){
+    buildups = new int[buildups.length];
+    Segment tempSeg = (Segment)segments.get(0);
+    String builtString = tempSeg.buildSegment();
+    buildups[tempSeg.type]++;
+    if(segments.size() > 1){
+      for(int i = 1; i < segments.size(); i++){
+        tempSeg = (Segment)segments.get(i);
+        if(builtString.length() + (tempSeg.buildSegment()).length() < 2080){
+          builtString = builtString + tempSeg.buildSegment();
+          buildups[tempSeg.type]++;
+        } else {
+          packets.add(new Packet(builtString));
+          buildups = new int[buildups.length];
+          builtString = tempSeg.buildSegment();
+          buildups[tempSeg.type]++;
+        }
+      }
+    }
+    packets.add(new Packet(builtString));
+    eventIDCycle += buildups[5];
+  }
+  segments.clear();
+}
+
+class Packet {
+  String content;
+  int id;
+  Packet(String tContent) {
+    id = packetIDCycle*100+playerID;
+    packetIDCycle++;
+    content = serverURL + str(id) + "&" + "rand=" + str(floor(random(1000))) + "&" + tContent;
+  }
+}
+
+class Segment {
+  String content;
+  int type;
+  Segment(String tContent, int tType) {
+    content = tContent;
+    type = tType;
+  }
+  public String buildSegment(){
+    if(type == 0){ //general
+      return content;
+    }
+    if(type == 1){ //load world column
+      return "LWC"+str(buildups[type])+content;
+    }
+    if(type == 2){ //load world unit
+      return "WU"+str(buildups[type])+content;
+    }
+    if(type == 3){ //load entity data
+      return "MOB"+str(buildups[type])+content;
+    }
+    if(type == 4){ //packet reciept
+      return "GOT"+str(buildups[type])+content;
+    }
+    if(type == 5){ //packet reciept
+      return "EV"+str(buildups[type])+"="+str((eventIDCycle+buildups[type])*100+playerID)+";"+content+"&";
+    }
+    return "";
+  }
+}
+
+
+
+public class PacketThread implements Runnable {
+  Thread thread;
+  String packetContent;
+  
+  public PacketThread(PApplet parent, String tPacketContent){
+    parent.registerDispose(this);
+    packetContent = tPacketContent;
+  }
+
+  public void start(){
+    thread = new Thread(this);
+    thread.start();
+  }
+
+  public void run(){
+    String[] primaryResponse = loadStrings(packetContent);
+    String[] response = split(primaryResponse[0],"<br>");
+    println(response);
+    packetRecievedCallback(response);
+  }
+
+  public void stop(){
+    thread = null;
+  }
+
+  // this will magically be called by the parent once the user hits stop 
+  // this functionality hasn't been tested heavily so if it doesn't work, file a bug 
+  public void dispose() {
+    stop();
+  }
+} 
+
+
+
+
+
+
+
+
+
+class Mimic {
+  float x = -100;
+  float y = -100;
+  float eDir = 0;
+  int EC = EC_BULLET;
+  int ID;
+  int playerID;
+  boolean expired = false;
+  boolean dead = false;
+  
+  Mimic(int tID, int tPlayerID) {
+    ID = tID;
+    playerID = tPlayerID;
+  }
+  
+  public void update(){
+    x+=random(.1f)-.05f;
+    y+=random(.1f)-.05f;
+  }
+  
+  public void display(){
+    PVector tempV = pos2Screen(new PVector(x,y));
+    //println(ID*100+playerID);
+    noStroke();
+    fill(0,255,0);
+    if(expired){fill(255,200,0);}
+    if(dead){fill(255,0,0);}
+    ellipse(tempV.x,tempV.y,gScale/2,gScale/2);
+  }
+  
+}
+
+public void disconnect(){
+  online = false;
+  offline = true;
+  packets.clear();
+  segments.add(new Segment("DIS", 5));
+  buildPackets();
+}
+
 ArrayList sL = new ArrayList<Sound>();
 
 public void updateSound(){
   Sound tempS;
   for (int i = 0; i < sL.size(); i++){
     tempS = (Sound) sL.get(i);
-    if(tempS.display()){
+    if(tempS.update()){
       sL.remove(i);
       i--;
     }
+  }
+}
+
+public void drawSound(){
+  Sound tempS;
+  for (int i = 0; i < sL.size(); i++){
+    tempS = (Sound) sL.get(i);
+    tempS.display();
   }
 }
 
@@ -1902,7 +2925,6 @@ class Sound {
   float offX;
   float offY;
   float wallMult = 1;
-  
   Sound(float tx, float ty, SoundConfig tconfig, int tindex) {
     x = tx;
     y = ty;
@@ -1910,7 +2932,10 @@ class Sound {
     config = tconfig;
     offX = random(config.variance*2)-config.variance;
     offY = random(config.variance*2)-config.variance;
-    
+    //0 = no effect - always loud
+    //if there is a ray cast - 0 to 100 always loud -> 200 is no sound
+    //if there is a path     - 0 = loud 200 = no sound scales
+    //if completely seperate - 0 to 100 scales -> 100 to 200 no sound
     if(config.wallEffect > 0){
       if(rayCast((int) x, (int) y, (int) wViewCenter.x, (int) wViewCenter.y)){
         wallMult = (100-max(config.wallEffect-100,0))/100;
@@ -1919,24 +2944,38 @@ class Sound {
       } else {
         wallMult = (100-config.wallEffect)/100;
       }
+      wallMult = max(min(wallMult,1),0);
+    }
+    if(index == 0){
+      if(wallMult > 0 && pointDistance(wViewCenter, new PVector(x,y)) < config.rMax*wallMult){
+        AudioPlayer tempAP = (AudioPlayer)config.sound.get(floor(random(config.sound.size())));
+        tempAP.setGain((1-pointDistance(wViewCenter, new PVector(x,y))/(config.rMax*wallMult))*35-35); //-35 to 0 dB
+        tempAP.rewind();
+        tempAP.play();
+      }
     }
   }
-  public boolean display() {
-    posV = pos2Screen(new PVector(x+offX,y+offY));
-    noFill();
-    stroke(config.baseColor,(config.rMax*gScale*wallMult-r*gScale)/(config.rMax*gScale*wallMult)*255);
-    strokeWeight(max(0,(r/wSize*config.bandWidth+.6f)*gScale));
-    ellipse(posV.x,posV.y,r*2*gScale,r*2*gScale);
+  public void display() {
+    if(config.drawWave){
+      posV = pos2Screen(new PVector(x+offX,y+offY));
+      noFill();
+      stroke(config.baseColor,(config.rMax*gScale*wallMult-r*gScale)/(config.rMax*gScale*wallMult)*255);
+      strokeWeight(max(0,(r/(config.rMax*wallMult)*config.bandWidth+.6f)*gScale));
+      ellipse(posV.x,posV.y,r*2*gScale,r*2*gScale);
+    }
+  }
+    
+  public boolean update() {
+    if(config.drawWave == false){
+      return true;
+    }
     r+=config.rSpeed;
-    
-    
     if(index < config.waveCount-1){
       if(r > config.waveLength){
         sL.add(new Sound(x,y,config,index+1));
         index = 999;
       }
     }
-    
     if(r>config.rMax*wallMult){
       return true;
     } else {
@@ -1946,6 +2985,7 @@ class Sound {
 }
 
 class SoundConfig {
+  boolean drawWave;
   float rSpeed=1;
   int rMax=0;
   float darkness=255;
@@ -1955,7 +2995,9 @@ class SoundConfig {
   float waveLength = 0;
   float variance = 0;
   float wallEffect = 0;
-  SoundConfig(float trSpeed, int trMax, float tdarkness, int tbaseColor, float tbandWidth, int twaveCount, float twaveLength, float tvariance, float twallEffect) {
+  ArrayList sound = new ArrayList<AudioPlayer>();
+  SoundConfig(boolean tdrawWave, float trSpeed, int trMax, float tdarkness, int tbaseColor, float tbandWidth, int twaveCount, float twaveLength, float tvariance, float twallEffect) {
+    drawWave = tdrawWave;
     rSpeed=trSpeed;
     rMax=trMax;
     darkness=tdarkness;
@@ -2012,6 +3054,7 @@ public void genLine(float x1, float y1, float x2, float y2, float weight, int b)
   }
   aSS(wU,floor(x1),floor(y1),b);
   aSS(wU,floor(x2),floor(y2),b);
+  
 }
 
 public void genRect(float x, float y, float w, float h, int b){
@@ -2083,8 +3126,6 @@ public void genReplace(int from, int to){
     for(int j = 0; j < wSize; j++){
       if(wU[i][j] == from){
         wU[i][j] = to;
-        wUP[i][j] = to;
-        wUC[i][j] = to;
       }
     }
   }
@@ -2266,17 +3307,24 @@ public void waveGrid(){
   wL.clear();
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      gM[i*2+1][j*2+1] = aGS(gU,i,j);
+      
+      if(aGS(gUShade,i,j) == 0){
+        //gM[i*2+1][j*2+1] = -2;
+      } else {
+        gM[i*2+1][j*2+1] = aGS(gU,i,j);
+      }
+      
+      
       //if(gUHUD[i][j] == false){gM[i*2+1][j*2+1] = 255;}
     }
   }
   for(int i = 0; i < gSize*2+1; i++){
     for(int j = 0; j < gSize*2+1; j++){
       if(i%2!=j%2){
-        if((gM[min(i+1,ceil(gSize)*2)][j] != -2 && gM[max(i-1,0)][j] != -2) && gBColor[gM[min(i+1,ceil(gSize)*2)][j]] != gBColor[gM[max(i-1,0)][j]]){
+        if(gBColor[gM[min(i+1,ceil(gSize)*2)][j]] != gBColor[gM[max(i-1,0)][j]]){
            wL.add(new Wave(i,j,0,1,(j+i)%4-2));
          }
-        if((gM[i][min(j+1,ceil(gSize)*2)] != -2 && gM[i][max(j-1,0)] != -2 && gBColor[gM[i][min(j+1,ceil(gSize)*2)]] != gBColor[gM[i][max(j-1,0)]])){
+        if(gBColor[gM[i][min(j+1,ceil(gSize)*2)]] != gBColor[gM[i][max(j-1,0)]]){
           wL.add(new Wave(i,j,1,0,(j+i+2)%4-2));
         }
       }
@@ -2385,13 +3433,17 @@ class Wave {
     
     
     
-    strokeWeight(gScale/15);
-    stroke(255);
-    line(ta.x,ta.y,tb.x,tb.y);
-    noStroke();
-    fill(255);
-    ellipse(ta.x,ta.y,gScale/15-1,gScale/15-1);
-    ellipse(tb.x,tb.y,gScale/15-1,gScale/15-1);
+    //gridBuffer.strokeWeight(gScale/15-3);
+    //gridBuffer.stroke(strokeColor);
+    
+    int strokeWe = ceil((gScale/15-3)/2);
+    rectL.add(new RectObj(PApplet.parseInt(ta.x)+ceil(gScale)-strokeWe,PApplet.parseInt(ta.y)+ceil(gScale)-strokeWe,PApplet.parseInt(tb.x)+ceil(gScale)-PApplet.parseInt(ta.x+ceil(gScale))+strokeWe,PApplet.parseInt(tb.y)+ceil(gScale)-PApplet.parseInt(ta.y+ceil(gScale))+strokeWe,color(255)));
+    
+    //gridBuffer.line(ta.x+ceil(gScale),ta.y+ceil(gScale),tb.x+ceil(gScale),tb.y+ceil(gScale));
+    //gridBuffer.noStroke();
+    //gridBuffer.fill(255);
+    //ellipse(ta.x,ta.y,gScale/15-1-1,gScale/15-1-1);
+    //ellipse(tb.x,tb.y,gScale/15-1-1,gScale/15-1-1);
     //waveFromImage(ta.x,ta.y,amp*floor((wPhase+shift)*10),wDir);
   }
 }
@@ -2484,11 +3536,56 @@ void waveFromImage(float tx, float ty, int tI, boolean tDir){
 //STEM Phagescape API v(see above)
 //STEM Phagescape API v(see above)
 
+ArrayList updates = new ArrayList<PVector>();
+
+PGraphics gridBuffer;
+PImage gridBufferImage;
+PVector gridBufferPos = new PVector(0,0);
+int[][] gUShade;
+int[][] nmapShade;
+ArrayList rectL = new ArrayList<RectObj>();
+ArrayList damageL = new ArrayList<DamageObj>();
+ArrayList textL = new ArrayList<TextObj>();
+
+class RectObj {
+  int x, y, w, h, col;
+  RectObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx; y = ty; w = tw; h = th; col = tcol;
+  }
+  public void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
+class DamageObj {
+  int x, y, d, posx, posy;
+  float maxstage;
+  DamageObj(int tx, int ty, int td, int tposx, int tposy) {
+    x = tx; y = ty; d = td; posx = tposx; posy = tposy;
+    maxstage = aGS1D(gBStrength,aGS(wU,posx,posy))-.01f;
+  }
+  public void display(float offx, float offy) {
+    arc(offx+x,offy+y,d,d,HALF_PI,HALF_PI+TWO_PI*(PApplet.parseFloat(aGS(wUDamage,posx,posy))/maxstage));
+  }
+}
+
+class TextObj {
+  int x, y, w, h, col;
+  TextObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx; y = ty; w = tw; h = th; col = tcol;
+  }
+  public void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
 public void setupWorld(){
   gScale = PApplet.parseFloat(width)/(gSize-1);
+  gridBuffer = createGraphics(width+ceil(gScale*2),height+ceil(gScale*2));
+  gridBufferImage = createImage(width+ceil(gScale*2),height+ceil(gScale*2),RGB);
   wU = new int[wSize][wSize];
-  wUP = new int[wSize][wSize];
-  wUC = new int[wSize][wSize];
   wUText = new boolean[wSize][wSize];
   wUDamage = new int[wSize][wSize];
   gU = new int[ceil(gSize)][ceil(gSize)];
@@ -2497,18 +3594,84 @@ public void setupWorld(){
 }
 
 public void refreshWorld(){
+  
   refreshHUD();
+  gUShade = new int[floor(gSize)][floor(gSize)];
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      if(aGS(nmap,i+wView.x,j+wView.y)>0 || shadows == false){
-        gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
-      } else {
-        gU[i][j] = 255;
+      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
+      gUShade[i][j] = aGS(nmapShade,i+wView.x,j+wView.y);
+      if(i+wView.x < 0 || j+wView.y < 0 || i+wView.x >= wSize || j+wView.y  >= wSize){
+        gUShade[i][j] = 0;
       }
-      
     }
   }
   waveGrid();
+
+  rectL.clear();
+  damageL.clear();
+  
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      //gridBuffer.noStroke();
+      
+      int thisBlock = gU[i][j];
+      
+      int tempColor = aGS1D(gBColor,thisBlock);
+      
+      float tempShade = PApplet.parseFloat(gUShade[i][j])/5;
+      
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
+      
+      if(tempShade > 1){
+        tempShade = 1;
+      }
+      
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        if(aGS1D(gBStrength,thisBlock) > -1){
+          if(aGS(gUShade,i,j) > 0){
+            if(aGS1D(gBStrength,thisBlock) > -1){
+              damageL.add(new DamageObj(floor(tempV.x)+ceil(gScale*1.5f),floor(tempV.y)+ceil(gScale*1.5f),ceil(gScale*2/3),PApplet.parseInt(i+wView.x),PApplet.parseInt(j+wView.y)));
+            }
+          }
+        }
+      }
+      //gridBuffer.fill(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade);
+      
+      
+      //gridBufferImage = toughRect(gridBufferImage, floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade));
+      //gridBufferImage.set(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),airMonster.Img);
+      if(tempColor != gBColor[0] || tempShade != 1){
+        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
+      }
+      //gridBuffer.rect(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+      
+      
+      if(sBHasImage[thisBlock]){
+        float tScale;
+        if(sBImageDrawType[thisBlock] == 0){
+          //gridBuffer.image(sBImage[thisBlock],floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        } else if(sBImageDrawType[thisBlock] == 1) {
+          //gridBuffer.image(sBImage[thisBlock],floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        } else {
+          tScale = width/sBImage[thisBlock].width;
+          //gridBuffer.image(sBImage[thisBlock].get(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)),floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        }
+      }
+    }
+  }
+  
+  if(gSize < 30){
+    for (Wave w : (ArrayList<Wave>) wL) {
+      w.display();
+    }
+  }
+  
+  gridBufferPos = new PVector(player.x,player.y);
+  
+  updateSpecialBlocks();
+  
 }
 
 public void moveToAnimate(PVector tV, float tTime){
@@ -2577,152 +3740,110 @@ public void addActionSpecialBlock(int tIndex, int tAction){
 public void centerView(float ta, float tb){
   wViewCenter = new PVector(ta,tb,gSize);
   wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
-  if(floor(wViewLast.x) != floor(wView.x)){
+  if(floor(wViewLast.x) != floor(wView.x) || floor(wViewLast.y) != floor(wView.y)){
     refreshWorld();
     wPhase -= PI;
-  }
-  if(floor(wViewLast.y) != floor(wView.y)){
-    refreshWorld();
-    wPhase -= PI;
+    debugLog(color(0,255,255));
   }
   wViewLast = new PVector(wView.x,wView.y);
 }
 
 public void updateWorld(){
-  //println("..");
-  //wPhase += .09;
-  boolean anyBlockChanges = false;
-  boolean theseBlockChanges = true;
-  
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUUpdate[i][j] = 0;
-    }
-  }
-  
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUC[i][j] = wU[i][j];
-    }
-  }
-  while(theseBlockChanges){
-    theseBlockChanges = false;
-    
-    for(int i = 0; i < wSize; i++){
-      for(int j = 0; j < wSize; j++){
-        if(wUUpdate[i][j] == 20){
-          wUUpdate[i][j] = -1;
-          updateBlock(i,j,0,0);
-          theseBlockChanges = true;
-        }
-        if(wUUpdate[i][j] == 21){
-          wUUpdate[i][j] = 20;
-          theseBlockChanges = true;
-        }
-      }
-    }
-    
-    for(int i = 0; i < wSize; i++){
-      for(int j = 0; j < wSize; j++){
-        if(wUC[i][j] != wUP[i][j]){
-          if(aGS1D(gBBreakType,wUP[i][j]) == wUC[i][j]){
-            if(aGS1DS(gBBreakCommand,wUP[i][j]) != null){
-              //entities.add(new Entity(i+.5,j+.5, gBBreakEntity[wUP[i][j]],random(TWO_PI)));
-              tryCommand((aGS1DS(gBBreakCommand,wUP[i][j])).replaceAll("_x_",str(i)).replaceAll("_y_",str(j)),"");//aGS1DS(gBBreakCommand,wUP[i][j])
-            }
-            int tempC = aGS1DC(gBColor,aGS(wUP,i,j));
-            particleEffect(i,j,1,1,15,tempC,tempC,.01f);
+  if(updates.size() > 0) {
+    int removedUpdates = 0;
+    while(updates.size()-removedUpdates > 0){
+      PVector update;
+      for (int i = updates.size() - 1; i >= 0; i--) {
+        update = (PVector) updates.get(i);
+        if(update.z == 20){
+          if(updateBlock(PApplet.parseInt(update.x),PApplet.parseInt(update.y))){
+            update.z = -1;
+          } else {
+            update.z = 0;
           }
-          
-          //if(wUUpdate[i][j] == 0){wUUpdate[i+1][j] = 20;}
-          if(wUUpdate[i][j] == 0){wUUpdate[i][j] = -1;}
-          if(i+1<wSize){if(wUUpdate[i+1][j] == 0){wUUpdate[i+1][j] = 21;}}
-          if(i-1>=0){if(wUUpdate[i-1][j] == 0){wUUpdate[i-1][j] = 21;}}
-          if(j+1<wSize){if(wUUpdate[i][j+1] == 0){wUUpdate[i][j+1] = 21;}}
-          if(j-1>=0){if(wUUpdate[i][j-1] == 0){wUUpdate[i][j-1] = 21;}}
-          theseBlockChanges = true;
-          
-          wUP[i][j] = wUC[i][j];
-          wU[i][j] = wUC[i][j];
+        }
+        if(update.z == 21){
+          update.z = 20;
         }
       }
+      for (int i = updates.size() - 1; i >= 0; i--) {
+        update = (PVector) updates.get(i);
+        if(update.z == -1){
+          if(!updateExists(update.x+1,update.y)){updates.add(new PVector(update.x+1,update.y,21));}
+          if(!updateExists(update.x-1,update.y)){updates.add(new PVector(update.x-1,update.y,21));}
+          if(!updateExists(update.x,update.y+1)){updates.add(new PVector(update.x,update.y+1,21));}
+          if(!updateExists(update.x,update.y-1)){updates.add(new PVector(update.x,update.y-1,21));}
+        }
+        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++; /*segments.add(new Segment("="+str(int(update.x))+";"+str(int(update.y))+";"+str(aGS(wU,update.x,update.y))+"&", 2));*/}
+      }
     }
-    if(theseBlockChanges){
-      anyBlockChanges = true;
-    }
-  }
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUP[i][j] = wU[i][j];
-    }
-  }
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wU[i][j] = wUC[i][j];
-    }
-  }
-  
-  if(anyBlockChanges){
     refreshWorld();
+    updates.clear();
   }
 }
 
-public void updateBlock(int x, int y, int xs, int ys){
+public boolean updateBlock(int x, int y){
   if(x >= 0 && y >= 0 && x < wSize && y < wSize){
-    int tempBT = aGS(wUC,x,y);
+    int tempBT = aGS(wU,x,y);
     if(aGS1DB(sBHasAction,tempBT)){
       int tAction = sBAction[tempBT];
       if(tAction == 0){
-        if(aGS(wUP,x+xs,y+ys) == aGS(wU,x,y))
-        aSS(wUC,x,y,aGS1D(gBBreakType,tempBT));
+        //if(aGS(wUP,x+xs,y+ys) == aGS(wU,x,y))
+        //aSS(wUC,x,y,aGS1D(gBBreakType,tempBT)); //what is action 0 again? - needs updated to new system of update list
       }
       if(tAction == 46){
-        if(aGS(wUP,x,y) == tempBT){
-          aSS(wUC,x,y,aGS1D(gBBreakType,tempBT));
-        }
+        //if(aGS(wUP,x,y) == tempBT){
+          hitBlock(x,y,10000,false);
+          return true;
+        //}
       }
     }
   }
+  return false;
 }
 
 public void updateSpecialBlocks(){
-  boolean updateAgain = false;
-  int iTo = (int)player.x+10;
-  int jTo = (int)player.y+10;
-  for(int i = (int)player.x-10; i < iTo; i++){
-    for(int j = (int)player.y-10; j < jTo; j++){
-      if(aGS1DB(sBHasAction,aGS(wU,i,j))){
-        int thisBlock = aGS(wU,i,j);
-        int tAction = sBAction[thisBlock];
-        
-        if(tAction >= 1 && tAction <= 10){
-          if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
-            aSS(wU,i,j,aGS1D(gBBreakType,thisBlock));
-          }
-        }
-        if(tAction >= 11 && tAction <= 20){
-          if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
-            if(genTestPathExists(player.x,player.y,i,j)){
-              aSS(wU,i,j,aGS1D(gBBreakType,thisBlock));
+  boolean updateAgain = true;
+  
+  int updateDist = 10;
+  int capX = min(max(floor(player.x)+updateDist,0),wSize-1);
+  int capY = min(max(floor(player.y)+updateDist,0),wSize-1);
+  
+  while(updateAgain){
+    updateAgain = false;
+    for(int i = min(max(floor(player.x)-updateDist,0),wSize-1); i <= capX; i++){
+      for(int j = min(max(floor(player.y)-updateDist,0),wSize-1); j <= capY; j++){
+        if(aGS1DB(sBHasAction,aGS(wU,i,j))){
+          int thisBlock = aGS(wU,i,j);
+          int tAction = sBAction[thisBlock];
+          
+          if(tAction >= 1 && tAction <= 10){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
+              hitBlock(i,j,10000,false);
               updateAgain = true;
             }
           }
-        }
-        if(tAction >= 21 && tAction < 30){
-          if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
-            if(genTestPathExists(player.x,player.y,i,j)){
-              if(rayCast(i,j,(int)player.x,(int)player.y)){
-                aSS(wU,i,j,aGS1D(gBBreakType,thisBlock));
+          if(tAction >= 11 && tAction <= 20){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
+              if(genTestPathExists(player.x,player.y,i,j)){
+                hitBlock(i,j,10000,false);
                 updateAgain = true;
+              }
+            }
+          }
+          if(tAction >= 21 && tAction < 30){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
+              if(genTestPathExists(player.x,player.y,i,j)){
+                if(rayCast(i,j,(int)player.x,(int)player.y)){
+                  hitBlock(i,j,10000,false);
+                  updateAgain = true;
+                }
               }
             }
           }
         }
       }
     }
-  }
-  if(updateAgain){
-    updateSpecialBlocks();
   }
 }
 
@@ -2760,15 +3881,40 @@ void updateBlockLight(int x, int y){
 */
 
 public void updateSpawners(){
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
+  int spawnDist = 5;
+  int capX = min(max(floor(player.x)+spawnDist,0),wSize-1);
+  int capY = min(max(floor(player.y)+spawnDist,0),wSize-1);
+  for(int i = min(max(floor(player.x)-spawnDist,0),wSize-1); i <= capX; i++){
+    for(int j = min(max(floor(player.y)-spawnDist,0),wSize-1); j <= capY; j++){
       if(aGS1DB(sBHasAction,wU[i][j])){
         int tempBlock = wU[i][j];
         int tempAction = aGS1D(sBAction,tempBlock);
         if(tempAction >= 31 && tempAction <= 45){
-          int tempVal = (int)sq(tempAction-30);
-          if(random(tempVal)<=1){
-            entities.add(new Entity(i+.5f,j+.5f, testEntity.EC,random(TWO_PI)));
+          if(nmapShade[i][j] > 0){
+            particleEffect(i-.25f,j-.25f,1.5f,1.5f,3,aGS1DC(gBColor,aGS(wU,i,j)),color(255),0.03f);
+            
+            if(tempAction < 45){
+              if(random(100) < 25){
+                tempAction++;
+              }
+            }
+            
+            if(tempAction == 45){
+            //try to spawn
+            
+              float tempX;
+              float tempY;
+              for(int k = 0; k < 5; k++){
+                tempX = random(5)-2.5f;
+                tempY = random(5)-2.5f;
+                if(aGS(nmapShade,i+tempX+.5f,j+tempY+.5f) > 0){
+                  if(boxHitsBlocks(i+tempX+.5f,j+tempY+.5f,.6f,.6f) == false){ //add enemy size
+                    entities.add(new Entity(i+tempX+.5f,j+tempY+.5f, EC_AIR_MONSTER,random(TWO_PI)));
+                    aSS1D(sBAction,tempBlock,31+floor(random(10)));
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2777,61 +3923,23 @@ public void updateSpawners(){
 }
 
 public void drawWorld(){
-  background(0);
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      noStroke();
-      
-      int thisBlock = gU[i][j];
-      
-      fill(aGS1D(gBColor,thisBlock));
-      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-      rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
-      
-      if(sBHasImage[thisBlock]){
-        float tScale;
-        if(sBImageDrawType[thisBlock] == 0){
-          image(sBImage[thisBlock],floor(tempV.x),floor(tempV.y));
-        } else if(sBImageDrawType[thisBlock] == 1) {
-          image(sBImage[thisBlock],floor(tempV.x),floor(tempV.y));
-        } else {
-          tScale = width/sBImage[thisBlock].width;
-          image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),floor(tempV.x),floor(tempV.y));
-        }
-      }
-      
-      thisBlock = aGS(wU,i+wView.x,j+wView.y);
-      
-      if(aGS1DB(gBIsSolid,thisBlock)){
-        PVector tempV2 = grid2Pos(new PVector(i,j));
-        if(aGS1D(gBStrength,thisBlock) > -1){
-          if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
-            if(aGS(wUDamage,tempV2.x,tempV2.y) > aGS1D(gBStrength,thisBlock)){
-              aSS(wU,tempV2.x,tempV2.y,aGS1D(gBBreakType,thisBlock));
-              aSS(wUDamage,tempV2.x,tempV2.y,0);
-              
-            } else {
-              stroke(255);
-              strokeWeight(gScale/15);
-              float Crumble = PApplet.parseFloat(aGS(wUDamage,tempV2.x,tempV2.y))/(aGS1D(gBStrength,thisBlock)-.01f);
-              //line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
-              //line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
-              //println(Crumble);
-              arc(tempV.x+gScale/2,tempV.y+gScale/2,gScale*2/3,gScale*2/3,HALF_PI,HALF_PI+TWO_PI*Crumble);
-            }
-          }
-        }
-      }
-    }
+  background(gBColor[0]);
+  noStroke();
+  int baseDrawX = PApplet.parseInt((gridBufferPos.x-player.x)*gScale-gScale);
+  int baseDrawY = PApplet.parseInt((gridBufferPos.y-player.y)*gScale-gScale);
+  for(RectObj tempObj : (ArrayList<RectObj>) rectL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-  
-  if(gSize < 30){
-    for (Wave w : (ArrayList<Wave>) wL) {
-      w.display();
-    }
+  noFill();
+  stroke(strokeColor);
+  strokeWeight(gScale/15);
+  for(DamageObj tempObj : (ArrayList<DamageObj>) damageL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-  
-
+  for(TextObj tempObj : (ArrayList<TextObj>) textL) {
+    tempObj.display(baseDrawX,baseDrawY);
+  }
+  /*
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       int thisBlock = gU[i][j];
@@ -2857,6 +3965,7 @@ public void drawWorld(){
       }
     }
   }
+  */
 }
 
 public PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
@@ -2988,15 +4097,45 @@ public int rayCastPath(ArrayList a, int x1, int y1){
   for(int i = a.size()-1; i >= 0; i--){
     tempPV = (PVector)a.get(i);
     if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1)){
-      //if(gBIsSolid[aGS(wU,tempPV.x,tempPV.y)]){
-      //  a.clear();
-      //  a.add(new PVector(50,50));
-      //  return -1;
-      //}
       return i;
     }
   }
   return -1;
+}
+
+public void hitBlock(float x, float y, int hardness, boolean sent){
+  if(aGS1D(gBStrength,aGS(wU,x,y)) >= 0 || hardness >= 999){
+    aSS(wUDamage,x,y,aGS(wUDamage,x,y)+hardness);
+    if(sent == false){segments.add(new Segment("HB,"+str(PApplet.parseInt(x))+","+str(PApplet.parseInt(y))+","+str(aGS(wU,x,y))+","+str(hardness), 5));}
+    
+    if(aGS(wUDamage,x,y) > aGS1D(gBStrength,aGS(wU,x,y))){
+      
+      if(!updateExists(PApplet.parseInt(x),PApplet.parseInt(y))){
+        updates.add(new PVector(PApplet.parseInt(x),PApplet.parseInt(y),-1));
+      }
+      if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
+        tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(PApplet.parseInt(x))),"_y_",str(PApplet.parseInt(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+      }
+      int tempC = aGS1DC(gBColor,aGS(wU,x,y));
+      aSS(wU,x,y,aGS1D(gBBreakType,aGS(wU,x,y)));
+      particleEffect(x,y,1,1,15,tempC,aGS1DC(gBColor,aGS(wU,x,y)),.01f);
+        
+        
+      
+      aSS(wUDamage,x,y,0);
+    } else if(aGS(wUDamage,x,y) < 0){
+      aSS(wUDamage,x,y,0);
+    }
+  }
+}
+
+public boolean updateExists(float x, float y){
+  for (PVector update : (ArrayList<PVector>) updates) {
+    if(update.x == x && update.y == y){
+      return true;
+    }
+  }
+  return false;
 }
 
 //STEM Phagescape API v(see above)

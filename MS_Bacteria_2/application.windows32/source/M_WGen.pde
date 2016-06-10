@@ -43,6 +43,7 @@ void genLine(float x1, float y1, float x2, float y2, float weight, int b){
   }
   aSS(wU,floor(x1),floor(y1),b);
   aSS(wU,floor(x2),floor(y2),b);
+  
 }
 
 void genRect(float x, float y, float w, float h, int b){
@@ -114,8 +115,6 @@ void genReplace(int from, int to){
     for(int j = 0; j < wSize; j++){
       if(wU[i][j] == from){
         wU[i][j] = to;
-        wUP[i][j] = to;
-        wUC[i][j] = to;
       }
     }
   }

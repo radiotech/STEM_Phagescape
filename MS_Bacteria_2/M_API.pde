@@ -35,15 +35,9 @@ minAbs(_NUM_1_,_NUM_2_)
 import ddf.minim.*;
 Minim minim;
 
-int[][] gU; //Grid unit - contains all blocks being drawn to the screen
-boolean[][] gUHUD;
-int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
-int[][] wU; //World Unit - contains all blocks in the world
+int playerID = 0;
 
-int[][] wUDamage;
-boolean[][] wUText; //
-int[][] wUUpdate; //
-float gScale; //the width and height of blocks being drawn to the screen in pixels
+
 float wPhase = 0; //the current phase of all waves in the world (where they are in their animation)
 ArrayList wL = new ArrayList<Wave>(); //Wave list - list of all waves in the world
 PVector wView = new PVector(45,45); //current world position of the center of the viewing window
@@ -51,25 +45,20 @@ PVector wViewLast = new PVector(0,0); //previous world position of the center of
 int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
-ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+
+ArrayList mimics = new ArrayList<Mimic>();
 color strokeColor = color(255);
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
 int[] gBStrength = new int[256];
 int[] gBBreakType = new int[256];
 String[] gBBreakCommand = new String[256];
-boolean[] sBHasImage = new boolean[256];
-PImage[] sBImage = new PImage[256];
-int[] sBImageDrawType = new int[256];
-boolean[] sBHasText = new boolean[256];
-String[] sBText = new String[256];
-int[] sBTextDrawType = new int[256];
 boolean[] sBHasAction = new boolean[256];
 int[] sBAction = new int[256];
 PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
-PVector wViewCenter;
+PVector wViewCenter = new PVector(50,50);
 PFont fontNorm;
 PFont fontBold;
 int[][] distanceMatrix = new int[300][300];
@@ -78,27 +67,41 @@ int lightStrength = 10;
 boolean mouseClicked = false;
 boolean drawHUDSoftEdge = false;
 int fn = 0;
+int frameRateGoal = 45;
 
 boolean clicking = true;
 PVector clickPos = new PVector(-1,-1);
+boolean isLeft;
+boolean isRight;
+boolean isI;
 
 void M_Setup(){
+  minim = new Minim(this);
   fontNorm = createFont("monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
   fontBold = createFont("monofonto.ttf",18);//"Monospaced.bold-23.vlw"
   HUDImage = loadImage("shadowHUD.png");
-  frameRate(60);
+  arrowImg = loadImage("arrow.png");
+  frameRate(frameRateGoal);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
   safePreSetup();
-
+  
+  setupHUD();
   setupWorld();
+  setupDebug();
   setupEntities();
   scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
   
   refreshWorld();
+  
+  wView.x -= .1; wView.y -= .1; refreshWorld(); wView.x += .1; wView.y += .1; // prefrence for positive blocks rendering on minimap
+  
+  refreshWorld();
+  
+  setupServer();
 }
 
 
@@ -113,11 +116,11 @@ void draw(){
     }
   }
   
-    //clickQuestion();
+    clickQuestion();
   
-    //animate();
+    animate();
   
-    //nodeDraw();
+    nodeDraw();
   
   manageAsync();
   
@@ -125,21 +128,25 @@ void draw(){
   
   drawWorld();
   
-    //safePostUpdate();
+    safePostUpdate();
   
   drawEntities();
   
-    //drawSound();
+    drawSound();
   
   safeDraw();
   
-    //drawHUD();
+    drawHUD();
   
-    //drawChat();
+    drawChat();
   
-    //safePostDraw();
+    safePostDraw();
   
   mouseClicked = false;
+  
+  
+  //updateDebug();
+  
 }
 
 void keyPressed(){
@@ -149,6 +156,10 @@ void keyPressed(){
     key = 0;
   }
   
+  if(key == 'i' || key == 'I'){
+    isI = true;
+  }
+  
   if(chatPushing == false){
     player.moveEvent(0);
   }
@@ -156,9 +167,23 @@ void keyPressed(){
   if(key == 'F' || key == 'f') {
     if(HUDSstage == 0){
       HUDSstage = 1;
+      disconnect();
     } else {
       HUDSstage = -HUDSstage;
     }
+  }
+  
+  if(key == '+') {
+    if(miniMapZoomSmall < 20){
+      miniMapZoomSmall++;
+    }
+    miniMapZoomLarge = 4;
+  }
+  if(key == '-') {
+    if(miniMapZoomSmall > 0){
+      miniMapZoomSmall--;
+    }
+    miniMapZoomLarge = 0;
   }
   
   safeKeyPressed();
@@ -167,15 +192,35 @@ void keyPressed(){
 void keyReleased(){
   player.moveEvent(1);
   safeKeyReleased();
-  
+  if(key == 'i' || key == 'I'){
+    isI = false;
+  }
   
 }
 
 void mousePressed(){
   clicking = true;
+  if(mouseButton == RIGHT){
+    isRight = true;
+  } else if(mouseButton == LEFT){
+    isLeft = true;
+  }
   clickPos = new PVector(mouseX,mouseY);
   
   safeMousePressed();
+}
+
+void mouseReleased(){
+  
+  if(mouseButton == RIGHT){
+    isRight = false;
+    println("Right");
+  } else if(mouseButton == LEFT){
+    isLeft = false;
+    println("Left");
+  }
+  
+  safeMouseReleased();
 }
 
 float pointDir(PVector v1,PVector v2){
@@ -186,7 +231,15 @@ float pointDir(PVector v1,PVector v2){
     }
     return tDir;
   } else {
-    return random(2*PI);
+    if((v2.y-v1.y) != 0){
+      if(v2.y > v1.y){
+        return PI/2;
+      } else {
+        return PI/2*3;
+      }
+    } else {
+      return random(2*PI);
+    }
   }
 }
 
@@ -221,9 +274,17 @@ float angleDir(float tA, float tB){
   if(tA<tB-PI){tA+=PI*2;}
   if(tB<tA-PI){tB+=PI*2;}
   if(tB == tA){
-    return 1;
+    return 0;
   }
   return (tB-tA)/abs(tB-tA);
+}
+
+int total(int[] list){
+  int myReturn = 0;
+  for(int i = 0; i < list.length; i++){
+    myReturn += list[i];
+  }
+  return myReturn;
 }
 
 float posMod(float tA, float tB){
@@ -244,6 +305,10 @@ void aSS2DB(boolean[][] tMat, float tA, float tB, boolean tValue){ //array set s
 }
 
 int aGS(int[][] tMat, float tA, float tB){ //array get safe
+  return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
+}
+
+ArrayList aGSAL(ArrayList[][] tMat, float tA, float tB){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))][max(0,min(tMat[0].length-1,(int)tB))];
 }
 
@@ -350,6 +415,7 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
+int lastMillis = 0;
 int asyncT = 1000;
 void manageAsync(){
   while(millis()-40>asyncT){
@@ -357,17 +423,18 @@ void manageAsync(){
     asyncT += 40;
     fn++;
     safeAsync();
+    debugLog(color(0,255,0));
     updateWorld();
     updateEntities();
     updateSound();
     updateHUD();
     if(fn % 13 == 0){
-      updateSpecialBlocks();
       updateSpawners();
     }
     if(fn % 125 == 0){
       healEntities();
     }
+    //updateServer();
   }
 }
 
@@ -394,4 +461,3 @@ PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
   }
   return canvas;
 }
-

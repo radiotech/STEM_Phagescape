@@ -1,5 +1,33 @@
 //STEM Phagescape API v(see above)
 
+int Astart = -1;
+
+void AIWander(Entity e, int AIradius, int AItestDelay, int AItestChance){ //Total behavior function
+  float disToD = pointDistance(e.eV,e.eD);
+  if(fn % AItestDelay == 0){
+    if(random(100) < AItestChance || disToD > wSize-10){
+      int loopingC = 0;
+      while(loopingC < 100){
+        e.eD = new PVector(e.x+random(AIradius*2)-AIradius,e.y+random(AIradius*2)-AIradius);
+        if(rayCast(e.x,e.y,e.eD.x,e.eD.y,false)){
+          loopingC = 101;
+        }
+        loopingC++;
+        println(loopingC);
+      }
+      if(loopingC == 100){
+        e.eD = new PVector(e.x,e.y);
+      }
+    }
+  }
+  if(disToD > 2){
+    e.eMove = true;
+  }
+}
+
+
+
+
 void nodeWorld(PVector startV, int targetBlock, int vision){
   int q;
   Node n2;
@@ -36,10 +64,12 @@ void nodeWorldPos(PVector startV, PVector targetBlock, int vision){
   Node n2;
   
   
-  
   for ( int ix = 0; ix < wSize; ix+=1 ) {
     for ( int iy = 0; iy < wSize; iy+=1) {
+
+      
       if ((gBIsSolid[wU[ix][iy]] == false && mDis(ix,iy,startV.x,startV.y)<vision) || (ix == floor(startV.x) && iy == floor(startV.y)) || (ix == floor(targetBlock.x) && iy == floor(targetBlock.y))) {
+        //entities.add(new Entity(ix+.5,iy+.5,0,0));
         
         nodes.add(new Node(ix,iy));
         nmap[iy][ix] = nodes.size()-1;
@@ -91,7 +121,11 @@ boolean astar(int iStart, int targetBlock, PVector endV) {
   boolean tentativeIsBetter;
   float lowest = 999999999;
   int lowId = -1;
+  
+  println("NOa");
+  
   while( openSet.size()>0 ) {
+    println("NOb");
     lowest = 999999999;
     for ( int a = 0; a < openSet.size(); a++ ) {
       if ( ( ((Node)openSet.get(a)).g+((Node)openSet.get(a)).h ) <= lowest ) {
@@ -106,18 +140,22 @@ boolean astar(int iStart, int targetBlock, PVector endV) {
         Node d = (Node)openSet.get(lowId);
         while( d.p != -1 ) {
           Apath.add( d );
+          println("NOc");
           d = (Node)nodes.get(d.p);
         }
+          println("NO1");
         return true;
       }
     } else {
-      if ( abs(current.x-endV.x) < .5 && abs(current.y-endV.y) < .5 ) { //path found
+      if ( abs(current.x-endV.x) <= .5 && abs(current.y-endV.y) <= .5 ) { //path found
         //follow parents backward from goal
         Node d = (Node)openSet.get(lowId);
         while( d.p != -1 ) {
           Apath.add(d);
+          println("NOd");
           d = (Node)nodes.get(d.p);
         }
+          println("NO2");
         return true;
       }
     }
@@ -153,6 +191,7 @@ boolean astar(int iStart, int targetBlock, PVector endV) {
     }
   }
   //no path found
+  println("noz");
   return false;
 }
 
@@ -199,14 +238,14 @@ ArrayList searchWorld(PVector startV, int targetBlock, int vision) {
   nodeWorld(startV, targetBlock, vision);
   
   
-  int start = aGS(nmap,startV.y,startV.x);
+  Astart = aGS(nmap,startV.y,startV.x);
   boolean tempB = false;
-  if(start > -1 && targetBlock > -1){
-    tempB = astar(start,targetBlock,null);
+  if(Astart > -1 && targetBlock > -1){
+    tempB = astar(Astart,targetBlock,null);
   }
   
   if(tempB == false){
-    Apath = new ArrayList();
+    //Apath = new ArrayList();
   }
   
   return Apath;
@@ -221,15 +260,14 @@ ArrayList searchWorldPos(PVector startV, PVector endV, int vision) {
   Apath = new ArrayList();
   
   //generateMap(targetBlock);
-  
 
   nodeWorldPos(startV, endV, vision);
   
   
-  int start = aGS(nmap,startV.y,startV.x);
+  Astart = aGS(nmap,startV.y,startV.x);
   boolean tempB = false;
-  if(start > -1){
-    tempB = astar(start,-1,endV);
+  if(Astart > -1){
+    tempB = astar(Astart,-1,endV);
   }
   
   if(tempB == false){
@@ -243,10 +281,9 @@ void nodeDraw() {
   Node t1;
   for ( int i = 0; i < nodes.size(); i++ ) {
     t1 = (Node)nodes.get(i);
-    if (i==start) {
+    if (i==Astart) {
       fill(0,255,0);
-    }
-    else {
+    } else {
       if (Apath.contains(t1)) {
         fill(255);
         if(((Node)Apath.get(Apath.size()-1)).x == t1.x && ((Node)Apath.get(Apath.size()-1)).y == t1.y){

@@ -146,7 +146,7 @@ class Wave {
     //gridBuffer.stroke(strokeColor);
     
     int strokeWe = ceil((gScale/15-3)/2);
-    rectL.add(new RectObj(int(ta.x)+ceil(gScale)-strokeWe,int(ta.y)+ceil(gScale)-strokeWe,int(tb.x)+ceil(gScale)-int(ta.x+ceil(gScale))+strokeWe,int(tb.y)+ceil(gScale)-int(ta.y+ceil(gScale))+strokeWe,color(255)));
+    rectL.add(new RectObj(ceil(ta.x)+ceil(gScale)-strokeWe,ceil(ta.y)+ceil(gScale)-strokeWe,ceil(tb.x)+ceil(gScale)-ceil(ta.x+ceil(gScale))+strokeWe,int(tb.y)+ceil(gScale)-int(ta.y+ceil(gScale))+strokeWe,color(255)));
     
     //gridBuffer.line(ta.x+ceil(gScale),ta.y+ceil(gScale),tb.x+ceil(gScale),tb.y+ceil(gScale));
     //gridBuffer.noStroke();

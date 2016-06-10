@@ -3,14 +3,23 @@
  */
 
 // wrap the P5 Minim sound library classes
+var callbackList = "";
 function Minim() {
-  this.loadFile = function (str) {
-    return new AudioPlayer(str);
-  }
+	this.loadSample = function (requestContent) { //*requestPacket*
+		$.get(requestContent, function(data) {
+			callbackList = data;
+		});
+	    return;
+	};
+  
+	this.loadFile = function (str) {
+		return new AudioPlayer(str);
+	};
 }
 
 // Browser Audio API
 function AudioPlayer(str) {
+  
   var loaded = false;
   var looping = false;
 
@@ -31,6 +40,12 @@ function AudioPlayer(str) {
     }
     loaded = true;
   }
+  
+  
+  this.getMetaData = function(){ //*checkPacketCallbacks*
+		return new AudioMetaData();
+	};
+	
   this.play = function () {
     if (!loaded) {
       var local = this;
@@ -92,6 +107,16 @@ function AudioPlayer(str) {
   };
 }
 
+function AudioMetaData() {
+  
+  this.fileName = function(){ //*checkPacketCallbacks*
+	var myReturn;
+	myReturn = callbackList;
+	callbackList = "";
+	return myReturn;
+	};
+}
+
 function canPlayOgg() {
   var a = document.createElement('audio');
   return !!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, ''));
@@ -101,3 +126,7 @@ function canPlayMp3() {
   var a = document.createElement('audio');
   return !!(a.canPlayType && a.canPlayType('audio/mpeg;').replace(/no/, ''));
 }
+
+
+
+

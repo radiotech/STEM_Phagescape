@@ -32,12 +32,15 @@ maxAbs(_NUM_1_,_NUM_2_)
 minAbs(_NUM_1_,_NUM_2_)
 */
 //These variables should not be changed
+import ddf.minim.*;
+Minim minim;
+
 int[][] gU; //Grid unit - contains all blocks being drawn to the screen
 boolean[][] gUHUD;
 int[][] gM; //Grid Mini - stores information regarding the position of block boundries and verticies for wave generation
 int[][] wU; //World Unit - contains all blocks in the world
-int[][] wUP; //past
-int[][] wUC; //current
+
+int playerID = 0;
 int[][] wUDamage;
 boolean[][] wUText; //
 int[][] wUUpdate; //
@@ -49,7 +52,9 @@ PVector wViewLast = new PVector(0,0); //previous world position of the center of
 int[] pKeys = new int[4];
 Entity player;
 boolean menu = false;
-ArrayList entities = new ArrayList<Entity>(); //Entity list - list of all entities in the world
+
+ArrayList mimics = new ArrayList<Mimic>();
+color strokeColor = color(255);
 color[] gBColor = new color[256];
 boolean[] gBIsSolid = new boolean[256];
 int[] gBStrength = new int[256];
@@ -72,60 +77,80 @@ PFont fontBold;
 int[][] distanceMatrix = new int[300][300];
 boolean shadows = false; //are there shadows?
 int lightStrength = 10;
-boolean registeredMouseClick = false;
 boolean mouseClicked = false;
+boolean drawHUDSoftEdge = false;
+int fn = 0;
+int frameRateGoal = 45;
+
+boolean clicking = true;
+PVector clickPos = new PVector(-1,-1);
 
 void M_Setup(){
-  fontNorm = loadFont("Monospaced.norm-23.vlw");
-  fontBold = loadFont("Monospaced.bold-23.vlw");
-  frameRate(60);
+  minim = new Minim(this);
+  fontNorm = createFont("monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
+  fontBold = createFont("monofonto.ttf",18);//"Monospaced.bold-23.vlw"
+  HUDImage = loadImage("shadowHUD.png");
+  frameRate(frameRateGoal);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
   textSize(20);
   safePreSetup();
 
   setupWorld();
+  setupDebug();
   setupEntities();
   scaleView(10);
   centerView(wSize/2,wSize/2);
   safeSetup();
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUP[i][j] = wU[i][j];
-    }
-  }
+  
   refreshWorld();
+  
+  setupServer();
 }
 
 
 void draw(){
-  if(mouseClicked == true) {registeredMouseClick = true;}
+  if(clicking){
+    if(pointDistance(clickPos,new PVector(mouseX,mouseY)) > 5){
+      clicking = false;
+    } else if(mousePressed == false){
+      mouseClicked = true;
+      safeMouseClicked();
+      clicking = false;
+    }
+  }
   
-  animate();
-  //drawWorld();//
-  nodeDraw();
-  //if(!menu){
-    
-  //}
+    clickQuestion();
+  
+    animate();
+  
+    nodeDraw();
   
   manageAsync();
   
   safeUpdate();
   
-  
   drawWorld();
+  
+    safePostUpdate();
   
   drawEntities();
   
+    drawSound();
+  
   safeDraw();
   
-  drawChat();
+    drawHUD();
   
-  updateSound();
+    drawChat();
   
-  safePostDraw();
+    safePostDraw();
   
-  if(registeredMouseClick == true){mouseClicked = false; registeredMouseClick=false;}
+  mouseClicked = false;
+  
+  
+  updateDebug();
+  
 }
 
 void keyPressed(){
@@ -139,21 +164,30 @@ void keyPressed(){
     player.moveEvent(0);
   }
   
+  if(key == 'F' || key == 'f') {
+    if(HUDSstage == 0){
+      HUDSstage = 1;
+      disconnect();
+    } else {
+      HUDSstage = -HUDSstage;
+    }
+  }
+  
   safeKeyPressed();
 }
 
 void keyReleased(){
   player.moveEvent(1);
   safeKeyReleased();
+  
+  
 }
 
 void mousePressed(){
+  clicking = true;
+  clickPos = new PVector(mouseX,mouseY);
+  
   safeMousePressed();
-}
-
-void mouseClicked(){
-  mouseClicked = true;
-  safeMouseClicked();
 }
 
 float pointDir(PVector v1,PVector v2){
@@ -229,6 +263,11 @@ int aGS1D(int[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
 
+void aSS1D(int[] tMat, float tA, int tValue){ //array set safe
+  //println(tValue);
+  tMat[max(0,min(tMat.length-1,(int)tA))] = tValue;
+}
+
 boolean aGS1DB(boolean[] tMat, float tA){ //array get safe
   return tMat[max(0,min(tMat.length-1,(int)tA))];
 }
@@ -265,6 +304,10 @@ float minAbs(float tA, float tB){
   }
 }
 
+float runAvg(float curAvg, float newVal, int pastValNum){
+  return (curAvg*pastValNum+newVal)/float(pastValNum+1);
+}
+
 int mode(int[] array) {
     int[] modeMap = new int [255];
     int maxEl = array[0];
@@ -287,6 +330,23 @@ int mode(int[] array) {
     return maxEl;
 }
 
+boolean boxHitsBlocks(float x, float y, float w, float h){
+  if(gBIsSolid[aGS(wU,x-w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y-h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x-w/2,y+h/2)]){
+    return true;
+  }
+  if(gBIsSolid[aGS(wU,x+w/2,y+h/2)]){
+    return true;
+  }
+  return false;
+}
+
+
 PImage resizeImage(PImage tImg, int tw, int th){
   PImage tImgNew = createImage(tw,th,ARGB);
   //tImgNew.loadPixels();
@@ -302,22 +362,26 @@ PImage resizeImage(PImage tImg, int tw, int th){
   return tImgNew;
 }
 
-int asyncC = 0;
+int lastMillis = 0;
 int asyncT = 1000;
 void manageAsync(){
   while(millis()-40>asyncT){
+    if(millis()-1000 > asyncT){ asyncT = millis(); }
     asyncT += 40;
-    asyncC++;
-    safeAsync(asyncC);
+    fn++;
+    safeAsync();
+    debugLog(color(0,255,0));
     updateWorld();
-    updateEntities(asyncC);
-    if(asyncC % 25 == 0){
-      updateSpecialBlocks();
+    updateEntities();
+    updateSound();
+    updateHUD();
+    if(fn % 13 == 0){
       updateSpawners();
     }
-    if(asyncC % 125 == 0){
+    if(fn % 125 == 0){
       healEntities();
     }
+    updateServer();
   }
 }
 
@@ -325,4 +389,23 @@ float mDis(float x1,float y1,float x2,float y2) {
   return abs(y2-y1)+abs(x2-x1);
 }
 
-//STEM Phagescape API v(see above)
+String StringReplaceAll(String str, String from, String to){
+  int index = str.indexOf(from);
+  while(index != -1){
+    str = str.substring(0,index) + to + str.substring(index+from.length(),str.length());
+    index = str.indexOf(from);
+  }
+  return str;
+}
+
+PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
+  int xCap = min(max(x+w,0),canvas.width-1);
+  int yCap = min(max(y+h,0),canvas.width-1);
+  for(int i = min(max(x,0),canvas.width-1); i < xCap; i++){
+    for(int j = min(max(y,0),canvas.width-1); j < yCap; j++){
+      canvas.pixels[j*canvas.width+i] = col;
+    }
+  }
+  return canvas;
+}
+

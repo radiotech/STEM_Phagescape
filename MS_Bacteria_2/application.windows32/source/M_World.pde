@@ -1,10 +1,55 @@
 //STEM Phagescape API v(see above)
 
+ArrayList updates = new ArrayList<PVector>();
+
+PGraphics gridBuffer;
+PImage gridBufferImage;
+PVector gridBufferPos = new PVector(0,0);
+int[][] gUShade;
+int[][] nmapShade;
+ArrayList rectL = new ArrayList<RectObj>();
+ArrayList damageL = new ArrayList<DamageObj>();
+ArrayList textL = new ArrayList<TextObj>();
+
+class RectObj {
+  int x, y, w, h, col;
+  RectObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx; y = ty; w = tw; h = th; col = tcol;
+  }
+  void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
+class DamageObj {
+  int x, y, d, posx, posy;
+  float maxstage;
+  DamageObj(int tx, int ty, int td, int tposx, int tposy) {
+    x = tx; y = ty; d = td; posx = tposx; posy = tposy;
+    maxstage = aGS1D(gBStrength,aGS(wU,posx,posy))-.01;
+  }
+  void display(float offx, float offy) {
+    arc(offx+x,offy+y,d,d,HALF_PI,HALF_PI+TWO_PI*(float(aGS(wUDamage,posx,posy))/maxstage));
+  }
+}
+
+class TextObj {
+  int x, y, w, h, col;
+  TextObj(int tx, int ty, int tw, int th, int tcol) {
+    x = tx; y = ty; w = tw; h = th; col = tcol;
+  }
+  void display(float offx, float offy) {
+    fill(col);
+    rect(offx+x,offy+y,w,h);
+  }
+}
+
 void setupWorld(){
   gScale = float(width)/(gSize-1);
+  gridBuffer = createGraphics(width+ceil(gScale*2),height+ceil(gScale*2));
+  gridBufferImage = createImage(width+ceil(gScale*2),height+ceil(gScale*2),RGB);
   wU = new int[wSize][wSize];
-  wUP = new int[wSize][wSize];
-  wUC = new int[wSize][wSize];
   wUText = new boolean[wSize][wSize];
   wUDamage = new int[wSize][wSize];
   gU = new int[ceil(gSize)][ceil(gSize)];
@@ -13,18 +58,84 @@ void setupWorld(){
 }
 
 void refreshWorld(){
+  
   refreshHUD();
+  gUShade = new int[floor(gSize)][floor(gSize)];
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
-      if(aGS(nmap,i+wView.x,j+wView.y)>0 || shadows == false){
-        gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
-      } else {
-        gU[i][j] = 255;
+      gU[i][j] = aGS(wU,i+wView.x,j+wView.y);
+      gUShade[i][j] = aGS(nmapShade,i+wView.x,j+wView.y);
+      if(i+wView.x < 0 || j+wView.y < 0 || i+wView.x >= wSize || j+wView.y  >= wSize){
+        gUShade[i][j] = 0;
       }
-      
     }
   }
   waveGrid();
+
+  rectL.clear();
+  damageL.clear();
+  
+  for(int i = 0; i < gSize; i++){
+    for(int j = 0; j < gSize; j++){
+      //gridBuffer.noStroke();
+      
+      int thisBlock = gU[i][j];
+      
+      int tempColor = aGS1D(gBColor,thisBlock);
+      
+      float tempShade = float(gUShade[i][j])/5;
+      
+      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
+      
+      
+      if(tempShade > 1){
+        tempShade = 1;
+      }
+      
+      if(aGS1DB(gBIsSolid,thisBlock)){
+        if(aGS1D(gBStrength,thisBlock) > -1){
+          if(aGS(gUShade,i,j) > 0){
+            if(aGS1D(gBStrength,thisBlock) > -1){
+              damageL.add(new DamageObj(floor(tempV.x)+ceil(gScale*1.5),floor(tempV.y)+ceil(gScale*1.5),ceil(gScale*2/3),int(i+wView.x),int(j+wView.y)));
+            }
+          }
+        }
+      }
+      //gridBuffer.fill(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade);
+      
+      
+      //gridBufferImage = toughRect(gridBufferImage, floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade));
+      //gridBufferImage.set(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),airMonster.Img);
+      if(tempColor != gBColor[0] || tempShade != 1){
+        rectL.add(new RectObj(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale), color(red(tempColor)*tempShade,green(tempColor)*tempShade,blue(tempColor)*tempShade)));
+      }
+      //gridBuffer.rect(floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale),ceil(gScale),ceil(gScale)); //-pV.x*gScale
+      
+      
+      if(sBHasImage[thisBlock]){
+        float tScale;
+        if(sBImageDrawType[thisBlock] == 0){
+          //gridBuffer.image(sBImage[thisBlock],floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        } else if(sBImageDrawType[thisBlock] == 1) {
+          //gridBuffer.image(sBImage[thisBlock],floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        } else {
+          tScale = width/sBImage[thisBlock].width;
+          //gridBuffer.image(sBImage[thisBlock].get(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)),floor(tempV.x)+ceil(gScale),floor(tempV.y)+ceil(gScale));
+        }
+      }
+    }
+  }
+  
+  if(gSize < 30){
+    for (Wave w : (ArrayList<Wave>) wL) {
+      w.display();
+    }
+  }
+  
+  gridBufferPos = new PVector(player.x,player.y);
+  
+  updateSpecialBlocks();
+  
 }
 
 void moveToAnimate(PVector tV, float tTime){
@@ -93,152 +204,110 @@ void addActionSpecialBlock(int tIndex, int tAction){
 void centerView(float ta, float tb){
   wViewCenter = new PVector(ta,tb,gSize);
   wView = new PVector(ta-(gSize-1)/2,tb-(gSize-1)/2);
-  if(floor(wViewLast.x) != floor(wView.x)){
+  if(floor(wViewLast.x) != floor(wView.x) || floor(wViewLast.y) != floor(wView.y)){
     refreshWorld();
     wPhase -= PI;
-  }
-  if(floor(wViewLast.y) != floor(wView.y)){
-    refreshWorld();
-    wPhase -= PI;
+    debugLog(color(0,255,255));
   }
   wViewLast = new PVector(wView.x,wView.y);
 }
 
 void updateWorld(){
-  //println("..");
-  //wPhase += .09;
-  boolean anyBlockChanges = false;
-  boolean theseBlockChanges = true;
-  
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUUpdate[i][j] = 0;
-    }
-  }
-  
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUC[i][j] = wU[i][j];
-    }
-  }
-  while(theseBlockChanges){
-    theseBlockChanges = false;
-    
-    for(int i = 0; i < wSize; i++){
-      for(int j = 0; j < wSize; j++){
-        if(wUUpdate[i][j] == 20){
-          wUUpdate[i][j] = -1;
-          updateBlock(i,j,0,0);
-          theseBlockChanges = true;
-        }
-        if(wUUpdate[i][j] == 21){
-          wUUpdate[i][j] = 20;
-          theseBlockChanges = true;
-        }
-      }
-    }
-    
-    for(int i = 0; i < wSize; i++){
-      for(int j = 0; j < wSize; j++){
-        if(wUC[i][j] != wUP[i][j]){
-          if(aGS1D(gBBreakType,wUP[i][j]) == wUC[i][j]){
-            if(aGS1DS(gBBreakCommand,wUP[i][j]) != null){
-              //entities.add(new Entity(i+.5,j+.5, gBBreakEntity[wUP[i][j]],random(TWO_PI)));
-              tryCommand((aGS1DS(gBBreakCommand,wUP[i][j])).replaceAll("_x_",str(i)).replaceAll("_y_",str(j)),"");//aGS1DS(gBBreakCommand,wUP[i][j])
-            }
-            color tempC = aGS1DC(gBColor,aGS(wUP,i,j));
-            particleEffect(i,j,1,1,15,tempC,tempC,.01);
+  if(updates.size() > 0) {
+    int removedUpdates = 0;
+    while(updates.size()-removedUpdates > 0){
+      PVector update;
+      for (int i = updates.size() - 1; i >= 0; i--) {
+        update = (PVector) updates.get(i);
+        if(update.z == 20){
+          if(updateBlock(int(update.x),int(update.y))){
+            update.z = -1;
+          } else {
+            update.z = 0;
           }
-          
-          //if(wUUpdate[i][j] == 0){wUUpdate[i+1][j] = 20;}
-          if(wUUpdate[i][j] == 0){wUUpdate[i][j] = -1;}
-          if(i+1<wSize){if(wUUpdate[i+1][j] == 0){wUUpdate[i+1][j] = 21;}}
-          if(i-1>=0){if(wUUpdate[i-1][j] == 0){wUUpdate[i-1][j] = 21;}}
-          if(j+1<wSize){if(wUUpdate[i][j+1] == 0){wUUpdate[i][j+1] = 21;}}
-          if(j-1>=0){if(wUUpdate[i][j-1] == 0){wUUpdate[i][j-1] = 21;}}
-          theseBlockChanges = true;
-          
-          wUP[i][j] = wUC[i][j];
-          wU[i][j] = wUC[i][j];
+        }
+        if(update.z == 21){
+          update.z = 20;
         }
       }
+      for (int i = updates.size() - 1; i >= 0; i--) {
+        update = (PVector) updates.get(i);
+        if(update.z == -1){
+          if(!updateExists(update.x+1,update.y)){updates.add(new PVector(update.x+1,update.y,21));}
+          if(!updateExists(update.x-1,update.y)){updates.add(new PVector(update.x-1,update.y,21));}
+          if(!updateExists(update.x,update.y+1)){updates.add(new PVector(update.x,update.y+1,21));}
+          if(!updateExists(update.x,update.y-1)){updates.add(new PVector(update.x,update.y-1,21));}
+        }
+        if(update.z == 0 || update.z == -1){update.z = -2; removedUpdates++; /*segments.add(new Segment("="+str(int(update.x))+";"+str(int(update.y))+";"+str(aGS(wU,update.x,update.y))+"&", 2));*/}
+      }
     }
-    if(theseBlockChanges){
-      anyBlockChanges = true;
-    }
-  }
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wUP[i][j] = wU[i][j];
-    }
-  }
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
-      wU[i][j] = wUC[i][j];
-    }
-  }
-  
-  if(anyBlockChanges){
     refreshWorld();
+    updates.clear();
   }
 }
 
-void updateBlock(int x, int y, int xs, int ys){
+boolean updateBlock(int x, int y){
   if(x >= 0 && y >= 0 && x < wSize && y < wSize){
-    int tempBT = aGS(wUC,x,y);
+    int tempBT = aGS(wU,x,y);
     if(aGS1DB(sBHasAction,tempBT)){
       int tAction = sBAction[tempBT];
       if(tAction == 0){
-        if(aGS(wUP,x+xs,y+ys) == aGS(wU,x,y))
-        aSS(wUC,x,y,aGS1D(gBBreakType,tempBT));
+        //if(aGS(wUP,x+xs,y+ys) == aGS(wU,x,y))
+        //aSS(wUC,x,y,aGS1D(gBBreakType,tempBT)); //what is action 0 again? - needs updated to new system of update list
       }
       if(tAction == 46){
-        if(aGS(wUP,x,y) == tempBT){
-          aSS(wUC,x,y,aGS1D(gBBreakType,tempBT));
-        }
+        //if(aGS(wUP,x,y) == tempBT){
+          hitBlock(x,y,10000,false);
+          return true;
+        //}
       }
     }
   }
+  return false;
 }
 
 void updateSpecialBlocks(){
-  boolean updateAgain = false;
-  int iTo = (int)player.x+10;
-  int jTo = (int)player.y+10;
-  for(int i = (int)player.x-10; i < iTo; i++){
-    for(int j = (int)player.y-10; j < jTo; j++){
-      if(aGS1DB(sBHasAction,aGS(wU,i,j))){
-        int thisBlock = aGS(wU,i,j);
-        int tAction = sBAction[thisBlock];
-        
-        if(tAction >= 1 && tAction <= 10){
-          if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
-            aSS(wU,i,j,aGS1D(gBBreakType,thisBlock));
-          }
-        }
-        if(tAction >= 11 && tAction <= 20){
-          if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
-            if(genTestPathExists(player.x,player.y,i,j)){
-              aSS(wU,i,j,aGS1D(gBBreakType,thisBlock));
+  boolean updateAgain = true;
+  
+  int updateDist = 10;
+  int capX = min(max(floor(player.x)+updateDist,0),wSize-1);
+  int capY = min(max(floor(player.y)+updateDist,0),wSize-1);
+  
+  while(updateAgain){
+    updateAgain = false;
+    for(int i = min(max(floor(player.x)-updateDist,0),wSize-1); i <= capX; i++){
+      for(int j = min(max(floor(player.y)-updateDist,0),wSize-1); j <= capY; j++){
+        if(aGS1DB(sBHasAction,aGS(wU,i,j))){
+          int thisBlock = aGS(wU,i,j);
+          int tAction = sBAction[thisBlock];
+          
+          if(tAction >= 1 && tAction <= 10){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction){
+              hitBlock(i,j,10000,false);
               updateAgain = true;
             }
           }
-        }
-        if(tAction >= 21 && tAction < 30){
-          if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
-            if(genTestPathExists(player.x,player.y,i,j)){
-              if(rayCast(i,j,(int)player.x,(int)player.y)){
-                aSS(wU,i,j,aGS1D(gBBreakType,thisBlock));
+          if(tAction >= 11 && tAction <= 20){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<tAction-10){
+              if(genTestPathExists(player.x,player.y,i,j)){
+                hitBlock(i,j,10000,false);
                 updateAgain = true;
+              }
+            }
+          }
+          if(tAction >= 21 && tAction < 30){
+            if(pointDistance(new PVector((int)player.x,(int)player.y), new PVector(i,j))<=tAction-20){
+              if(genTestPathExists(player.x,player.y,i,j)){
+                if(rayCast(i,j,(int)player.x,(int)player.y)){
+                  hitBlock(i,j,10000,false);
+                  updateAgain = true;
+                }
               }
             }
           }
         }
       }
     }
-  }
-  if(updateAgain){
-    updateSpecialBlocks();
   }
 }
 
@@ -276,15 +345,40 @@ void updateBlockLight(int x, int y){
 */
 
 void updateSpawners(){
-  for(int i = 0; i < wSize; i++){
-    for(int j = 0; j < wSize; j++){
+  int spawnDist = 5;
+  int capX = min(max(floor(player.x)+spawnDist,0),wSize-1);
+  int capY = min(max(floor(player.y)+spawnDist,0),wSize-1);
+  for(int i = min(max(floor(player.x)-spawnDist,0),wSize-1); i <= capX; i++){
+    for(int j = min(max(floor(player.y)-spawnDist,0),wSize-1); j <= capY; j++){
       if(aGS1DB(sBHasAction,wU[i][j])){
         int tempBlock = wU[i][j];
         int tempAction = aGS1D(sBAction,tempBlock);
         if(tempAction >= 31 && tempAction <= 45){
-          int tempVal = (int)sq(tempAction-30);
-          if(random(tempVal)<=1){
-            entities.add(new Entity(i+.5,j+.5, testEntity.EC,random(TWO_PI)));
+          if(nmapShade[i][j] > 0){
+            particleEffect(i-.25,j-.25,1.5,1.5,3,aGS1DC(gBColor,aGS(wU,i,j)),color(255),0.03);
+            
+            if(tempAction < 45){
+              if(random(100) < 25){
+                tempAction++;
+              }
+            }
+            
+            if(tempAction == 45){
+            //try to spawn
+            
+              float tempX;
+              float tempY;
+              for(int k = 0; k < 5; k++){
+                tempX = random(5)-2.5;
+                tempY = random(5)-2.5;
+                if(aGS(nmapShade,i+tempX+.5,j+tempY+.5) > 0){
+                  if(boxHitsBlocks(i+tempX+.5,j+tempY+.5,.6,.6) == false){ //add enemy size
+                    entities.add(new Entity(i+tempX+.5,j+tempY+.5, EC_AIR_MONSTER,random(TWO_PI)));
+                    aSS1D(sBAction,tempBlock,31+floor(random(10)));
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -293,61 +387,23 @@ void updateSpawners(){
 }
 
 void drawWorld(){
-  background(0);
-  for(int i = 0; i < gSize; i++){
-    for(int j = 0; j < gSize; j++){
-      noStroke();
-      
-      int thisBlock = gU[i][j];
-      
-      fill(aGS1D(gBColor,thisBlock));
-      PVector tempV = pos2Screen(grid2Pos(new PVector(i,j)));
-      rect(floor(tempV.x),floor(tempV.y),ceil(gScale),ceil(gScale)); //-pV.x*gScale
-      
-      if(sBHasImage[thisBlock]){
-        float tScale;
-        if(sBImageDrawType[thisBlock] == 0){
-          image(sBImage[thisBlock],floor(tempV.x),floor(tempV.y));
-        } else if(sBImageDrawType[thisBlock] == 1) {
-          image(sBImage[thisBlock],floor(tempV.x),floor(tempV.y));
-        } else {
-          tScale = width/sBImage[thisBlock].width;
-          image(sBImage[thisBlock].get(floor(tempV.x+gScale),floor(tempV.y+gScale),ceil(gScale),ceil(gScale)),floor(tempV.x),floor(tempV.y));
-        }
-      }
-      
-      thisBlock = aGS(wU,i+wView.x,j+wView.y);
-      
-      if(aGS1DB(gBIsSolid,thisBlock)){
-        PVector tempV2 = grid2Pos(new PVector(i,j));
-        if(aGS1D(gBStrength,thisBlock) > -1){
-          if(aGS(wUDamage,tempV2.x,tempV2.y) > 0){
-            if(aGS(wUDamage,tempV2.x,tempV2.y) > aGS1D(gBStrength,thisBlock)){
-              aSS(wU,tempV2.x,tempV2.y,aGS1D(gBBreakType,thisBlock));
-              aSS(wUDamage,tempV2.x,tempV2.y,0);
-              
-            } else {
-              stroke(255);
-              strokeWeight(gScale/15);
-              float Crumble = float(aGS(wUDamage,tempV2.x,tempV2.y))/(aGS1D(gBStrength,thisBlock)-.01);
-              //line(tempV.x,tempV.y+gScale/2-Crumble,tempV.x+gScale,tempV.y+gScale/2+Crumble);
-              //line(tempV.x+gScale/2+Crumble,tempV.y,tempV.x+gScale/2-Crumble,tempV.y+gScale);
-              //println(Crumble);
-              arc(tempV.x+gScale/2,tempV.y+gScale/2,gScale*2/3,gScale*2/3,HALF_PI,HALF_PI+TWO_PI*Crumble);
-            }
-          }
-        }
-      }
-    }
+  background(gBColor[0]);
+  noStroke();
+  int baseDrawX = int((gridBufferPos.x-player.x)*gScale-gScale);
+  int baseDrawY = int((gridBufferPos.y-player.y)*gScale-gScale);
+  for(RectObj tempObj : (ArrayList<RectObj>) rectL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-  
-  if(gSize < 30){
-    for (Wave w : (ArrayList<Wave>) wL) {
-      w.display();
-    }
+  noFill();
+  stroke(strokeColor);
+  strokeWeight(gScale/15);
+  for(DamageObj tempObj : (ArrayList<DamageObj>) damageL) {
+    tempObj.display(baseDrawX,baseDrawY);
   }
-  
-
+  for(TextObj tempObj : (ArrayList<TextObj>) textL) {
+    tempObj.display(baseDrawX,baseDrawY);
+  }
+  /*
   for(int i = 0; i < gSize; i++){
     for(int j = 0; j < gSize; j++){
       int thisBlock = gU[i][j];
@@ -373,6 +429,7 @@ void drawWorld(){
       }
     }
   }
+  */
 }
 
 PVector screen2Pos(PVector tA){tA.div(gScale);tA.add(wView); return tA;}
@@ -504,15 +561,45 @@ int rayCastPath(ArrayList a, int x1, int y1){
   for(int i = a.size()-1; i >= 0; i--){
     tempPV = (PVector)a.get(i);
     if(rayCast((int)tempPV.x, (int)tempPV.y, x1, y1)){
-      //if(gBIsSolid[aGS(wU,tempPV.x,tempPV.y)]){
-      //  a.clear();
-      //  a.add(new PVector(50,50));
-      //  return -1;
-      //}
       return i;
     }
   }
   return -1;
+}
+
+void hitBlock(float x, float y, int hardness, boolean sent){
+  if(aGS1D(gBStrength,aGS(wU,x,y)) >= 0 || hardness >= 999){
+    aSS(wUDamage,x,y,aGS(wUDamage,x,y)+hardness);
+    if(sent == false){segments.add(new Segment("HB,"+str(int(x))+","+str(int(y))+","+str(aGS(wU,x,y))+","+str(hardness), 5));}
+    
+    if(aGS(wUDamage,x,y) > aGS1D(gBStrength,aGS(wU,x,y))){
+      
+      if(!updateExists(int(x),int(y))){
+        updates.add(new PVector(int(x),int(y),-1));
+      }
+      if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
+        tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+      }
+      color tempC = aGS1DC(gBColor,aGS(wU,x,y));
+      aSS(wU,x,y,aGS1D(gBBreakType,aGS(wU,x,y)));
+      particleEffect(x,y,1,1,15,tempC,aGS1DC(gBColor,aGS(wU,x,y)),.01);
+        
+        
+      
+      aSS(wUDamage,x,y,0);
+    } else if(aGS(wUDamage,x,y) < 0){
+      aSS(wUDamage,x,y,0);
+    }
+  }
+}
+
+boolean updateExists(float x, float y){
+  for (PVector update : (ArrayList<PVector>) updates) {
+    if(update.x == x && update.y == y){
+      return true;
+    }
+  }
+  return false;
 }
 
 //STEM Phagescape API v(see above)
