@@ -30,15 +30,21 @@ function AJ() {
 		if(this.MP()){
 			//connection.send("con");
 			//console.log("Emit")
-			if(socket.live == -1){
-				socket.live = 1;
-				socket =  io.connect('/');
-				socket.on('text', function(data) {
-					outputFun(0,data);
-				});
-			}
-			socket.emit("text",str);
-			return "Sent data";
+			
+				
+				if(socket.live == -1){
+					
+					socket.live = 1;
+					socket = io.connect('/');
+					socket.on('text', function(data) {
+						outputFun(0,data);
+					});
+					
+				} else {
+					socket.emit("text",str);
+					return "Sent data";
+				}
+				
 		} else {
 			if(!isNaN(str)){
 				if(e == -1){

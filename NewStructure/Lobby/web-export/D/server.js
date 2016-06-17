@@ -259,6 +259,7 @@ function Env() {
 			}
 		});
 		if(e.tick % 25 == 0){
+			/*
 			println(0,true);
 			println("[SERVER CONSOLE]");
 			println("Upload: "+Math.ceil(upload*0.001)+" kbps");upload = 0;
@@ -277,6 +278,7 @@ function Env() {
 					
 				});
 			}
+			*/
 		}
 	};
 	e.World = function(id){
@@ -574,8 +576,8 @@ function outWorld(w){checkArgs(arguments);
 	w.wU.forEach(function(i,indI) {
 		i.forEach(function(j,indJ) {
 			updates += j+":";
-			if(w.wUDamage[indI][intJ] != 0){
-				updates += (-w.wUDamage[indI][intJ])+":";
+			if(w.wUDamage[indI][indJ] != 0){
+				updates += (-w.wUDamage[indI][indJ])+":";
 			}
 		})
 	})

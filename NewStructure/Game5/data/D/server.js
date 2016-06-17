@@ -259,6 +259,7 @@ function Env() {
 			}
 		});
 		if(e.tick % 25 == 0){
+			/*
 			println(0,true);
 			println("[SERVER CONSOLE]");
 			println("Upload: "+Math.ceil(upload*0.001)+" kbps");upload = 0;
@@ -277,6 +278,7 @@ function Env() {
 					
 				});
 			}
+			*/
 		}
 	};
 	e.World = function(id){
