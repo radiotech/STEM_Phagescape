@@ -43,7 +43,7 @@ boolean showChat = true;
 
 
 /*LOCK*/void setup(){
-  size(700,700); //must be square
+  size(1500,1500); //must be square
 /*LOCK*/  M_Setup(); //call API setup
 /*LOCK*/}
 
@@ -51,7 +51,7 @@ boolean showChat = true;
 
 /*LOCK*/void safeSetup(){ //called when world generation and entity placement is ready to begin
   
-  CFuns.add(new CFun(0,"door",1,false));
+  //CFuns.add(new CFun(0,"door",1,false));
   
   //genLoadMap(loadImage(aj.D()+"Lobby/dimension0.png"));
   
@@ -843,6 +843,7 @@ void M_Setup(){
   aj = new AJ();
   try{
     aj.Setup(dataPath("")+"\\D\\");
+    println("DONE WITH SETUP!");
   }catch(Throwable e){}
   fontNorm = createFont(aj.D()+"monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
   fontBold = createFont(aj.D()+"monofonto.ttf",18);//"Monospaced.bold-23.vlw"

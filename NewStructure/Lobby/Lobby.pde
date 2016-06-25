@@ -44,16 +44,23 @@ boolean showChat = true;
 
 /*LOCK*/void setup(){
   size(700,700); //must be square
-/*LOCK*/  M_Setup(); //call API setup
+  /*LOCK*/  M_Setup(); //call API setup
 /*LOCK*/}
 
 /*LOCK*/void safePreSetup(){} //first function called, in case you need to set some variables before anything else starts
 
 /*LOCK*/void safeSetup(){ //called when world generation and entity placement is ready to begin
   
-  CFuns.add(new CFun(0,"door",1,false));
+  //CFuns.add(new CFun(0,"door",1,false));
   
   //genLoadMap(loadImage(aj.D()+"Lobby/dimension0.png"));
+  
+  if(!AJ.isWeb()){
+    println("Resize");
+    //frame.setResizable(true);
+    //frame.setSize(1300,1300);
+    size(1300,1300);
+  }
   
   scaleView(10); //scale the view to fit the entire map
   
