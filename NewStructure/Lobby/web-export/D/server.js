@@ -23,39 +23,39 @@ game[0].setup = function(w){var g = game[0];
     	w.hall = -1;
     }
     
-	addGeneralBlock(w,0,[100,0,0],false,0); //background
+	addGeneralBlock(w,0,[100,0,0],false,0); // background
 	
-	addGeneralBlock(w,1,[255,255,190],true,-1); //bone1
-	addGeneralBlock(w,2,[255,255,170],true,-1); //bone2
-	addGeneralBlock(w,3,[255,255,210],true,-1); //bone3
+	addGeneralBlock(w,1,[255,255,190],true,-1); // bone1
+	addGeneralBlock(w,2,[255,255,170],true,-1); // bone2
+	addGeneralBlock(w,3,[255,255,210],true,-1); // bone3
 	
-	addGeneralBlock(w,6,[230,0,0],true,5); //rock1
-	addGeneralBlock(w,5,[200,0,0],true,7); //rock2
-	addGeneralBlock(w,4,[260,0,0],true,3); //rock3
+	addGeneralBlock(w,6,[230,0,0],true,5); // rock1
+	addGeneralBlock(w,5,[200,0,0],true,7); // rock2
+	addGeneralBlock(w,4,[260,0,0],true,3); // rock3
 	
-	addGeneralBlock(w,10,[0,255,0],true,10); //question
+	addGeneralBlock(w,10,[0,255,0],true,10); // question
 	
-	addGeneralBlock(w,15,[100,0,0],false,0); //broken
+	addGeneralBlock(w,15,[100,0,0],false,0); // broken
 	
-	addGeneralBlock(w,18,[150,250,100],false,0); //door
-	addGeneralBlock(w,19,[255,150,150],true,-1); //door frame
+	addGeneralBlock(w,18,[150,250,100],false,0); // door
+	addGeneralBlock(w,19,[255,150,150],true,-1); // door frame
 	
-	addGeneralBlock(w,20,[150,50,50],false,0); //spawn area
+	addGeneralBlock(w,20,[150,50,50],false,0); // spawn area
 	
-	addGeneralBlock(w,99,[0,0,0],false,0); //darkness
+	addGeneralBlock(w,99,[0,0,0],false,0); // darkness
 	
-	addGeneralBlock(w,100,[0,0,250],false,0); //game 0
-	addGeneralBlock(w,101,[0,50,200],false,0); //game 1
-	addGeneralBlock(w,102,[0,100,150],false,0); //game 2
-	addGeneralBlock(w,103,[0,150,100],false,0); //game 3
-	addGeneralBlock(w,104,[0,200,50],false,0); //game 4
-	addGeneralBlock(w,105,[0,250,0],false,0); //game 5
+	addGeneralBlock(w,100,[0,0,250],false,0); // game 0
+	addGeneralBlock(w,101,[0,50,200],false,0); // game 1
+	addGeneralBlock(w,102,[0,100,150],false,0); // game 2
+	addGeneralBlock(w,103,[0,150,100],false,0); // game 3
+	addGeneralBlock(w,104,[0,200,50],false,0); // game 4
+	addGeneralBlock(w,105,[0,250,0],false,0); // game 5
 	
 	g.setupLobby(w);
 	genRandomProb(w,15,[4,6,15,5,10],[8,4,200,1,1]);
 	
 	w.props = [10,1,1,0,1];
-	//aSS(w.wU,0,0,1);
+	// aSS(w.wU,0,0,1);
 };
 game[0].exitRoom = function(player,w){var g = game[0];
 	var checkPoint = {"x":0,"y":0};
@@ -162,15 +162,15 @@ exports.getData = function(w, data, src){
 			item.forEach(function(input){
 				if(input != "MOVE"){
 					if(input[0] > src.playerE.recievedMovePacketId){
-						//console.log(input[1]+1-1);
-						//console.log(input[2]+1-1);
+						// console.log(input[1]+1-1);
+						// console.log(input[2]+1-1);
 						src.playerE.listInput.push([input[1],input[2],input[3],input[4]]);
 					}
 				}
 			})
 			src.playerE.recievedMovePacketId = item[1][0];
-		} else if(item[0] == "NEWCONN"){ //NEWCONN,world
-			//console.log("NEW CONN");
+		} else if(item[0] == "NEWCONN"){ // NEWCONN,world
+			// console.log("NEW CONN");
 			var e = w;
 			if(src.userId == undefined){
 				output("New User!");
@@ -192,24 +192,33 @@ exports.getData = function(w, data, src){
 				e[src.worldID].users.push(src.userId);
 				
 				src.playerE = new Entity(e[src.worldID],50,50,"player",0,0,src);
-				e[src.worldID].entities.push(src.playerE);
+				e[src.worldID].mobEnter(src.playerE);
 				
-				out("MOVED:0:"+src.playerE.snap.v.x+":"+src.playerE.snap.v.y+":"+src.playerE.snap.speed+":"+src.playerE.snap.dir+":"+src.playerE.snap.tSpeed+":"+src.playerE.snap.stamina+":"+src.playerE.snap.fireCoolDown+";",src,-1);
+				out("MOVED:0:"+src.playerE.snap.v.x+":"+src.playerE.snap.v.y+":"+src.playerE.snap.speed+":"+src.playerE.snap.dir+":"+src.playerE.snap.tSpeed+":"+src.playerE.snap.stamina+":"+src.playerE.snap.health+":"+src.playerE.snap.hSteps+":"+src.playerE.snap.fireCoolDown+";",src,-1);
 				out(outWorldProp(e[src.worldID]),src,-1);
 				out(outWorld(e[src.worldID]),src,-1);
 				out(outWorldMobs(e[src.worldID],src.playerE.id),src,-1);
+				out("PID:"+src.playerE.id+";",src,-1);
 			}
 		} else if(item[0] == "DISCONN"){
 			var e = w;
-			if(!(src.userId == undefined)){
-				out("MOB_DIE:"+src.playerE.id+";",-1,e[src.worldID]);
-				e[src.worldID].entities.splice(e[src.worldID].entities.indexOf(src.playerE),1);
-				delete src.playerE;
-				e[src.worldID].users.splice(e[src.worldID].users.indexOf(src.userId),1);
-				delete e.users[src.userId];
-				delete src.worldID;
-				delete src.updates;
-				delete src.userId;
+			if(src.playerE != undefined){
+				if(src.playerE.snap.bullets.length == 0){
+					out("MOB_DIE:"+src.playerE.id+";",-1,e[src.worldID]);
+					//delete src.playerE;
+					println("DIED");
+				}
+				println("TESTED "+src.playerE.snap.bullets.length);
+				e[src.worldID].mobExit(src.playerE);
+				if(!(src.userId == undefined)){
+					e[src.worldID].users.splice(e[src.worldID].users.indexOf(src.userId),1);
+					delete e.users[src.userId];
+					//delete src.worldID;
+					//delete src.updates;
+					//delete src.userId;
+				}
+			} else {
+				println("NO USER ON DISCONN");
 			}
 		} else if(item[0] == "USER"){
 			out("READY:",src,-1);
@@ -257,25 +266,38 @@ function Env() {
 					}
 				});
 			}
+			if(e.tick%25 == 0){
+				if(e[w].lastActiveTick+1500 < e.tick){
+					e[w] = undefined;
+					e.worlds.splice(e.worlds.indexOf(w),1);
+				}
+			}
 		});
 		if(e.tick % 25 == 0){
 			/*
-			println(0,true);
-			println("[SERVER CONSOLE]");
-			println("Upload: "+Math.ceil(upload*0.001)+" kbps");upload = 0;
-			println("Download: "+Math.ceil(download*0.001)+" kbps");download = 0;
-			println("Users: "+Object.keys(e.users).length);
-			println("Worlds: "+e.worlds.length);
-			if(outputText.length > 0){
-				println("");
-				println("[SERVER OUTPUT]");
-				outputText.forEach(function(text,i){
-					println(text);
-					if(e.tick > outputTick[i]){
-						outputText.splice(i,1);
-						outputTick.splice(i,1);
+			 * println(0,true); println("[SERVER CONSOLE]"); println("Upload:
+			 * "+Math.ceil(upload*0.001)+" kbps");upload = 0; println("Download:
+			 * "+Math.ceil(download*0.001)+" kbps");download = 0;
+			 * println("Users: "+Object.keys(e.users).length); println("Worlds:
+			 * "+e.worlds.length); if(outputText.length > 0){ println("");
+			 * println("[SERVER OUTPUT]"); outputText.forEach(function(text,i){
+			 * println(text); if(e.tick > outputTick[i]){
+			 * outputText.splice(i,1); outputTick.splice(i,1); }
+			 * 
+			 * }); }
+			 */
+			/*
+			if(e[0] != undefined){
+				e[0].eU.forEach(function(wL,ln){
+					if(ln > 30 && ln < 70){
+						var thisL = "";
+						wL.forEach(function(wD,dn){
+							if(dn > 30 && dn < 70){
+								thisL += Math.min(wD.length,9)+" ";
+							}
+						});
+						println(thisL);
 					}
-					
 				});
 			}
 			*/
@@ -283,6 +305,7 @@ function Env() {
 	};
 	e.World = function(id){
 		var w = this;
+		w.lastActiveTick = e.tick;
 		w.id = id;
 		e.worlds.push(id);
 		e[id] = w;
@@ -292,42 +315,65 @@ function Env() {
 		w.entityIdCounter = 0;
 		w.wSize = 100;
 		w.wU = [];
+		w.eU = [];
 		w.wUDamage = [];
 		w.entities = [];
-		//w.gb.isSolid = new Array(256).fill(-1);
+		// w.gb.isSolid = new Array(256).fill(-1);
 		w.gb.isSolid = []; fillArray(w.gb.isSolid,256,-1);
 		w.gb.color = [];
 		w.gb.strength = [];
-		//w.gb.breakType = new Array(256).fill(0);
+		// w.gb.breakType = new Array(256).fill(0);
 		w.gb.breakType = []; fillArray(w.gb.breakType,256,0);
 		for(var i = 0; i < w.wSize; i++){
-			//w.wU[i] = new Array(w.wSize).fill(0);
+			// w.wU[i] = new Array(w.wSize).fill(0);
 			w.wU[i] = []; fillArray(w.wU[i],w.wSize,0);
-			//w.wUDamage[i] = new Array(w.wSize).fill(0);
+			// w.wUDamage[i] = new Array(w.wSize).fill(0);
 			w.wUDamage[i] = []; fillArray(w.wUDamage[i],w.wSize,0);
+			w.eU[i] = [];  //fillArray(w.eU[i],w.wSize,[]);
+			for(var j = 0; j < w.wSize; j++){
+				w.eU[i][j] = [];
+			}
+		}
+		e.World.prototype.mobEnter = function(mob){
+			w = this;
+			w.entities.push(mob);
+	        addEntityToGridArea(w,mob.snap.v.x-mob.size*mob.hitboxScale/2,mob.snap.v.y-mob.size*mob.hitboxScale/2,mob.snap.v.x+mob.size*mob.hitboxScale/2,mob.snap.v.y+mob.size*mob.hitboxScale/2,mob);
+		}
+		e.World.prototype.mobExit = function(mob){
+			w = this;
+			if(mob.snap.bullets.length > 0){
+				mob.snap.health = 0;
+				mob.type = "deadPlayer";
+			} else {
+				w.entities.splice(w.entities.indexOf(mob),1);
+				removeEntityFromGridArea(w,mob.pv.x-mob.size*mob.hitboxScale/2,mob.pv.y-mob.size*mob.hitboxScale/2,mob.pv.x+mob.size*mob.hitboxScale/2,mob.pv.y+mob.size*mob.hitboxScale/2,mob.id);
+			}
 		}
 		setup(w);
 	}
 }
 var Entity = function(w,tX,tY,tType,tSpeed,tDir,tSrc){checkArgs(arguments);
 	var mob = this;
-	mob.snap = new Snap(mob); //controls movement and position, NOT safe to change x and y values of this (use listJumps)
-	mob.id = w.entityIdCounter++; //unique mob id for this world
-	mob.type = tType; //mob type - player, ...
+	
+	mob.lastActiveTick = w.parent.tick;
+	mob.id = w.entityIdCounter++; // unique mob id for this world
+	mob.type = tType; // mob type - player, ...
 	if(mob.type == "player"){
 		mob.src = tSrc;
 	}
-	mob.changes = {}; //tracks major changes to mobs to properly output them (likely to be removed)
-	mob.changes.any = false; //any changes
-	mob.changes.die = false; //die change
-	mob.recievedMovePacketId = -1; //tracks the last move packet received from the player
-	mob.moves = 0; //tracks the number of moves sent to users
+	mob.changes = {}; // tracks major changes to mobs to properly output them
+						// (likely to be removed)
+	mob.changes.any = false; // any changes
+	mob.changes.die = false; // die change
+	mob.recievedMovePacketId = -1; // tracks the last move packet received from
+									// the player
+	mob.moves = 0; // tracks the number of moves sent to users
 	
-	mob.pv = {}; //previous position vector
-	mob.pv.x = 50.1; //set previous x
-	mob.pv.y = 50.1; //set previous y
-	mob.inMotion = true; //is the entity currently in motion
-	mob.inNewBlock = true; //is the entity currently in a new block
+	mob.pv = {}; // previous position vector
+	mob.pv.x = 50.1; // set previous x
+	mob.pv.y = 50.1; // set previous y
+	mob.inMotion = true; // is the entity currently in motion
+	mob.inNewBlock = true; // is the entity currently in a new block
 	
 	mob.listInput = [];
 	mob.listJumps = [];
@@ -343,38 +389,50 @@ var Entity = function(w,tX,tY,tType,tSpeed,tDir,tSrc){checkArgs(arguments);
 	mob.staminaRate = 1;
 	mob.fireDelay = 10;
 	mob.size = 1;
+	
+	mob.hMax = 20;
+	mob.hSteps = 100;
+	
+	mob.bull = {};
+	mob.bull.col = [0,0,0];
+	mob.bull.size = .1;
+	
+	mob.snap = new Snap(mob); // controls movement and position, NOT safe to
+	// change x and y values of this (use listJumps)
 }
 Entity.prototype.changed = function(str){
 	this.changes.any = true;
 	this.changes[str] = true;
 }
 Entity.prototype.update = function(w,mob){
-	if(mob.type == "bullet"){
-		mob.x+=mob.speed*Math.cos(mob.dir);
-		mob.y+=mob.speed*Math.sin(mob.dir);
-		if(aGS1DB(w.gb.isSolid,aGS(w.wU,mob.x,mob.y))){
-			hitBlock(w,mob.x,mob.y,1);
-			mob.remove(w);
-		}
-	} else if(mob.type == "player"){
+	if(mob.type == "player"){
 		if(mob.listInput.length > 0 || mob.listJumps.length > 0){
 			if(mob.listJumps.length > 0){
 				var s = mob.snap;
 				mob.listJumps.forEach(function(jump){
 					eval(jump);
 				})
-				out(outMob(mob),-1,w);
-				mob.listJumps = []; //may be improved with something like array.clear although I wrote this code without web access for reference..
+				if(mob.src != undefined){
+					w = w.parent[mob.src.worldID];
+				}
+				
+				out(outMob(mob),mob.src,w);
+				mob.listJumps = []; // may be improved with something like
+									// array.clear although I wrote this code
+									// without web access for reference..
 			}
 			if(mob.listInput.length > 0){
 				mob.listInput.forEach(function(input){
 					mob.snap = mob.snap.simulate(w,1,input);
-					out(outMob(mob),-1,w);
+					out(outMob(mob),mob.src,w);
 				})
-				mob.listInput = []; //may be improved with something like array.clear although I wrote this code without web access for reference..
+				mob.listInput = []; // may be improved with something like
+									// array.clear although I wrote this code
+									// without web access for reference..
 				mob.lastActiveTick = w.parent.tick;
+				w.lastActiveTick = w.parent.tick;
 			}
-			var tempOut = "MOVED:"+mob.recievedMovePacketId+":"+mob.snap.v.x+":"+mob.snap.v.y+":"+mob.snap.speed+":"+mob.snap.dir+":"+mob.snap.tSpeed+":"+mob.snap.stamina+":"+mob.snap.fireCoolDown+":";
+			var tempOut = "MOVED:"+mob.recievedMovePacketId+":"+mob.snap.v.x+":"+mob.snap.v.y+":"+mob.snap.speed+":"+mob.snap.dir+":"+mob.snap.tSpeed+":"+mob.snap.stamina+":"+mob.snap.health+":"+mob.snap.hSteps+":"+mob.snap.fireCoolDown+":";
 			mob.snap.bullets.forEach(function(bull){
 				tempOut += bull.v.x+":"+bull.v.y+":"+bull.speed+":"+bull.dir+":";
 			})
@@ -385,18 +443,42 @@ Entity.prototype.update = function(w,mob){
 				exports.getData(w.parent, "[[\"DISCONN\"]]", mob.src);
 			}
 		}
+	} else if(mob.type == "deadPlayer"){
+		mob.snap = mob.snap.simulate(w,1,[0,0,0,0]);
+		out(outMob(mob),mob.src,w);
+		if(w.parent.tick%25 == 0){
+			exports.getData(w.parent, "[[\"DISCONN\"]]", mob.src);
+		}
 	}
-	//if(mob.x)
-	//mob.changed("move");
+	// if(mob.x)
+	// mob.changed("move");
 }
 Entity.prototype.remove = function(w){
-	w.entities.splice(w.entities.indexOf(this),1);
+	w.mobExit(this);
 	this.changed("die");
 }
 function goToWorldId(w,worldID,src){
-	w.entities.splice(w.entities.indexOf(src.playerE),1);
+	w.mobExit(src.playerE);
 	w.users.splice(w.users.indexOf(src.userId),1);
 	src.worldID = worldID;
+	
+	if(src.playerE.snap.bullets.length > 0){
+		/*
+		if(w.entities.length > 0){
+			src.playerE.snap.bullets.forEach(function(bull){
+				w.entities[0].snap.bullets.push(bull);
+			});
+		} else {
+			var modSnap = src.playerE.snap;
+			var limitLoops = 0;
+			while (modSnap.bullets.length > 0 && limitLoops<1000) {
+				modSnap = modSnap.simulate(w,1,[0,0,0,0]);
+				limitLoops++;
+			}
+		}
+		src.playerE.snap.bullets = [];
+		*/
+	}
 	
 	var worldExists = false;
 	w.parent.worlds.forEach(function(world) {
@@ -409,8 +491,8 @@ function goToWorldId(w,worldID,src){
 	}
 	
 	w.parent[worldID].users.push(src.userId);
-	w.parent[worldID].entities.push(src.playerE);
-	out("MOB_DIE:"+src.playerE.id+";",-1,w);
+	w.parent[worldID].mobEnter(src.playerE);
+	out("MOB_DIE:"+src.playerE.id+";",src,w);
 	out("RESET:0;",src,-1);
 	out(outWorldProp(w.parent[worldID]),src,-1);
 	out(outWorld(w.parent[worldID]),src,-1);
@@ -421,21 +503,49 @@ function addGeneralBlock(w,i,col,solid,hard){checkArgs(arguments);
 	w.gb.color[i] = col;
 	w.gb.strength[i] = hard;
 }
-function hitBlock(w,x,y,pow){checkArgs(arguments);
+function hitMob(w,mob,pow,src,ind){
+	if(mob.hMax >= 0 || pow >= 999){
+		mob.snap.health -= pow;
+		if(src != undefined){out(outBullHitMob(src,ind,mob),-1,w);}
+		mob.snap.health = Math.max(Math.min(mob.snap.health,mob.hMax),0);
+		if(mob.snap.health == 0){
+			// if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
+			// tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+			// }
+			
+			//MOB DIES
+			
+			//aSS(w.wU,x,y,aGS1DB(w.gb.breakType,aGS(w.wU,x,y)));
+			//var pe = particleEffect(15,5,[Math.floor(x)+.5,Math.floor(y)+.5],[1,1],[aGS1DB(w.gb.color,aGS(w.wU,x,y))],[-1,.1,.05],[-1,.02,.005],[0,1],[-1,20,30]);
+			//syncToMobWrap(w,mob,pe,true);
+			
+			// particleEffect(x,y,1,1,15,tempC,aGS1DC(gBColor,aGS(wU,x,y)),.01);
+			
+		}
+		out(outMob(mob),mob.src,w);
+	}
+}
+function outBullHitMob(src,ind,mob){
+	return "BHITM:"+src.id+":"+ind+":"+mob.id+";";
+}
+function hitBlock(w,x,y,pow,/* OPTIONAL */mob){checkArgs(arguments);
 	if(aGS1DB(w.gb.strength,aGS(w.wU,x,y)) >= 0 || pow >= 999){
 		aSS(w.wUDamage,x,y,aGS(w.wUDamage,x,y)+pow);
 		if(aGS(w.wUDamage,x,y) > aGS1DB(w.gb.strength,aGS(w.wU,x,y))){
-			//if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
-			//	tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
-			//}
-			var tempC = aGS1DB(w.gb.color,aGS(w.wU,x,y));
+			// if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
+			// tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+			// }
+			
+			var pe = particleEffect(15,5,[Math.floor(x)+.5,Math.floor(y)+.5],[1,1],[aGS1DB(w.gb.color,aGS(w.wU,x,y))],[-1,.1,.05],[-1,.02,.005],[0,1],[-1,20,30]);
+			syncToMobWrap(w,mob,pe,true);
 			aSS(w.wU,x,y,aGS1DB(w.gb.breakType,aGS(w.wU,x,y)));
-			//particleEffect(x,y,1,1,15,tempC,aGS1DC(gBColor,aGS(wU,x,y)),.01);
+			// particleEffect(x,y,1,1,15,tempC,aGS1DC(gBColor,aGS(wU,x,y)),.01);
+			
 			aSS(w.wUDamage,x,y,0);
 		} else if(aGS(w.wUDamage,x,y) < 0){
 			aSS(w.wUDamage,x,y,0);
 		}
-		out(outBlock(w,x,y),-1,w);
+		syncToMobWrap(w,mob,outBlock(w,x,y),true);
 	}
 }
 var Snap = function(mom){
@@ -449,99 +559,152 @@ var Snap = function(mom){
 	s.dir = 0;
 	s.tSpeed = 0;
 	s.stamina = 0;
+	s.health = s.dad.hMax;
+	s.hSteps = 0;
 	s.fireCoolDown = 0;
 	s.simulate = function(w,reps,input){
 		s.newS = new Snap(s.dad);
 		s.newS.type = s.type;
 		switch(s.type){
-			case 0://player simulation
+			case 0:// player simulation
 				s.bullets.forEach(function(bull,ind){
-					s.newS.bullets[ind] = {"v":{"x":bull.v.x,"y":bull.v.y},"speed":bull.speed,"dir":bull.dir};
+					s.newS.bullets[ind] = {"v":{"x":bull.v.x,"y":bull.v.y},"speed":bull.speed,"dir":bull.dir,"src":[bull.src[0],bull.src[1],bull.src[2]]};
 				})
-				s.newS.stamina = s.stamina;
+				s.newS.stamina = Math.min(s.stamina+1,110);
+				s.newS.health = s.health;
+				s.newS.hSteps = s.hSteps;
 				s.newS.v.x = s.v.x;
 				s.newS.v.y = s.v.y;
-				//console.log(s.v.x);
+				// console.log(s.v.x);
 				s.newS.speed = s.speed;
 				s.newS.tSpeed = s.tSpeed;
 				s.newS.dir = s.dir;
 				s.newS.fireCoolDown = s.fireCoolDown;
-				s.newS.stamina++;
+				
 				for(var i = 0; i < reps; i++){
 					
-					if(s.newS.fireCoolDown > 0){
-						s.newS.fireCoolDown--;
-					}
-					if(input[0+i*5] == 1){//if move input
-						if(s.tryStaminaAction(1)){//if we have stamina
-							s.newS.speed += s.dad.accel;//accelerate
-						}
-					}
+					
 					s.newS.bullets.forEach(function(bull,index){
 						bull.v.x += bull.speed * Math.cos(bull.dir);
 						bull.v.y += bull.speed * Math.sin(bull.dir);
-						if(w.gb.isSolid[aGS(w.wU,bull.v.x,bull.v.y)]){
-							hitBlock(w,bull.v.x,bull.v.y,1)
+						if(bull.v.x > w.wSize || bull.v.y > w.wSize || bull.v.x < 0 || bull.v.y < 0){
 							s.newS.bullets.splice(index,1);
+						} else if(w.gb.isSolid[aGS(w.wU,bull.v.x,bull.v.y)]){
+							syncToMobWrap(w,s.dad,particleEffect(5,5,[bull.v.x,bull.v.y],[.2,.2],[-1,aGS1DB(w.gb.color,aGS(w.wU,bull.v.x,bull.v.y)),s.dad.bull.col],[-1,.1,.05],[-1,.02,.005],[0,1],[-1,20,30]),false);
+							hitBlock(w,bull.v.x,bull.v.y,1,s.dad);
+							s.newS.bullets.splice(index,1);
+						} else {
+							var hitMobs = mobsAt(w,bull.v.x,bull.v.y,bull.src[0].bull.size/2);
+							hitMobs.forEach(function(mob){
+								if(bull.src[1] == 0){ //bullet will not collide with player src[2]
+									if(mob.id != bull.src[2]){
+										hitMob(w,mob,1,s.newS.dad,index);
+										s.newS.bullets.splice(index,1);
+									}
+								} else if(bull.src[1] == 1){ //bullet will collide with player src[2]
+									if(mob.id == bull.src[2]){
+										hitMob(w,mob,1,s.newS.dad,index);
+										s.newS.bullets.splice(index,1);
+									}
+								} else if(bull.src[1] == 2){ //bullet will not collide with team src[2]
+									if(mob.team != bull.src[2]){
+										hitMob(w,mob,1,s.newS.dad,index);
+										s.newS.bullets.splice(index,1);
+									}
+								} else if(bull.src[1] == 3){ //bullet will collide with team src[2]
+									if(mob.team == bull.src[2]){
+										hitMob(w,mob,1,s.newS.dad,index);
+										s.newS.bullets.splice(index,1);
+									}
+								}
+							});
 						}
 					})
-					
-					if(input[2+i*5] == 1 && s.newS.fireCoolDown <= 0){//if fire
-						if(s.tryStaminaAction(5)){//if we have stamina
-							s.newS.fireCoolDown += s.newS.dad.fireDelay;
-							s.newS.fire(s.newS,input[3+i*5]);
+					if(s.newS.health > 0){
+						if(s.newS.fireCoolDown > 0){
+							s.newS.fireCoolDown--;
 						}
-					}
-					
-					s.newS.speed = Math.min(Math.max(s.newS.speed-s.dad.drag,0),s.dad.sMax);//apply drag and ensure speed is within limits
-
-					
-					var aDif = angleDif(s.newS.dir,input[1+i*5]);
-					//console.log(aDif);
-					if(aDif != 0){
-						var dirS = Math.round(aDif/Math.abs(aDif));
 						
-						var innspeed = s.newS.tSpeed+s.dad.tAccel*dirS-s.dad.tDrag*dirS;
-						var num = Math.floor(innspeed/s.dad.tDrag*dirS);
-						var rotDis = (num+1)*(innspeed-num/2*s.dad.tDrag*dirS);
-						if(Math.abs(rotDis) / Math.abs(aDif) < 1 ){
-							s.newS.tSpeed += dirS*s.dad.tAccel;
+						if(input[0+i*5] == 1){// if move input
+							if(s.tryStaminaAction(1)){// if we have stamina
+								s.newS.speed += s.dad.accel;// accelerate
+							}
 						}
+						if(s.newS.hSteps < s.newS.dad.hSteps){
+							s.newS.hSteps++;
+						} else if(s.newS.health < s.newS.dad.hMax && s.tryStaminaAction(5,0)){
+							s.newS.health++;
+							s.newS.hSteps = 0;
+						}
+						
+						if(input[2+i*5] == 1 && s.newS.fireCoolDown <= 0){// if
+																			// fire
+							if(s.tryStaminaAction(5)){// if we have stamina
+								s.newS.fireCoolDown += s.newS.dad.fireDelay;
+								s.newS.fire(s.newS,input[3+i*5]);
+							}
+						}
+						
+						s.newS.speed = Math.min(Math.max(s.newS.speed-s.dad.drag,0),s.dad.sMax);// apply
+																								// drag
+																								// and
+																								// ensure
+																								// speed
+																								// is
+																								// within
+																								// limits
+	
+						
+						var aDif = angleDif(s.newS.dir,input[1+i*5]);
+						// console.log(aDif);
+						if(aDif != 0){
+							var dirS = Math.round(aDif/Math.abs(aDif));
+							
+							var innspeed = s.newS.tSpeed+s.dad.tAccel*dirS-s.dad.tDrag*dirS;
+							var num = Math.floor(innspeed/s.dad.tDrag*dirS);
+							var rotDis = (num+1)*(innspeed-num/2*s.dad.tDrag*dirS);
+							if(Math.abs(rotDis) / Math.abs(aDif) < 1 ){
+								s.newS.tSpeed += dirS*s.dad.tAccel;
+							}
+						}
+						
+						if(Math.abs(s.newS.tSpeed)-s.dad.tDrag > 0){
+							s.newS.tSpeed = (Math.abs(s.newS.tSpeed)-s.dad.tDrag)*(Math.abs(s.newS.tSpeed)/s.newS.tSpeed);
+						} else {
+							s.newS.tSpeed = 0;
+						}
+						
+						s.newS.tSpeed = Math.min(s.dad.tSMax, Math.max(-s.dad.tSMax, s.newS.tSpeed));
+						
+						s.newS.dir += s.newS.tSpeed*s.newS.speed/s.dad.sMax; // pTSpeed*pSpeed/pSMax
+						// if(aDif != 0){
+						// s.newS.dir = rotDis;
+						// }
+						
+						// s.newS.dir =
+						// pointDir(s.newS.v.x,s.newS.v.y,input[1+i*3],input[2+i*3]);
+						
+						moveInWorld(w,s.newS.v, s.newS.speed*Math.cos(s.newS.dir),s.newS.speed*Math.sin(s.newS.dir),s.dad.size*s.dad.hitboxScale/2,s.dad.size*s.dad.hitboxScale/2);
 					}
-					
-					if(Math.abs(s.newS.tSpeed)-s.dad.tDrag > 0){
-						s.newS.tSpeed = (Math.abs(s.newS.tSpeed)-s.dad.tDrag)*(Math.abs(s.newS.tSpeed)/s.newS.tSpeed);
-					} else {
-						s.newS.tSpeed = 0;
-					}
-					
-					s.newS.tSpeed = Math.min(s.dad.tSMax, Math.max(-s.dad.tSMax, s.newS.tSpeed));
-					
-					s.newS.dir += s.newS.tSpeed*s.newS.speed/s.dad.sMax; //pTSpeed*pSpeed/pSMax
-					//if(aDif != 0){
-					//	s.newS.dir = rotDis;
-					//}
-					
-					//s.newS.dir = pointDir(s.newS.v.x,s.newS.v.y,input[1+i*3],input[2+i*3]);
-					
-					moveInWorld(w,s.newS.v, s.newS.speed*Math.cos(s.newS.dir),s.newS.speed*Math.sin(s.newS.dir),s.dad.size*s.dad.hitboxScale/2,s.dad.size*s.dad.hitboxScale/2);
 				}
 				break;
 		}
 		return s.newS;
 	}
-	s.tryStaminaAction = function(cost){
+	s.tryStaminaAction = function(cost,nCost){
+		var negCost = 1;
+		if(nCost != undefined){negCost = nCost;}
 		cost = cost*s.dad.staminaRate;
 		if(s.newS.stamina > cost){
 			s.newS.stamina -= cost;
 			return true;
 		} else {
-			s.newS.stamina -= cost/5;
+			s.newS.stamina = Math.max(0,s.newS.stamina-cost/5*negCost);
 			return false;
 		}
 	}
 	s.fire = function(newS,tDir){
-		newS.bullets.push({"v":{"x":newS.v.x,"y":newS.v.y},"speed":newS.dad.bulletSpeed,"dir":tDir});
+		newS.bullets.push({"v":{"x":newS.v.x,"y":newS.v.y},"speed":newS.dad.bulletSpeed,"dir":tDir,"src":[s.dad,0,s.dad.id]});
 	}
 }
 function moveInWorld(w, tV, xSpeed, ySpeed, width, height){
@@ -570,6 +733,35 @@ function moveInWorld(w, tV, xSpeed, ySpeed, width, height){
 		}
 	}
 	tV.y += ySpeed;
+}
+function particleEffect(num,emittime,pos,area,cols,sizes,speeds,shapes,lifespans){
+	var updates = "PEFFECT:"+num+":"+emittime+":"+pos[0]+":"+pos[1]+":"+area[0]+":"+area[1]+":";
+	cols.forEach(function(col){
+		if(col != -1){
+			updates += col[0]+","+col[1]+","+col[2]+",";
+		} else {
+			updates += "-1,-1,-1,";
+		}
+	});
+	updates = updates.substring(0,updates.length-1)+":";
+	sizes.forEach(function(size){
+		updates += size+",";
+	});
+	updates = updates.substring(0,updates.length-1)+":";
+	speeds.forEach(function(speed){
+		updates += speed+",";
+	});
+	updates = updates.substring(0,updates.length-1)+":";
+	shapes.forEach(function(shape){
+		updates += shape+",";
+	});
+	updates = updates.substring(0,updates.length-1)+":";
+	lifespans.forEach(function(lifespan){
+		updates += lifespan+",";
+	});
+	updates = updates.substring(0,updates.length-1)+";";
+	//println(updates);
+	return updates;
 }
 function outWorld(w){checkArgs(arguments);
 	var updates = "WORLD:"+w.wSize+":"+w.wSize+":";
@@ -610,8 +802,26 @@ function outWorldMobs(w,notId){
 	});
 	return updates;
 }
+function syncToMob(mob,str){
+	//println("MOBSYNC:"+mob.id+":"+mob.recievedMovePacketId+":" + str.replace(/:/g,"%%%"));
+	return "MOBSYNC:"+mob.id+":"+mob.recievedMovePacketId+":" + str.replace(/:/g,"%%%");
+}
+function syncToMobWrap(w,mob,str,toSource){
+	if(mob == undefined){
+		out(str,-1,w);
+	} else {
+		if(mob.src == undefined){
+			out(syncToMob(mob,str),-1,w);
+		} else {
+			out(syncToMob(mob,str),mob.src,w);
+			if(toSource){
+				out(str,mob.src,-1);
+			}
+		}
+	}
+}
 function outMob(mob){
-	var tempOut = "MOB:"+mob.id+":"+(mob.moves++)+":"+mob.snap.v.x+":"+mob.snap.v.y+":"+mob.snap.dir+":";
+	var tempOut = "MOB:"+mob.id+":"+(mob.moves++)+":"+mob.snap.v.x+":"+mob.snap.v.y+":"+mob.snap.dir+":"+mob.snap.health+":";
 	mob.snap.bullets.forEach(function(bull){
 		tempOut += bull.v.x+":"+bull.v.y+":";
 	})
@@ -645,8 +855,13 @@ function update(w){
 		mob.update(w,mob);
 		if(mob.pv.x != mob.snap.v.x || mob.pv.y != mob.snap.v.y){
 			mob.inMotion = true;
-			if(Math.floor(mob.pv.x) != Math.floor(mob.snap.v.x) || Math.floor(mob.pv.y) != Math.floor(mob.snap.v.y)){
+			if(Math.floor(mob.snap.v.x-mob.size*mob.hitboxScale/2) != Math.floor(mob.pv.x-mob.size*mob.hitboxScale/2) ||
+					Math.floor(mob.snap.v.x+mob.size*mob.hitboxScale/2) != Math.floor(mob.pv.x+mob.size*mob.hitboxScale/2) ||
+					Math.floor(mob.snap.v.y-mob.size*mob.hitboxScale/2) != Math.floor(mob.pv.y-mob.size*mob.hitboxScale/2) ||
+					Math.floor(mob.snap.v.y+mob.size*mob.hitboxScale/2) != Math.floor(mob.pv.y+mob.size*mob.hitboxScale/2)){
 				mob.inNewBlock = true;
+				removeEntityFromGridArea(w,mob.pv.x-mob.size*mob.hitboxScale/2,mob.pv.y-mob.size*mob.hitboxScale/2,mob.pv.x+mob.size*mob.hitboxScale/2,mob.pv.y+mob.size*mob.hitboxScale/2,mob.id);
+		        addEntityToGridArea(w,mob.snap.v.x-mob.size*mob.hitboxScale/2,mob.snap.v.y-mob.size*mob.hitboxScale/2,mob.snap.v.x+mob.size*mob.hitboxScale/2,mob.snap.v.y+mob.size*mob.hitboxScale/2,mob);
 			} else {
 				mob.inNewBlock = false;
 			}
@@ -669,19 +884,20 @@ function checkThat(expression, message) {
 	}
 }
 function checkArgs(args) {
-	//checkThat(args.length === args.callee.length,"Wrong arg # for "+args.callee.name);
+	// checkThat(args.length === args.callee.length,"Wrong arg # for
+	// "+args.callee.name);
 }
-function aSS(tMat, tA, tB, tValue){ //array set safe
+function aSS(tMat, tA, tB, tValue){ // array set safe
 	tMat[Math.max(0,Math.min(tMat.length-1,Math.floor(tA)))][Math.max(0,Math.min(tMat[0].length-1,Math.floor(tB)))] = tValue;
 }
-function aGS( tMat, tA, tB){ //array get safe
+function aGS( tMat, tA, tB){ // array get safe
 	try{
 		return tMat[Math.max(0,Math.min(tMat.length-1,Math.floor(tA)))][Math.max(0,Math.min(tMat[0].length-1,Math.floor(tB)))];
 	}catch(ex){
-		//println(ex.stack);
+		// println(ex.stack);
 	}
 }
-function aGS1DB( tMat, tA){ //array get safe
+function aGS1DB( tMat, tA){ // array get safe
 	return tMat[Math.max(0,Math.min(tMat.length-1,Math.floor(tA)))];
 }
 function pointDistance(v1x,v1y,v2x,v2y){
@@ -720,7 +936,7 @@ function pointDir(v1x,v1y,v2x,v2y){
 		}
 	}
 }
-//*************** GEN ***************
+// *************** GEN ***************
 function genRect(w, x, y, wi, h, b){checkArgs(arguments);
 	wi = Math.round(wi);
 	h = Math.round(h);
@@ -760,7 +976,13 @@ function genRing(w, x, y, wi, h, weight, b){checkArgs(arguments);
 function genArc(w, rStart, rEnd, x, y, wi, h, weight, b){checkArgs(arguments);
 	if(rStart > rEnd){var rTemp = rStart; rStart = rEnd; rEnd = rTemp;}
 	var dR = rEnd-rStart;
-	var c = dR/Math.floor(dR*Math.max(wi,h)*10); //dR is range -> range/(circumfrence of arc(radians * 2*max_radius *5 -> 20*radius -> 20 points per block)) -> gives increment value
+	var c = dR/Math.floor(dR*Math.max(wi,h)*10); // dR is range ->
+													// range/(circumfrence of
+													// arc(radians *
+													// 2*max_radius *5 ->
+													// 20*radius -> 20 points
+													// per block)) -> gives
+													// increment value
 	var r;
 	for(var i = rStart; i < rEnd; i+=c){
 		r = (wi*h/2)/Math.sqrt(Math.pow(wi*Math.cos(i),2)+Math.pow(h*Math.sin(i),2))-weight/2;
@@ -794,7 +1016,7 @@ function genRandomProb(w,from,to,prob){checkArgs(arguments);
 	for(var i=0; i<prob.length; i++) {
 		totProb += prob[i];
 	}
-	for(i = 0; i < w.wSize; i++){
+	for(var i = 0; i < w.wSize; i++){
 		for(var j = 0; j < w.wSize; j++){
 			if(w.wU[i][j] == from){
 				tRand = Math.random()*totProb;
@@ -915,7 +1137,7 @@ function println(str,clear){
 			console.log(str);
 		}
 	}catch(ex){
-		//java output methods
+		// java output methods
 	}
 }
 function output(str,ticks){
@@ -925,6 +1147,91 @@ function output(str,ticks){
 	} else {
 		outputTick.push(globalE.tick+ticks);
 	}
+}
+
+
+function removeEntityFromGridPos(eL,id){
+  eL.forEach(function(mob,ind){
+	  if(mob.id == id){
+		  eL.splice(ind,1);
+	  }
+  });
+}
+
+function addEntityToGridPos(eL,mob){
+	var notFoundSelf = true;
+	eL.forEach(function(tMob){
+		if(tMob.id == mob.id){
+			notFoundSelf = false;
+		}
+	});
+	if(notFoundSelf){
+		eL.push(mob);
+	}
+}
+
+function removeEntityFromGridArea(w,x1,y1,x2,y2,id){
+  x2 = Math.min(Math.max(Math.floor(x2),0),w.wSize-1);
+  y2 = Math.min(Math.max(Math.floor(y2),0),w.wSize-1);
+  for(var i = Math.min(Math.max(Math.floor(x1),0),w.wSize-1); i <= x2; i++){
+    for(var j = Math.min(Math.max(Math.floor(y1),0),w.wSize-1); j <= y2; j++){
+      removeEntityFromGridPos(aGS(w.eU,i,j),id);
+    }
+  }
+}
+
+function addEntityToGridArea(w,x1,y1,x2,y2,mob){
+  x2 = Math.min(Math.max(Math.floor(x2),0),w.wSize-1);
+  y2 = Math.min(Math.max(Math.floor(y2),0),w.wSize-1);
+  for(var i = Math.min(Math.max(Math.floor(x1),0),w.wSize-1); i <= x2; i++){
+    for(var j = Math.min(Math.max(Math.floor(y1),0),w.wSize-1); j <= y2; j++){
+    	addEntityToGridPos(aGS(w.eU,i,j),mob);
+    }
+  }
+}
+
+function getEntitiesFromGridAreaOther(w,x1,y1,x2,y2,id){
+  var myReturn = [];
+  var tempAL;
+  x2 = Math.min(Math.max(Math.floor(x2),0),w.wSize-1);
+  y2 = Math.min(Math.max(Math.floor(y2),0),w.wSize-1);
+  for(var i = Math.min(Math.max(Math.floor(x1),0),w.wSize-1); i <= x2; i++){
+	for(var j = Math.min(Math.max(Math.floor(y1),0),w.wSize-1); j <= y2; j++){
+      tempAL = aGS(w.eU,i,j);
+      tempAL.forEach(function(mob){
+    	  if(mob.id != id){
+    		  if(w.entities.indexOf(mob) != -1){
+    			  addUniqueEntityAL(myReturn,mob);
+    		  } else {
+    			  removeEntityFromGridPos(tempAL,mob.id);
+    		  }
+    	  }
+      });
+    }
+  }
+  return myReturn;
+}
+
+function addUniqueEntityAL(eL,mob){
+  eL.forEach(function(tMob){
+	  if(tMob.id == mob.id){
+		  return;
+	  }
+  });
+  eL.push(mob);
+}
+
+function mobsAt(w,x,y,r,/*optional*/exceptid){
+	var posMobL = getEntitiesFromGridAreaOther(w,x-r,y-r,x+r,y+r,exceptid);
+	var hitMobL = [];
+	posMobL.forEach(function(mob){
+		if(mob.snap.health > 0){
+			if(pointDistance(x,y,mob.snap.v.x,mob.snap.v.y) <= r+mob.size*mob.hitboxScale/2){
+				hitMobL.push(mob);
+			}
+		}
+	});
+	return hitMobL;
 }
 
 var mapLobbyDimension = [];

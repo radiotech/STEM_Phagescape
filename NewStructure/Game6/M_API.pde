@@ -46,6 +46,7 @@ Mimic player;
 boolean menu = false;
 
 ArrayList mimics = new ArrayList<Mimic>();
+ArrayList particles = new ArrayList<Particle>();
 color strokeColor = color(255);
 
 
@@ -136,8 +137,9 @@ void draw(){
   drawWorld();
   
     safePostUpdate();
-  
+    
     drawEntities();
+    drawParticles();
   
     drawSound();
   

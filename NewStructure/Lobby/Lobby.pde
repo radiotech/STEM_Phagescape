@@ -10,6 +10,7 @@ PVector lDimensionOffset2 = new PVector(0,0);
 int lWing = -1;
 int lHall = -1;
 int lRoom = -1;
+int pid = -1;
 
 int server = -1;
 int conn = 0;
@@ -17,6 +18,7 @@ String connData = "";
 int movePacketId = 0;
 int movePacketResponseId = -1;
 ArrayList<SnapInput> movePackets = new ArrayList();
+String mobSyncs;
 
 //data to send in world properties
 /*
@@ -68,6 +70,8 @@ PVector ballPos = new PVector(0,0);
 //boolean skip = false;
 void processServerOutput(){
   String temp = aj.checkServer();
+  temp += mobSyncs;
+  mobSyncs = "";
   /*if(random(20)<1){
     temp = "";
     if(skip == true){
@@ -81,7 +85,9 @@ void processServerOutput(){
   if(!temp.equals("")){
     //println("Server: "+temp);
     String[] updates = split(temp,";");
-    for(String u: updates){ //each update
+    String u;
+    for(int itt = 0; itt < updates.length; itt++){ //each update
+      u = updates[itt];
       String[] parts = split(u,":");
       if(parts[0].equals("NOCONN")){
         conn = 0;
@@ -111,18 +117,20 @@ void processServerOutput(){
       } else if(parts[0].equals("READY")){
         conn = 5;
       } else if(parts[0].equals("MOB")){
+        println(parts[1]);
         Mimic mob = getMimic(int(parts[1]));
         if(mob.isNew){
           mob.isNew = false;
           mob.snap.v.x = float(parts[3]);
           mob.snap.v.y = float(parts[4]);
           mob.snap.dir = float(parts[5]);
+          mob.snap.health = int(parts[6]);
         }
-        MimicDes PendingDes = new MimicDes(int(parts[2]),float(parts[3]),float(parts[4]),float(parts[5]));
-        PendingDes.bulls = floor((parts.length-6)/2);
+        MimicDes PendingDes = new MimicDes(int(parts[2]),float(parts[3]),float(parts[4]),float(parts[5]),int(parts[6]));
+        PendingDes.bulls = floor((parts.length-7)/2);
         PendingDes.bullV = new PVector[PendingDes.bulls];
         for(int i = 0; i < PendingDes.bulls; i++){
-          PendingDes.bullV[i] = new PVector(float(parts[6+i*2]),float(parts[7+i*2]));
+          PendingDes.bullV[i] = new PVector(float(parts[7+i*2]),float(parts[8+i*2]));
         }
         if(PendingDes.id == mob.moves){
           mob.MimicDess.add(PendingDes);
@@ -143,7 +151,7 @@ void processServerOutput(){
             MimicDes Msource;
             if(mob.MimicDess.size() == 0){
               println("ERROR!!");
-              Msource = new MimicDes(-1,mob.snap.v.x,mob.snap.v.y,mob.snap.dir);
+              Msource = new MimicDes(-1,mob.snap.v.x,mob.snap.v.y,mob.snap.dir,mob.snap.health);
             } else {
               Msource = mob.MimicDess.get(0);
             }
@@ -154,7 +162,7 @@ void processServerOutput(){
             MimicDes tempMD;
             for(int i = 0; i < frames; i++){
               interpol = float(i+1)/(frames+1);
-              tempMD = new MimicDes(mob.moves+i,Msource.val[0]*(1-interpol)+Mtarget.val[0]*interpol,Msource.val[1]*(1-interpol)+Mtarget.val[1]*interpol,Msource.val[2]*(1-interpol)+Mtarget.val[2]*interpol);
+              tempMD = new MimicDes(mob.moves+i,Msource.val[0]*(1-interpol)+Mtarget.val[0]*interpol,Msource.val[1]*(1-interpol)+Mtarget.val[1]*interpol,Msource.val[2]*(1-interpol)+Mtarget.val[2]*interpol,int(Mtarget.val[3]));
               if(Msource.bulls == Mtarget.bulls){
                 tempMD.bulls = Msource.bulls;
                 tempMD.bullV = new PVector[tempMD.bulls];
@@ -192,6 +200,61 @@ void processServerOutput(){
           gBStrength[int(parts[i*6+1])] = int(parts[i*6+6]);
           //println(int(parts[i*6+1]));
         }
+      } else if(parts[0].equals("PID")){
+        pid = int(parts[1]);
+      } else if(parts[0].equals("BHITM")){
+        Mimic bull = getMimic(int(parts[1]));
+        Mimic mob = getMimic(int(parts[3]));
+        if(bull.snap.bullets.length > int(parts[2])){
+          if(pointDistance(bull.snap.bullets[int(parts[2])].v,mob.snap.v) < 1.5){
+            color[] cols = {-1,mob.col,bull.bullColor};
+            float[] sizes = {-1,.1,.05};
+            float[] speeds = {-1,.02,.005};
+            int[] shapes = {0,1};
+            int[] lifespans = {-1,20,30};
+            particleEffectLine(bull.snap.bullets[int(parts[2])].v,mob.snap.v,5,10,5,.2,.2,cols,sizes,speeds,shapes,lifespans);
+          }
+        }
+      } else if(parts[0].equals("MOBSYNC")){
+        Mimic mob = getMimic(int(parts[1]));
+        if(mob.MimicDess.size() > 0 && ((MimicDes)mob.MimicDess.get(0)).id >= int(parts[2])){
+          updates = append(updates,parts[3].replaceAll("%%%",":")+";");
+          println(parts[3].replaceAll("%%%",":"));
+        } else {
+          mobSyncs += "MOBSYNC:"+parts[1]+":"+parts[2]+":"+parts[3]+";";
+        }
+      } else if(parts[0].equals("PEFFECT")){
+        String[] tempS;
+        tempS = split(parts[7],",");
+        color[] cols = new color[floor(tempS.length/3)];
+        for(int i = 0; i < floor(tempS.length/3); i++){
+          if(int(tempS[i*3]) != -1){
+            cols[i] = color(int(tempS[i*3]),int(tempS[i*3+1]),int(tempS[i*3+2]));
+          } else {
+            cols[i] = -1;
+          }
+        }
+        tempS = split(parts[8],",");
+        float[] sizes = new float[tempS.length];
+        for(int i = 0; i < tempS.length; i++){
+          sizes[i] = float(tempS[i]);
+        }
+        tempS = split(parts[9],",");
+        float[] speeds = new float[tempS.length];
+        for(int i = 0; i < tempS.length; i++){
+          speeds[i] = float(tempS[i]);
+        }
+        tempS = split(parts[10],",");
+        int[] shapes = new int[tempS.length];
+        for(int i = 0; i < tempS.length; i++){
+          shapes[i] = int(tempS[i]);
+        }
+        tempS = split(parts[11],",");
+        int[] lifespans = new int[tempS.length];
+        for(int i = 0; i < tempS.length; i++){
+          lifespans[i] = int(tempS[i]);
+        }
+        particleEffect(int(parts[1]),int(parts[2]),float(parts[3]),float(parts[4]),float(parts[5]),float(parts[6]),cols,sizes,speeds,shapes,lifespans);
       } else if(parts[0].equals("PROPS")){
         println("Recieved Props");
         String[] components;
@@ -241,17 +304,25 @@ void processServerOutput(){
           player.snap.dir = float(parts[5]);
           player.snap.tSpeed = float(parts[6]);
           player.snap.stamina = float(parts[7]);
-          player.snap.fireCoolDown = float(parts[8]);
+          if(int(parts[8]) == 0){
+            if(player.snap.health != 0){
+              deathParticles(player.snap);
+            }
+          }
+          player.snap.health = int(parts[8]);
+          println(u);
+          player.snap.hSteps = int(parts[9]);
+          player.snap.fireCoolDown = float(parts[10]);
           player.snap.bullets = new SnapBullet[0];
           int bulls = floor((parts.length-9)/4);
           for(int i = 0; i < bulls; i++){
-            player.snap.bullets = (SnapBullet[])append(player.snap.bullets,new SnapBullet(new PVector(float(parts[9+i*4]),float(parts[10+i*4])),float(parts[11+i*4]),float(parts[12+i*4])));
+            player.snap.bullets = (SnapBullet[])append(player.snap.bullets,new SnapBullet(new PVector(float(parts[11+i*4]),float(parts[12+i*4])),float(parts[13+i*4]),float(parts[14+i*4])));
           }
           SnapInput pack;
           for (int i = 0; i < movePackets.size(); i++) {
             pack = (SnapInput) movePackets.get(i);
             if(pack.id > movePacketResponseId){
-              player.snap = player.snap.simulate(1,pack.val);
+              player.snap = player.snap.simulate(1,pack.val,false);
             }
           }
           /*

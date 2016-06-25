@@ -21,7 +21,7 @@ socket.live = -1;
 
 
 function AJ() {
-	this.MP = function(){return false;}
+	this.MP = function(){return true;}
 	this.isWeb = function () {return true;}
 	this.D = function () {return "D/";};
 	this.forceUpdateServer = function(){};
