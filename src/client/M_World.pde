@@ -614,7 +614,7 @@ void hitBlock(float x, float y, int hardness, boolean sent){
         updates.add(new PVector(int(x),int(y),-1));
       }
       if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
-        tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+        //tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
       }
       color tempC = aGS1DC(gBColor,aGS(wU,x,y));
       aSS(wU,x,y,aGS1D(gBBreakType,aGS(wU,x,y)));

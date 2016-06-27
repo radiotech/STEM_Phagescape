@@ -288,7 +288,7 @@ function Env() {
             }
         });
         if (e.tick % 25 == 0) {
-            
+            /*
             println(0,true);
             println("[SERVER CONSOLE]");
             println("Upload: "+Math.ceil(upload*0.001)+" kbps");upload = 0;
@@ -306,7 +306,7 @@ function Env() {
                 	}
                 });
             }
-            
+            */
             /*
              * if(e[0] != undefined){ e[0].eU.forEach(function(wL,ln){ if(ln > 30 && ln < 70){ var thisL = ""; wL.forEach(function(wD,dn){ if(dn > 30 && dn < 70){ thisL += Math.min(wD.length,9)+" "; } }); println(thisL); } }); }
              */

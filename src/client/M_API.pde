@@ -125,8 +125,7 @@ void draw(){
     }
   }
   
-    clickQuestion();
-  
+    
     animate();
   
     //nodeDraw();
@@ -148,8 +147,6 @@ void draw(){
   
     drawHUD();
   
-    drawChat();
-  
     safePostDraw();
   
   mouseClicked = false;
@@ -170,16 +167,8 @@ void keyPressed(){
     isI = true;
   }
   
-  if(chatPushing == false){
-    player.moveEvent(0);
-  }
-  
   if(key == 'F' || key == 'f') {
-    if(HUDSstage == 0){
-      HUDSstage = 1;
-    } else {
-      HUDSstage = -HUDSstage;
-    }
+    
   }
   
   if(key == '+') {
@@ -442,7 +431,6 @@ void manageAsync(){
     updateWorld();
     updateEntities();
     updateSound();
-    updateHUD();
     if(fn % 13 == 0){
       updateSpawners();
     }

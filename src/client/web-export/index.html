@@ -42,6 +42,71 @@
 		border-right: 1px solid #333; border-bottom: 1px solid #333;
 		background-color: #000000;
 	}
+	
+	.hudDiv {
+		position:absolute;
+		overflow: auto;
+		pointer-events:none;
+		font-size:20px;
+		height:175px;
+		line-height: 100%;
+		width:175px;
+		left:233.33333333333334px;
+		top:233.33333333333334px;
+		z-index:100;
+		background:rgba(0,0,0,0.5);
+		color:rgba(255,255,0,1);
+		text-align: center;
+	}
+	.hudSpan {
+		display: inline-block;
+		line-height: 20px;
+		vertical-align: middle;
+	}
+	
+	
+	#chat {
+		overflow: hidden;
+	}
+	.chat {
+		overflow: visible;
+		pointer-events: none;
+		width: auto;
+		max-width: 400px;
+		height: auto;
+		padding: 10px;
+		left: 0px;
+		top: auto;
+		bottom: 100%;
+		border-bottom-right-radius: 10px;
+		border-top-right-radius: 10px;
+		position: absolute;
+		background-color: inherit;
+		color: inherit;
+		text-align: left;
+		
+	}
+	.chatInput {
+		bottom: -43px;
+		top: auto;
+		pointer-events: auto;
+		border-bottom-right-radius: 0px;
+		background-color: rgba(0,0,0,.4);
+		color: rgba(255,255,255,.4);
+	}
+	.spanInput:focus {
+		outline: none;
+	}
+	#chat spans {
+		position: relative;
+		top: 0px;
+		left: 0px;
+		height: auto;
+		width: auto;
+		max-width: 400px;
+		overflow: hide;
+	}
+	
 		</style>
 		<!--[if lt IE 9]>
 			<script type="text/javascript">alert("Your browser does not support the canvas tag.");</script>
@@ -52,6 +117,10 @@
 		</script>-->  
 		<script src="processing.js" type="text/javascript"></script>
 		<script src="minim.js" type="text/javascript"></script>
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+		<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 		
 		<script src="/D/aj.js" type="text/javascript"></script>
 		<script src="/D/server.js" type="text/javascript"></script>
@@ -66,7 +135,7 @@ function getProcessingSketchId () { return 'client'; }
 	<body>
 		<!--<div id="content">-->
 			
-			<div>
+			<div style="position: relative; margin: 0 auto; height: 700px; width: 700px;">
 				<center>
 				<canvas id="client" data-processing-sources="client.pde" 
 						width="700" height="700">
@@ -74,10 +143,17 @@ function getProcessingSketchId () { return 'client'; }
 					<!-- Note: you can put any alternative content here. -->
 				</canvas>
 				</center>
+				<div id="hud" style="position: absolute; left: 0px; top: 0px; height: 100%; width: 100%; pointer-events: none;"></div>
+				<div id="chat" style="position: absolute; left: 0px; top: 0px; height: 100%; width: 75%; pointer-events: none;"></div>
 				<noscript>
 					<p>JavaScript is required to view the contents of this page.</p>
 				</noscript>
 	    	</div>
+			<div style="position: relative; height: 400px; width: 400px;background-color:purple;">
+				<div id="moveMe" style="position: relative; height: 100px; width: 100px; left: 200px; top: 100px; line-height: 100px; vertical-align: middle; background-color:white;">
+					hello world
+				</div>
+			</div>
 			<!--
 			<h1>client</h1>
     		<p id="description">/aj.sendData("["+connData.substring(0,connData.length()-1)+"]");/</p>

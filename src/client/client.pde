@@ -55,12 +55,25 @@ boolean showChat = true;
   
   //genLoadMap(loadImage(aj.D()+"Lobby/dimension0.png"));
   
-  if(!AJ.isWeb()){
+  if(!aj.isWeb()){
     println("Resize");
     //frame.setResizable(true);
     //frame.setSize(1300,1300);
     size(1300,1300);
   }
+  
+  //addHUDItem(new HUDItem(width/2,height/2,width/4,height/4,10));
+  //addHUDItem(new HUDItem(width/3,height/3,width/4,height/4,100));
+  aj.hud("add","#hud","hid");
+  aj.hud("css","#hid","color","blue","opacity","0.5");
+  
+  aj.hud("setupChat");
+  
+  //String ajx = aj.hud("add","#chat","inputBox");
+  //aj.hud("class",ajx,"chat");
+  //aj.hud("input",ajx);
+  //aj.hud("class",ajx,"chatInput");
+  
   
   scaleView(10); //scale the view to fit the entire map
   
@@ -349,7 +362,6 @@ void processServerOutput(){
 }
 
 /*LOCK*/void safeAsync(){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
-  println(aj.MP());
   try{
     aj.forceUpdateServer();
   }catch(Throwable e){}
@@ -387,6 +399,11 @@ void processServerOutput(){
   
   if(fn%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
     //println(frameRate); //display the game FPS
+    aj.hud("act","#hid","700","left",str(mouseX)+"px");
+    if(mouseY > height-50){
+      //aj.hud("act","#hid","700","background-color","rgba(0,0,0,0)");
+      aj.hud("del","#hid","700");
+    }
   }
   if(fn%100 == 0){
     
@@ -414,19 +431,7 @@ void safePluginAI(Entity e){
 }
 */
 /*LOCK*/void safeDraw(){} //called after everything else has been drawn on the screen (draw things on the game)
-/*LOCK*/void safePostDraw(){
-  if(chatPush != 0){
-    stroke(255,chatPush*500);
-    strokeWeight(2);
-    fill(0,chatPush*500);
-    rect(-10,height-chatHeight-2,width+20,100);
-    fill(0,255,0);
-    stroke(255);
-    
-    
-    //textMarkup(chatKBS,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
-  }
-} //called after everything else has been drawn on the screen (draw things on the screen)
+/*LOCK*/void safePostDraw(){} //called after everything else has been drawn on the screen (draw things on the screen)
 
 /*LOCK*/void safeKeyPressed(){
   if(key == '0'){
