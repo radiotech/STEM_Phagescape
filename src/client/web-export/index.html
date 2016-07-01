@@ -48,19 +48,25 @@
 		overflow: auto;
 		pointer-events:none;
 		font-size:20px;
-		height:175px;
+		height:100px;
 		line-height: 100%;
-		width:175px;
-		left:233.33333333333334px;
-		top:233.33333333333334px;
+		width:100px;
+		left:0px;
+		top:0px;
 		z-index:100;
 		background:rgba(0,0,0,0.5);
 		color:rgba(255,255,0,1);
 		text-align: center;
+		background-repeat: no-repeat;
+		-ms-background-size: cover;
+		-o-background-size: cover;
+		-moz-background-size: cover;
+		-webkit-background-size: cover;
+		background-size: cover;
 	}
 	.hudSpan {
 		display: inline-block;
-		line-height: 20px;
+		line-height: normal;
 		vertical-align: middle;
 	}
 	
@@ -77,22 +83,24 @@
 		padding: 10px;
 		left: 0px;
 		top: auto;
-		bottom: 100%;
+		bottom: calc(100% - 2px);
 		border-bottom-right-radius: 10px;
 		border-top-right-radius: 10px;
 		position: absolute;
-		background-color: inherit;
-		color: inherit;
+		background-color: rgba(0,0,0,1);
+		color: rgba(255,255,255,1);
 		text-align: left;
-		
+		-webkit-box-shadow:inset 0px 0px 0px 2px #fff;
+		-moz-box-shadow:inset 0px 0px 0px 2px #fff;
+		box-shadow:inset 0px 0px 0px 2px #fff;
+		z-index: 20;
 	}
 	.chatInput {
-		bottom: -43px;
+		left: 1px;
 		top: auto;
+		bottom: -100px;
 		pointer-events: auto;
 		border-bottom-right-radius: 0px;
-		background-color: rgba(0,0,0,.4);
-		color: rgba(255,255,255,.4);
 	}
 	.spanInput:focus {
 		outline: none;
@@ -106,7 +114,75 @@
 		max-width: 400px;
 		overflow: hide;
 	}
-	
+	.splash-bg {
+		pointer-events: auto;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		z-index: 100;
+		text-shadow: 0 0 6px #000000;
+	}
+	.splash-title {
+		top: calc(40% - 40px);
+		width: 100%;
+		height: 50%;
+		color: rgba(255,255,255,0);
+		background-color: rgba(0,0,0,0);
+		font-size: 50px;
+		z-index: 200;
+	}
+	.splash-subtitle {
+		top: calc(55% - 30px);
+		width: 100%;
+		height: 30%;
+		color: rgba(255,255,255,0);
+		background-color: rgba(0,0,0,0);
+		font-size: 20px;
+		z-index: 200;
+	}
+	.tip {
+		-webkit-border-radius: 20px;
+		-moz-border-radius: 20px;
+		border-radius: 20px;
+		border: rgba(0,0,0,0) solid 3px; 
+		width: auto;
+		height: auto;
+		max-width: 250px;
+		overflow: hide;
+		padding: 6px;
+		color: rgba(0,0,0,0);
+		background-color: rgba(255,255,255,0);
+		z-index: 10;
+	}
+	.tip-leaf {
+		position: absolute;
+		background-color(0,0,0,1);
+		width: 0;
+		height: 0;
+		padding: 5px;
+		-webkit-border-radius: 5px;
+		-moz-border-radius: 5px;
+		border-radius: 5px;
+		z-index: 10;
+	}
+	#map {
+		position: absolute;
+		pointer-events:none;
+		opacity: .5;
+		top: auto;
+		left: auto;
+		right: 0px;
+		bottom: 0px;
+		width: 190px;
+		height: 190px;
+		margin: 15px;
+		border: 5px solid #fff;
+		z-index: 30;
+	}
+	#map-c {
+		width: 100%;
+		height: 100%;
+	}
 		</style>
 		<!--[if lt IE 9]>
 			<script type="text/javascript">alert("Your browser does not support the canvas tag.");</script>
@@ -115,6 +191,10 @@
 		<!--<script>  
 			var socket = io.connect('/');
 		</script>-->  
+		
+		<!--<script data-main="D/aj" src="D/require.js"></script>-->
+		
+		
 		<script src="processing.js" type="text/javascript"></script>
 		<script src="minim.js" type="text/javascript"></script>
 		
@@ -123,7 +203,7 @@
 		<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 		
 		<script src="/D/aj.js" type="text/javascript"></script>
-		<script src="/D/server.js" type="text/javascript"></script>
+		<!--<script src="/D/server.js" type="text/javascript"></script>-->
 		
 		
 		<script type="text/javascript">
@@ -143,17 +223,17 @@ function getProcessingSketchId () { return 'client'; }
 					<!-- Note: you can put any alternative content here. -->
 				</canvas>
 				</center>
+				
+				<div id="tips" style="position: absolute; left: -1px; top: 0px; height: 200%; width: 200%; pointer-events: none;"></div>
+				<div id="chat" style="position: absolute; left: -1px; top: 0px; height: 100%; width: 75%; pointer-events: none;"></div>
 				<div id="hud" style="position: absolute; left: 0px; top: 0px; height: 100%; width: 100%; pointer-events: none;"></div>
-				<div id="chat" style="position: absolute; left: 0px; top: 0px; height: 100%; width: 75%; pointer-events: none;"></div>
+				<div id="map"><canvas id="map-c" width="300" height="300"></canvas><div>
+				
 				<noscript>
 					<p>JavaScript is required to view the contents of this page.</p>
 				</noscript>
 	    	</div>
-			<div style="position: relative; height: 400px; width: 400px;background-color:purple;">
-				<div id="moveMe" style="position: relative; height: 100px; width: 100px; left: 200px; top: 100px; line-height: 100px; vertical-align: middle; background-color:white;">
-					hello world
-				</div>
-			</div>
+			
 			<!--
 			<h1>client</h1>
     		<p id="description">/aj.sendData("["+connData.substring(0,connData.length()-1)+"]");/</p>

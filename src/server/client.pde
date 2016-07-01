@@ -1,6 +1,8 @@
 /* @pjs font=/D/monofonto.ttf; */
 
 //Entity testEntity;
+
+
 int lLevel = 0;
 PVector lCheckPoint = new PVector(0,0);
 PVector lCheckPoint2 = new PVector(0,0);
@@ -15,8 +17,8 @@ int pid = -1;
 int server = -1;
 int conn = 0;
 String connData = "";
-int movePacketId = 0;
-int movePacketResponseId = -1;
+int movePacketId = 1;
+int movePacketResponseId = -5;
 ArrayList<SnapInput> movePackets = new ArrayList();
 String mobSyncs;
 
@@ -55,14 +57,28 @@ boolean showChat = true;
   
   //genLoadMap(loadImage(aj.D()+"Lobby/dimension0.png"));
   
-  if(!AJ.isWeb()){
+  if(!aj.isWeb()){
     println("Resize");
     //frame.setResizable(true);
     //frame.setSize(1300,1300);
     size(1300,1300);
   }
   
+  //addHUDItem(new HUDItem(width/2,height/2,width/4,height/4,10));
+  //addHUDItem(new HUDItem(width/3,height/3,width/4,height/4,100));
+  
+  aj.hud("setupChat");
+  
+  splash("http://atextures.com/wp-content/uploads/2014/08/Nature-Leaves-Background-4-625x468.jpg","Loading","",0,0,0,0,1000,0,true);
+  //String ajx = aj.hud("add","#chat","inputBox");
+  //aj.hud("class",ajx,"chat");
+  //aj.hud("input",ajx);
+  //aj.hud("class",ajx,"chatInput");
+  
+  
   scaleView(10); //scale the view to fit the entire map
+  
+  
   
   shadows = false;
   centerView(player.snap.v.x,player.snap.v.y); //center the view in the middle of the world
@@ -97,9 +113,21 @@ void processServerOutput(){
       u = updates[itt];
       String[] parts = split(u,":");
       if(parts[0].equals("NOCONN")){
+        splash(getBG(),"Connection Lost","Trying to reconnect to the server...",0,0,0,200,2000,4000,true);
         conn = 0;
+        pid = -1;
+        mimics.clear();
+        mimics.add(player);
+        maxMimicID = -1;
+        mimicIDs = new Mimic[0];
+        println("CONN IS NOW 0");
+        connData = "";
+        movePackets.clear();
+        movePacketId = 1;
+        movePacketResponseId = -5;
       } else if(parts[0].equals("CONN")){
         conn = 1;
+        println("CONN IS NOW 1");
       } else if(parts[0].equals("WORLD")){
         int skips = 0;
         int tempInt = 0;
@@ -123,8 +151,9 @@ void processServerOutput(){
         if(conn == 0){conn++;}
       } else if(parts[0].equals("READY")){
         conn = 5;
+        println("CONN IS NOW 5");
       } else if(parts[0].equals("MOB")){
-        println(parts[1]);
+        //println(parts[1]);
         Mimic mob = getMimic(int(parts[1]));
         if(mob.isNew){
           mob.isNew = false;
@@ -157,7 +186,7 @@ void processServerOutput(){
             }
             MimicDes Msource;
             if(mob.MimicDess.size() == 0){
-              println("ERROR!!");
+              //println("ERROR!!");
               Msource = new MimicDes(-1,mob.snap.v.x,mob.snap.v.y,mob.snap.dir,mob.snap.health);
             } else {
               Msource = mob.MimicDess.get(0);
@@ -207,6 +236,13 @@ void processServerOutput(){
           gBStrength[int(parts[i*6+1])] = int(parts[i*6+6]);
           //println(int(parts[i*6+1]));
         }
+      } else if(parts[0].equals("TIPS")){
+        int limit = floor((parts.length-1)/5);
+        tips = new Tip[limit];
+        for(int i = 0; i < limit; i++){
+          tips[i] = new Tip(float(parts[i*5+1]),float(parts[i*5+2]),float(parts[i*5+3]),parts[i*5+4],float(parts[i*5+5]));
+          //println(int(parts[i*6+1]));
+        }
       } else if(parts[0].equals("PID")){
         pid = int(parts[1]);
       } else if(parts[0].equals("BHITM")){
@@ -226,7 +262,7 @@ void processServerOutput(){
         Mimic mob = getMimic(int(parts[1]));
         if(mob.MimicDess.size() > 0 && ((MimicDes)mob.MimicDess.get(0)).id >= int(parts[2])){
           updates = append(updates,parts[3].replaceAll("%%%",":")+";");
-          println(parts[3].replaceAll("%%%",":"));
+          //println(parts[3].replaceAll("%%%",":"));
         } else {
           mobSyncs += "MOBSYNC:"+parts[1]+":"+parts[2]+":"+parts[3]+";";
         }
@@ -263,13 +299,14 @@ void processServerOutput(){
         }
         particleEffect(int(parts[1]),int(parts[2]),float(parts[3]),float(parts[4]),float(parts[5]),float(parts[6]),cols,sizes,speeds,shapes,lifespans);
       } else if(parts[0].equals("PROPS")){
-        println("Recieved Props");
+        noSplash(true);
+        //println("Recieved Props");
         String[] components;
         for(int i = 1; i < parts.length; i++){
           components = split(parts[i],"=");
           if(components.length > 1){
             if(int(components[0]) < 100){
-              println("Proper Format");
+              //println("Proper Format");
               switch(int(components[0])){
                 case 0: scaleView(float(components[1])); break;
                 case 1: fillOnLoad = boolean(int(components[1])); break;
@@ -289,7 +326,7 @@ void processServerOutput(){
       } else if(parts[0].equals("MOB_DIE")){
         killMimic(int(parts[1]));
       } else if(parts[0].equals("RESET")){
-        println("REVIEVED RESET");
+        //println("REVIEVED RESET");
         wUDamage = new int[wSize][wSize];
         gBColor = new color[256];
         gBIsSolid = new boolean[256];
@@ -299,8 +336,8 @@ void processServerOutput(){
         maxMimicID = -1;
         mimics.add(player);
       } else if(parts[0].equals("MOVED")){
-        
         if(int(parts[1]) >= movePacketResponseId){
+          println("updated response id to "+parts[1]);
           float wasX = player.snap.v.x;
           float wasY = player.snap.v.y;
           
@@ -317,7 +354,7 @@ void processServerOutput(){
             }
           }
           player.snap.health = int(parts[8]);
-          println(u);
+          //println(u);
           player.snap.hSteps = int(parts[9]);
           player.snap.fireCoolDown = float(parts[10]);
           player.snap.bullets = new SnapBullet[0];
@@ -349,7 +386,9 @@ void processServerOutput(){
 }
 
 /*LOCK*/void safeAsync(){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
-  println(aj.MP());
+  
+  
+  
   try{
     aj.forceUpdateServer();
   }catch(Throwable e){}
@@ -380,19 +419,24 @@ void processServerOutput(){
       }
     }
   }
-
-  if(fn%10 == 0){
-    
-  }
   
   if(fn%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
     //println(frameRate); //display the game FPS
   }
   if(fn%100 == 0){
-    
+    if(random(100) < 10){
+      splash(getBG(),"Hiii!!!!","This is an anoying popup!",0,0,0,1000,1000,1000,false);
+    } else {
+      noSplash(false);
+    }
+  
     //println("Beat");
     
   } //every ten seconds (similar idea applies here)
+}
+
+String getBG(){
+  return "http://www.hdwallpaperbackgrounds.net/wp-content/uploads/2016/06/Cool-Background-"+str(floor(random(15)+1))+".jpg";
 }
 
 /*LOCK*/void safeUpdate(){ //called before anything has been drawn to the screen (update the world before it is drawn)
@@ -414,19 +458,7 @@ void safePluginAI(Entity e){
 }
 */
 /*LOCK*/void safeDraw(){} //called after everything else has been drawn on the screen (draw things on the game)
-/*LOCK*/void safePostDraw(){
-  if(chatPush != 0){
-    stroke(255,chatPush*500);
-    strokeWeight(2);
-    fill(0,chatPush*500);
-    rect(-10,height-chatHeight-2,width+20,100);
-    fill(0,255,0);
-    stroke(255);
-    
-    
-    //textMarkup(chatKBS,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
-  }
-} //called after everything else has been drawn on the screen (draw things on the screen)
+/*LOCK*/void safePostDraw(){} //called after everything else has been drawn on the screen (draw things on the screen)
 
 /*LOCK*/void safeKeyPressed(){
   if(key == '0'){
@@ -862,7 +894,6 @@ void M_Setup(){
   textSize(20);
   safePreSetup();
   
-  setupHUD();
   setupWorld();
   setupDebug();
   setupMimics();
@@ -889,8 +920,7 @@ void draw(){
     }
   }
   
-    clickQuestion();
-  
+    
     animate();
   
     //nodeDraw();
@@ -912,8 +942,6 @@ void draw(){
   
     drawHUD();
   
-    drawChat();
-  
     safePostDraw();
   
   mouseClicked = false;
@@ -934,29 +962,22 @@ void keyPressed(){
     isI = true;
   }
   
-  if(chatPushing == false){
-    player.moveEvent(0);
-  }
-  
-  if(key == 'F' || key == 'f') {
-    if(HUDSstage == 0){
-      HUDSstage = 1;
-    } else {
-      HUDSstage = -HUDSstage;
-    }
-  }
-  
   if(key == '+') {
-    if(miniMapZoomSmall < 20){
-      miniMapZoomSmall++;
+    if(miniMapZoom < 20){
+      miniMapZoom++;
     }
-    miniMapZoomLarge = 4;
+    updateMinimap();
   }
   if(key == '-') {
-    if(miniMapZoomSmall > 0){
-      miniMapZoomSmall--;
+    if(miniMapZoom > 0){
+      miniMapZoom--;
     }
-    miniMapZoomLarge = 0;
+    updateMinimap();
+  }
+  if(key == 'M' || key == 'm'){
+    miniMapScale = 6;
+    updateMinimap();
+    aj.hud("mapScale","1");
   }
   
   safeKeyPressed();
@@ -967,6 +988,11 @@ void keyReleased(){
   safeKeyReleased();
   if(key == 'i' || key == 'I'){
     isI = false;
+  }
+  if(key == 'M' || key == 'm'){
+    miniMapScale = 2;
+    updateMinimap();
+    aj.hud("mapScale","0");
   }
   
 }
@@ -987,10 +1013,10 @@ void mouseReleased(){
   
   if(mouseButton == RIGHT){
     isRight = false;
-    println("Right");
+    //println("Right");
   } else if(mouseButton == LEFT){
     isLeft = false;
-    println("Left");
+    //println("Left");
   }
   
   safeMouseReleased();
@@ -1206,7 +1232,7 @@ void manageAsync(){
     updateWorld();
     updateEntities();
     updateSound();
-    updateHUD();
+    updateTips();
     if(fn % 13 == 0){
       updateSpawners();
     }
@@ -1244,382 +1270,12 @@ PImage toughRect(PImage canvas, int x, int y, int w, int h, int col){
 
 //STEM Phagescape API v(see above)
 
-float charWidth = 9;
-boolean isHoverText = false;
-String hoverText = "";
-
-float chatHeight = 40;
-float chatPush = 0;
-float chatPushSpeed = .07;
-boolean chatPushing = false;
-String chatKBS = "";
-int totalChatWidth = 0;
-int lastChatCount = 0;
-ArrayList cL = new ArrayList<Chat>();
-
-ArrayList CFuns = new ArrayList<CFun>();
-
-void drawChat(){
-  
-  if(lastChatCount!=cL.size()){
-    chatEvent("");
-  }
-  lastChatCount = cL.size();
-  
-  
-  if(chatPushing){
-    if(chatPush < 1){
-      chatPush+=chatPushSpeed;
-    } else {
-      chatPush = 1;
-    }
-  } else {
-    if(chatPush > 0){
-      chatPush-=chatPushSpeed;
-    } else {
-      chatPush = 0;
-    }
-  }
-  
-  Chat tempChat;
-  for(int i = 0; i < cL.size(); i++){
-    tempChat = (Chat) cL.get(i);
-    tempChat.display(cL.size()-i-1);
-  }
-  
-  if(chatPush > 0){
-    textAlign(LEFT,CENTER);
-    textSize(18);
-    stroke(255,220*chatPush);
-    strokeWeight(3);
-    fill(0,200*chatPush);
-    rect(0-10,floor(height-chatHeight),width/5*4+10,floor(chatHeight+10),0,100,0,0);
-    totalChatWidth = textMarkup(chatKBS,18,chatHeight/5,height-chatHeight/2,color(255),220*chatPush,true);
-    simpleText(chatKBS,chatHeight/5,height-chatHeight/2);
-  }
-  
-  if(isHoverText){
-    if(chatPush > .5){drawTextBubble(mouseX,mouseY,hoverText,127);} else {drawTextBubble(mouseX,mouseY,hoverText,90);}
-    isHoverText = false;
-  }
-}
-
-void simpleText(String a, float x, float y){
-  text(a,x,y);
-}
-
-int textMarkup(String text, float size, float x, float y, color defCol, float alpha, boolean showMarks){
-  size = size/18;
-  
-  textFont(fontBold);
-  
-  textSize(size*18);
-  fill(defCol,alpha);
-  noStroke();
-  int pointer = 0;
-  color lastColor = defCol;
-  boolean tUL = false;
-  boolean tST = false;
-  boolean rURL = false;
-  String tREF = "";
-  String tempStr;
-  String tempStr2;
-  for(int i = 0; i < text.length(); i++){
-    //println(text.charAt(i));
-    tempStr = text.charAt(i)+"";
-    if(tempStr.equals("*")){
-      if(showMarks){
-        fill(200,0,255,alpha);
-        simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
-        pointer++;
-      }
-      if(text.length() > i+1){
-        if(showMarks){
-          simpleText(text.charAt(i+1)+"",x+pointer*charWidth*size,y);
-          pointer++;
-        }
-        tempStr = text.charAt(i+1)+"";
-        if(tempStr.equals("r")){fill(255,0,0,alpha); lastColor=color(255,0,0);}  //red
-        if(tempStr.equals("o")){fill(255,150,0,alpha); lastColor=color(255,150,0);} //orange
-        if(tempStr.equals("y")){fill(255,255,0,alpha); lastColor=color(255,255,0);} //yellow
-        if(tempStr.equals("g")){fill(0,255,0,alpha); lastColor=color(0,255,0);} //green
-        if(tempStr.equals("c")){fill(0,255,255,alpha); lastColor=color(0,255,255);} //cyan
-        if(tempStr.equals("b")){fill(0,0,255,alpha); lastColor=color(0,0,255);} //blue
-        if(tempStr.equals("p")){fill(225,0,255,alpha); lastColor=color(225,0,255);} //purple
-        if(tempStr.equals("m")){fill(255,0,255,alpha); lastColor=color(255,0,255);} //magenta
-        if(tempStr.equals("w")){fill(255,255,255,alpha); lastColor=color(255,255,255);} //white
-        if(tempStr.equals("l")){fill(255,255,255,alpha); lastColor=color(200,200,200);} //light grey
-        if(tempStr.equals("d")){fill(255,255,255,alpha); lastColor=color(100,100,100);} //dark grey
-        if(tempStr.equals("k")){fill(0,0,0,alpha); lastColor=color(0,0,0);} //black (key)
-        if(tempStr.equals("i")){/*textFont(fontNorm);*/}
-        if(tempStr.equals("n")){fill(defCol,alpha); lastColor=defCol; /*textFont(fontBold);*/ tUL = false; tST = false;}
-        if(tempStr.equals("u")){tUL = true;}
-        if(tempStr.equals("s")){tST = true;}
-        if(tempStr.equals("a")){
-          tREF = "";
-          tempStr = text.charAt(i+1)+"";
-          tempStr2 = text.charAt(i)+"";
-          while(text.length() > i+2 && ((!tempStr.equals("!")) || (!tempStr2.equals("!")))){
-            if(showMarks){
-              simpleText(text.charAt(i+2)+"",x+pointer*charWidth*size,y);
-              pointer++;
-            }
-            tREF = tREF + text.charAt(i+2);
-            i++;
-            tempStr = text.charAt(i+1)+"";
-            tempStr2 = text.charAt(i)+"";
-          }
-          if(tREF.indexOf("!!") > -1){
-            tREF = tREF.substring(0,tREF.length()-2);
-            if(tREF.indexOf("::") > -1){
-              String[] tREF2 = split(tREF,"::");
-              if(tREF2.length == 2){
-                for(int j = 0; j < tREF2[1].length(); j++){
-                  simpleText(tREF2[1].charAt(j)+"",x+pointer*charWidth*size,y);
-                  pointer++;
-                }
-                if(mouseX > x+(pointer-tREF2[1].length())*charWidth*size && mouseX < x+pointer*charWidth*size){
-                  if(mouseY > y-chatHeight/4 && mouseY < y+chatHeight/4){
-                    if(tREF2[0].indexOf("\"\"") > -1){
-                      String[] tREF3 = split(tREF2[0],"\"\"");
-                      if(tREF3.length == 2){
-                        isHoverText = true;
-                        hoverText = tREF3[1];
-                        if(mouseClicked){
-                          tryCommand(tREF3[0],"");
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            fill(lastColor,alpha);
-          }
-        }
-        tempStr = text.charAt(i+1)+"";
-        if(tempStr.equals("#")){ textMarkup(text.substring(i+2,text.length()), size*18, x, y+size*18, defCol, alpha, showMarks); i = text.length(); }
-      }
-      i++;
-    } else {
-      simpleText(text.charAt(i)+"",x+pointer*charWidth*size,y);
-      pointer++;
-      if(tUL){
-        rect(x+pointer*charWidth*size-charWidth*size,y+10,charWidth*size,1);
-      }
-      if(tST){
-        rect(x+pointer*charWidth*size-charWidth*size,y,charWidth*size,1);
-      }
-    }
-    
-  }
-  return pointer;
-}
-
-float simpleTextWidth(String str, float size){
-  if(str.indexOf("*#") == -1){
-    return str.length()*charWidth*size/18;
-  } else {
-    int pos = str.indexOf("*#");
-    return max(pos*charWidth*size/18,simpleTextWidth(str.substring(pos+2,str.length()),size));
-  }
-}
-
-float simpleTextHeight(String str, float size){
-  int lines = 1;
-  int nextIndex = str.indexOf("*#");
-  while(nextIndex != -1){
-    lines++;
-    nextIndex = str.indexOf("*#",nextIndex+1);
-  }
-  return lines*size;
-}
-
-String simpleTextCrush(String str, float size, float w){
-  String[] lines = new String[100];
-  int nextLine = 1;
-  int pointer = 0;
-  String tempStr;
-  lines[0] = StringReplaceAll(str,"*#"," ");
-  
-  while(nextLine < 99 && simpleTextWidth(lines[nextLine-1],size) > w){
-    pointer = floor(w/(charWidth*size/18));
-    tempStr = lines[nextLine-1].charAt(pointer) + "";
-    while(pointer > 0 && !tempStr.equals(" ")){
-      pointer--;
-      tempStr = lines[nextLine-1].charAt(pointer) + "";
-    }
-    if(pointer > 0){
-      lines[nextLine] = lines[nextLine-1].substring(pointer+1,lines[nextLine-1].length());
-    } else {
-      pointer = ceil(w/(charWidth*size/18));
-      lines[nextLine] = lines[nextLine-1].substring(pointer,lines[nextLine-1].length());
-    }
-    lines[nextLine-1] = lines[nextLine-1].substring(0,pointer);
-    if(nextLine > 1){
-      str = str + "*#" + lines[nextLine-1];
-    } else {
-      str = lines[0];
-    }
-    nextLine++;
-  }
-  if(nextLine > 1){
-    str = str + "*#" + lines[nextLine-1];
-  }
-  return str;
-}
-
-class Chat{
-  String content;
-  int time;
-  int totalChatWidthL;
-  
-  Chat(String tContent) {
-    content = tContent;
-    time = millis();
-    totalChatWidthL = width*2;
-  }
-  
-  void display(int i){
-    if(i < height/chatHeight+2){
-      if(time+5000>millis() || chatPush > 0){
-        float fadeOut = float(millis()-(time+4000))/1000;
-        fadeOut = min(max(fadeOut,0),1);
-        if(chatPush > 0){
-          fadeOut -= chatPush;
-        }
-        fadeOut = min(max(fadeOut,0),1);
-        
-        noStroke();
-      
-        fill(0,100+100*chatPush-255*fadeOut);
-        rect(0-10,height-chatHeight-chatHeight*i-chatHeight*chatPush,charWidth*totalChatWidthL+chatHeight,chatHeight,0,100,100,0);
-        totalChatWidthL = textMarkup(content,18,chatHeight/5,height-chatHeight/2-chatHeight*i-chatHeight*chatPush,color(255),100+100*chatPush-255*fadeOut,false);
-      }
-    }
-  }
-}
-
-void drawTextBubble(float tx, float ty, String tText, float opacity){
-  if(tText != ""){
-    String[] textFragments = split(tText,"##");
-    float tw = 0;
-    for(int i = 0; i < textFragments.length; i++){
-      tw = max(textFragments[i].length()*charWidth+chatHeight,tw);
-    }
-    
-    float td = chatHeight+(textFragments.length-1)*chatHeight*2/3;
-    
-    float tx2 = abs(width-tx-tw+.5)/(width-tx-tw+.5)*tw/2+tx;
-    if(tx2-tw/2 < 0){tx2 = tw/2; if(tw>width){tx2 = width/2;}}
-    float ty2 = -abs(ty-(td+chatHeight/2)+.5)/(ty-(td+chatHeight/2)+.5)*(td-chatHeight*2/3*(textFragments.length-1)/2)+ty;
-    
-    noStroke();
-    
-    int fliph=1;
-    int flipv=1;
-    if(tx2<tx){fliph=-1;}
-    if(ty2>ty){flipv=-1;}
-    
-    fill(255,opacity/2);
-    triangle(tx,ty,tx-3*fliph,ty-(chatHeight/2-3)*flipv,tx+(chatHeight/3+3)*fliph,ty-(chatHeight/2-3)*flipv);
-    rect(tx2-tw/2-3-chatHeight/10,ty2-chatHeight/2-3-chatHeight*2/3*(textFragments.length-1)/2,tw+6+chatHeight/5,td+6,chatHeight/10);
-    
-    fill(255,opacity);
-    triangle(tx,ty,tx,ty-chatHeight/2*flipv,tx+chatHeight/3*fliph,ty-chatHeight/2*flipv);
-    rect(tx2-tw/2-chatHeight/10,ty2-chatHeight/2-chatHeight*2/3*(textFragments.length-1)/2,tw+chatHeight/5,td,chatHeight/10);
-    
-    for(int i = 0; i < textFragments.length; i++){
-      textMarkup(textFragments[i],18,tx2-tw/2+chatHeight/2,ty2-chatHeight*2/3*(textFragments.length-1)/2+chatHeight*2/3*i,color(0),opacity*2,false);
-    }
-  }
-}
-
 void keyPressedChat(){
-  println(key);
-  println(keyCode);
-  if(chatPushing){
-    if(key != CODED){
-      if(keyCode == BACKSPACE){
-        if(chatKBS.length() > 0){
-          chatKBS = chatKBS.substring(0,chatKBS.length()-1);
-        }
-      } else if(key == ESC) {
-        chatPushing = false;
-        chatKBS = "";
-      } else if(keyCode == ENTER) {
-        if(chatKBS.length() > 0){
-          if(chatKBS.charAt(0) == '/'){
-            tryCommand(chatKBS.substring(1,chatKBS.length()),"player");
-          } else {
-            cL.add(new Chat(chatKBS));
-          }
-          chatKBS = "";
-          chatPushing = false;
-          chatPush = 0;
-        }
-      } else {
-        if(charWidth*totalChatWidth < width/5*4-chatHeight/5*2){
-          chatKBS = chatKBS+str(key);
-        }
-      }
-    }
-  } else {
-    if(key == 't' || key == 'T' || key == 'c' || key == 'C' || key == ENTER){
-      chatPushing = true;
-    }
+  if(key == 't' || key == 'T' || key == '/'){
+    aj.hud("chatPush");
+    player.moveEvent(0);
   }
 }
-
-void tryCommand(String command, String source) {
-  String[] commands = split(command," ");
-  int args = commands.length-1;
-  commands[0] = commands[0].toLowerCase();
-  
-  Boolean didNone = true;
-  for(int i = 0; i < CFuns.size(); i++){
-    CFun tempFun = (CFun)CFuns.get(i);
-    
-    if(tempFun.name.toLowerCase().equals(commands[0])){
-      didNone = false;
-      if(source.equals("") || tempFun.free){
-        if(tempFun.args == args){
-          executeCommand(tempFun.ID,commands);
-        } else {
-          cL.add(new Chat("*o/*i*o"+commands[0]+"*n*o requires *s*o"+str(tempFun.args)+"*c*o arguments, you provided *s*o"+str(args)));
-        }
-      } else {
-        cL.add(new Chat("*oYou need permission to use /*i*o"+commands[0]+"*n"));
-      }
-    }
-    
-
-  }
-  
-  if(commands[0].length()!=0){
-    if(didNone){
-      cL.add(new Chat("*o/*i*o"+commands[0]+"*n*o was not recognized as a command"));
-    }
-  }
-}
-
-
-
-class CFun{
-  int ID;
-  String name;
-  int args;
-  boolean free;
-  CFun(int tID, String tName, int tArgs, boolean tFree){
-    ID = tID;
-    name = tName;
-    args = tArgs;
-    free = tFree;
-  }
-}
-
-
-
 
 //STEM Phagescape API v(see above)
 //String[] effects = {""}
@@ -1823,27 +1479,11 @@ void drawParticles(){
 }
 //STEM Phagescape API v(see above)
 
+Tip[] tips = new Tip[0];
+
+float HUDStaminaSize = 10;
+
 PImage HUDImage;
-
-String HUDTtext = "";
-String HUDTsubText = "";
-float HUDTtextSize = 10;
-float HUDTsubTextSize = 10;
-color HUDTtextColor = 0;
-color HUDTsubTextColor = 0;
-int HUDTfadeIn = 0;
-int HUDTfadeOut = 0;
-int HUDTsubTextDelay = 0;
-int HUDTdisplayTime = 0;
-int HUDTstage = 0;
-float HUDTtextWidth = 0;
-float HUDTsubTextWidth = 0;
-
-float HUDStaminaSize = 12;
-
-int HUDSstage = 0;
-int HUDSfade = 10;
-float HUDSradius = float(1)/3;
 
 boolean showBars = true;
 boolean showMiniMap = true;
@@ -1852,18 +1492,9 @@ boolean lockMinimapToCamera = true;
 int[][] miniMap;
 ArrayList miniMapEntities = new ArrayList();
 int miniMapScale = 2;
-int miniMapZoomSmall = 6;
-int miniMapZoomLarge = 18; //18 is equal
-int miniMapZoom;
-int miniMapX = 30;
-int miniMapY = 30;
+int miniMapZoom = 6;
 int viewCX = 50;
 int viewCY = 50;
-
-void setupHUD(){
-  miniMapX = width-floor(HUDStaminaSize)-miniMapScale*wSize;
-  miniMapY = height-floor(HUDStaminaSize)-miniMapScale*wSize;
-}
 
 void drawHUD(){
   
@@ -1884,137 +1515,46 @@ void drawHUD(){
   }
   
   if(showMiniMap){
-    if(keyPressed && key == 'm'){
-      miniMapScale = 6;
-      miniMapX = (width-miniMapScale*wSize)/2;
-      miniMapY = (height-miniMapScale*wSize)/2;
-      miniMapZoom = miniMapZoomLarge;
-    } else {
-      miniMapScale = 2;
-      miniMapX = width-floor(HUDStaminaSize)-miniMapScale*wSize;
-      miniMapY = height-floor(HUDStaminaSize)-miniMapScale*wSize;
-      miniMapZoom = miniMapZoomSmall;
-    }
-    
     int wBlocks = ceil(float(miniMapScale)/(miniMapScale+miniMapZoom)*wSize);
-    if(lockMinimapToCamera){
-      viewCX = min(wSize-ceil(float(wBlocks)/2),max(floor(float(wBlocks)/2),floor(wViewCenter.x)));
-      viewCY = min(wSize-ceil(float(wBlocks)/2),max(floor(float(wBlocks)/2),floor(wViewCenter.y)));
-    }
     
-    int tempScale = miniMapScale+miniMapZoom;
-    int tempOffX = viewCX-floor(float(wBlocks)/2);
-    int tempOffY = viewCY-floor(float(wBlocks)/2);
-    int tempX = miniMapX-tempScale*wBlocks+wSize*miniMapScale;
-    int tempY = miniMapY-tempScale*wBlocks+wSize*miniMapScale;
-    
-    noStroke();
-    fill(red(gBColor[0]),green(gBColor[0]),blue(gBColor[0]));
-    if(keyPressed && key == 'm'){ //if large scale mini map
-      rect(tempX,tempY,6*wSize,6*wSize);
-    } else {
-      rect(tempX,tempY,2*wSize,2*wSize);
-    }
-    
-    noStroke();
-    for(int i = 0; i < wBlocks; i++){
-      for(int j = 0; j < wBlocks; j++){
-        fill(miniMap[tempOffX+i][tempOffY+j]);
-        rect(tempX+tempScale*i,tempY+tempScale*j,tempScale,tempScale);
-      }
-    }
-  
-    
-    Mimic tempE;
-    float tx, ty;
-    for (int i = miniMapEntities.size()-1; i >= 0; i--) {
-      tempE = (Mimic) miniMapEntities.get(i);
-      tx = tempE.snap.v.x-tempOffX;
-      ty = tempE.snap.v.y-tempOffY;
-      if(tx > .5 && ty > .5 && tx < wBlocks-.5 && ty < wBlocks-.5){ // is on map
-        fill(tempE.col);
-        ellipse(tempX+(tx)*tempScale,tempY+(ty)*tempScale,tempScale,tempScale);
-      }
-    }
-    fill(255);
-    ellipse(tempX+((int)player.snap.v.x-tempOffX+.5)*tempScale+.5,tempY+((int)player.snap.v.y-tempOffY+.5)*tempScale+.5,tempScale,tempScale);
-    
-    noFill();
-    stroke(255);
-    if(keyPressed && key == 'm'){ //if large scale mini map
-      rect(tempX,tempY,6*wSize,6*wSize);
-    } else {
-      rect(tempX,tempY,2*wSize,2*wSize);
-    }
-  
-    miniMapScale = 2;
   }
   
   if(drawHUDSoftEdge){
     image(HUDImage,0,0);
   }
   
-  if(HUDTstage < HUDTfadeIn+HUDTdisplayTime+HUDTfadeOut){
-    float tempAlpha = 255;
-    float tempAlpha2 = 255;
-    float mainOffset = height/15;
-    if(HUDTstage < HUDTfadeIn){
-      tempAlpha = float(HUDTstage)/HUDTfadeIn*255;
-    }
-    if(HUDTstage < HUDTfadeIn+HUDTsubTextDelay){
-      tempAlpha2 = float(HUDTstage-HUDTsubTextDelay)/HUDTfadeIn*255;
-    }
-    if(HUDTstage > HUDTfadeIn+HUDTdisplayTime){
-      tempAlpha = 255-float(HUDTstage-(HUDTfadeIn+HUDTdisplayTime))/HUDTfadeOut*255;
-      tempAlpha2 = min(tempAlpha2,tempAlpha);
-    }
-    
-    if(HUDTsubText.equals("")){
-      mainOffset = +HUDTtextSize/2;
-    }
-    textMarkup(HUDTtext, HUDTtextSize, (width-HUDTtextWidth)/2, height/2-mainOffset, HUDTtextColor, tempAlpha, false);
-    if(!HUDTsubText.equals("")){
-      textMarkup(HUDTsubText, HUDTsubTextSize, (width-HUDTsubTextWidth)/2, height/2+mainOffset, HUDTsubTextColor, tempAlpha2, false);
-    }
-  }
   
-  if(HUDSstage != 0){
-    
-    int items = 35;
-    float tempFade = float(abs(HUDSstage))/HUDSfade*255;
-    float sliceSize = TWO_PI/items;
-    
-    if(mouseX != width/2 && pointDistance(new PVector(width/2,height/2), new PVector(mouseX,mouseY)) < width*HUDSradius){
-      fill(0,255,0,tempFade*4/5);
-      noStroke();
-      float mousePlace = float(floor((pointDir(new PVector(width/2,height/2), new PVector(mouseX,mouseY))+PI/2)/sliceSize)+0)*sliceSize-PI/2;
-      arc(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2,mousePlace,mousePlace+sliceSize);
-    }
-    
-    stroke(255,tempFade);
-    strokeWeight(width*HUDSradius/30);
-    fill(200,tempFade*4/5);
-    ellipse(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2);
-    ellipse(width/2,height/2,width*HUDSradius/30,width*HUDSradius/30);
-    float dir = -PI/2;
-    fill(100,tempFade);
-    
-    for(int i = 0; i < items; i++){
-      line(width/2,height/2,width/2+width*HUDSradius*cos(dir),height/2+width*HUDSradius*sin(dir));
-      
-      textAlign(CENTER,CENTER);
-      textSize(20);
-      if(i < 10){
-        text(str((i+1)%10),width/2+(width*HUDSradius-18)*cos(dir+.08),height/2+(width*HUDSradius-18)*sin(dir+.08));
-      }
-      textAlign(CENTER,LEFT);
-      
-      dir += sliceSize;
-    }
-    
-    stroke(0,255,0);
-    
+}
+
+void setupMinimap(){
+  int wBlocks = ceil(float(miniMapScale)/(miniMapScale+miniMapZoom)*wSize);
+  aj.hud("setupMinimap",str(wBlocks));
+}
+
+void updateMinimap(){
+  int wBlocks = ceil(float(miniMapScale)/(miniMapScale+miniMapZoom)*wSize);
+  int tempOffX = viewCX-floor(float(wBlocks)/2);
+  int tempOffY = viewCY-floor(float(wBlocks)/2);
+  if(lockMinimapToCamera){
+    viewCX = min(wSize-ceil(float(wBlocks)/2),max(floor(float(wBlocks)/2),floor(wViewCenter.x)));
+    viewCY = min(wSize-ceil(float(wBlocks)/2),max(floor(float(wBlocks)/2),floor(wViewCenter.y)));  
   }
+  String pass = "[";
+  float alpha;
+  int c;
+  for(int i = 0; i < wBlocks; i++){
+    for(int j = 0; j < wBlocks; j++){
+      c = miniMap[tempOffX+i][tempOffY+j];
+      if(red(c) == 0 && green(c) == 0 && blue(c) == 0){
+        alpha = .3;
+      } else {
+        alpha = 1;
+      }
+      pass += "\"rgba("+str(red(c))+","+str(green(c))+","+str(blue(c))+","+str(alpha)+")\",";
+    }
+  }
+  pass = pass.substring(0,pass.length()-1)+"]";
+  aj.hud("map",pass,str(wBlocks));
 }
 
 void refreshHUD(){
@@ -2047,41 +1587,8 @@ void HUDAddLightLoop(int x, int y, int dist){
   }
 }
 
-void updateHUD(){
-  if(HUDTstage < HUDTfadeIn+HUDTdisplayTime+HUDTfadeOut){
-    HUDTstage++;
-  }
-  
-  if(HUDSstage != 0){
-    if(HUDSstage > 0 && HUDSstage < HUDSfade){
-      HUDSstage++;
-    }
-    if(HUDSstage < 0 && HUDSstage < 0){
-      HUDSstage++;
-    }
-    
-    noStroke();
-    fill(255,float(abs(HUDSstage))/HUDSfade*255);
-    ellipse(width/2,height/2,width*HUDSradius*2,width*HUDSradius*2);
-  }  
-}
 
-void HUDText(String ttext, String tsubText, float ttextSize, float tsubTextSize, color ttextColor, color tsubTextColor, int tfadeIn, int tfadeOut, int tsubTextDelay, int tdisplayTime){
-  HUDTtext = ttext;
-  HUDTsubText = tsubText;
-  HUDTtextSize = ttextSize;
-  HUDTsubTextSize = tsubTextSize;
-  HUDTtextColor = ttextColor;
-  HUDTsubTextColor = tsubTextColor;
-  HUDTfadeIn = tfadeIn;
-  HUDTfadeOut = tfadeOut;
-  HUDTsubTextDelay = tsubTextDelay;
-  HUDTdisplayTime = tdisplayTime;
-  HUDTstage = 0;
-  
-  HUDTtextWidth = simpleTextWidth(HUDTtext, HUDTtextSize);
-  HUDTsubTextWidth =simpleTextWidth(HUDTsubText, HUDTsubTextSize);
-}
+
 
 void fillMiniMap(){
   for(int i = 0; i < wSize; i++){
@@ -2089,109 +1596,53 @@ void fillMiniMap(){
       miniMap[i][j] = gBColor[wU[i][j]];
     }
   }
+  updateMinimap();
 }
 
-String qText = "";
-String[] qAnswerLabels = {"a. ", "b. ", "c. ", "d. ", "e. ", "f. ", "g. ", "h. ", "i. ", "J. "};
-String[] qAnswers = new String[4];
-int qCorrectAnswer = 0;
-float qSize;
-float qAnswerSize;
-float qWidth;
-float qHeight;
-float qHoverPad = 7;
-float qHover = -1;
-String qGoodCallback;
-String qBadCallback;
-float qLastFade = -1;
+void splash(String url, String title, String sub, int d1, int d2, int d3, int f1, int f2, int f3, boolean override){
+  if(conn == 5 || override){
+    aj.hud("splash",url,title,sub,str(d1),str(d2),str(d3),str(f1),str(f2),str(f3));
+    isLeft = false;
+    isRight = false;
+  }
+}
 
-void newQuestion(String goodCallback, String badCallback){
-  qHover = -1;
-  qSize = 45.5;
-  qAnswerSize = 40;
-  qWidth = width/10*9;
-  qHeight = height/10*9;
-  
-  qCorrectAnswer = 2;
-  
-  String qTText = "Did you know, if you cut off your left arm, your right arm would be left? Don't worry though, you will (JUSTIN WAS HERE) be all right. [insert question here] The quick brown fox jumped over the lazy dog! When does 1+1 equal three? ";
-  String qTAnswers_0 = "One pluse one equals three when you read 1984 by George Orwell";
-  String qTAnswers_1 = "One pluse one equals three for large values of 1";
-  String qTAnswers_2 = "One pluse one doesn't equal three";
-  String qTAnswers_3 = "One pluse one equals three when a cop says it does. Stop resisting! I'm-a light you up!";
-  
-  boolean resize = true;
-  while(resize){
-    qText = simpleTextCrush(qTText,qSize,qWidth);
-    qAnswers[0] = simpleTextCrush(qAnswerLabels[0]+qTAnswers_0,qAnswerSize,qWidth);
-    qAnswers[1] = simpleTextCrush(qAnswerLabels[1]+qTAnswers_1,qAnswerSize,qWidth);
-    qAnswers[2] = simpleTextCrush(qAnswerLabels[2]+qTAnswers_2,qAnswerSize,qWidth);
-    qAnswers[3] = simpleTextCrush(qAnswerLabels[3]+qTAnswers_3,qAnswerSize,qWidth);
-    
-    float tempH = simpleTextHeight(qText, qSize) + qSize + qAnswerSize*float(qAnswers.length-1);
-    for(int i = 0; i < qAnswers.length; i++){
-      tempH += simpleTextHeight(qAnswers[i], qAnswerSize);
-    }
-    if(tempH > qHeight){
-      qSize-=.5;
-      qAnswerSize = qSize/5*4;
-    } else {
-      resize = false;
+void noSplash(boolean override){
+  if(conn == 5 || override){
+    aj.hud("splash");
+  }
+}
+
+void updateTips(){
+  for(int i = tips.length-1; i >= 0; i--){
+    tips[i].display();
+  }
+}
+
+PVector MID_SCREEN;
+class Tip{
+  PVector sv;
+  PVector v;
+  float r;
+  String text;
+  float fade;
+  boolean active = true;
+  String id = "tip"+str(floor(random(10000)));
+  Tip(float x, float y, float tr, String ttext, float tfade) {
+    v = new PVector(x,y);
+    r = tr; text = ttext; fade = tfade;
+    MID_SCREEN = new PVector(width/2,height/2);
+  }
+  void display(){
+    sv = pos2Screen(new PVector(v.x,v.y));
+    if(pointDistance(v,player.snap.v) < r){
+      aj.hud("tip",id,str(pointDir(MID_SCREEN, sv)),str(sv.x),str(sv.y),text,str(fade));
     }
   }
-  
-  qGoodCallback = goodCallback;
-  qBadCallback = badCallback;
 }
 
-void clickQuestion(){
-  if(mouseClicked){
-    if(qHover > -1){
-      if(qLastFade >= 255){
-        if(qHover == qCorrectAnswer){
-          tryCommand(qGoodCallback,"");
-        } else {
-          tryCommand(qBadCallback,"");
-        }
-        mouseClicked = false;
-        qHover = -1;
-      }
-    }
-  }
-  
-  
-}
 
-void drawQuestion(float fade){
-  qLastFade = fade;
-  float yPointer = (height-qHeight)/2 + qSize/2;
-  
-  textMarkup(qText, qSize, (width-qWidth)/2, yPointer, 255, fade, false);
-  
-  yPointer += simpleTextHeight(qText, qSize) + qSize/2 + qAnswerSize/2;
-  
-  qHover = -1;
-  for(int i = 0; i < qAnswers.length; i++){
-    if(mouseY > yPointer-qAnswerSize/2+qAnswerSize/5-qHoverPad){
-      if(mouseY < yPointer-qAnswerSize/2+qAnswerSize/5+simpleTextHeight(qAnswers[i], qAnswerSize)+qHoverPad){
-        if(mouseX > (width-qWidth)/2-qHoverPad){
-          if(mouseX < (width-qWidth)/2+simpleTextWidth(qAnswers[i], qAnswerSize)+qHoverPad){
-            qHover = i;
-            fill(0,100);
-            noStroke();
-            rect((width-qWidth)/2-qHoverPad,yPointer-qAnswerSize/2+qAnswerSize/15-qHoverPad,simpleTextWidth(qAnswers[i], qAnswerSize)+qHoverPad*2,simpleTextHeight(qAnswers[i], qAnswerSize)+qHoverPad*2,qHoverPad);
-          }
-        }
-      }
-    }
-    textMarkup(qAnswers[i], qAnswerSize, (width-qWidth)/2, yPointer, 255, fade, false);
-    yPointer += simpleTextHeight(qAnswers[i], qAnswerSize) + qAnswerSize;
-  }
-  
-  noFill();
-  stroke(255);
-  strokeWeight(3);
-}
+
 Mimic[] mimicIDs = new Mimic[0];
 int maxMimicID = -1;
 void setupMimics(){
@@ -2207,6 +1658,7 @@ void updateEntities(){
     Mimic tempM = (Mimic) mimics.get(i);
     tempM.update();
   }
+  println("updating entities");
 }
 void drawEntities(){
   for (int i = 0; i < mimics.size(); i++) {
@@ -2251,6 +1703,7 @@ class Mimic {
     img = loadImage("D/player.png");
   }
   void update(){
+    
     
     if(type.equals("otherPlayer")){
       if(MimicDess.size() > 0){
@@ -2315,21 +1768,27 @@ class Mimic {
         imp = 1;
       }
       float[] inputs = { imp,des,imp2,fireDes };
-      snap = snap.simulate(1,inputs,true);
-      
-      
-      movePackets.add(new SnapInput(imp,des,imp2,fireDes));
-      connData += "[\"MOVE\",";
-      SnapInput pack;
-      for (int i = movePackets.size() - 1; i >= 0; i--) {
-        pack = (SnapInput) movePackets.get(i);
-        if(pack.id > movePacketResponseId){
-          connData += "["+pack.id+","+pack.val[0]+","+pack.val[1]+","+pack.val[2]+","+pack.val[3]+"],";
-        } else {
-          movePackets.remove(i);
+      println(movePackets.size());
+      println(movePacketResponseId-movePacketId);
+      if(conn == 5 && movePacketId-movePacketResponseId < 100){
+        snap = snap.simulate(1,inputs,true);
+        
+        
+        movePackets.add(new SnapInput(imp,des,imp2,fireDes));
+        
+        connData += "[\"MOVE\",";
+        SnapInput pack;
+        for (int i = movePackets.size() - 1; i >= 0; i--) {
+          pack = (SnapInput) movePackets.get(i);
+          if(pack.id > movePacketResponseId){
+            connData += "["+pack.id+","+pack.val[0]+","+pack.val[1]+","+pack.val[2]+","+pack.val[3]+"],";
+          } else {
+            movePackets.remove(i);
+          }
         }
+        connData = connData.substring(0,connData.length()-1)+"],";
       }
-      connData = connData.substring(0,connData.length()-1)+"],";
+      
       
     }
   }
@@ -3145,6 +2604,7 @@ void refreshWorld(){
   gridBufferPos = new PVector(wViewCenter.x,wViewCenter.y);
   
   updateSpecialBlocks();
+  updateMinimap();
   
 }
 
@@ -3592,7 +3052,7 @@ void hitBlock(float x, float y, int hardness, boolean sent){
         updates.add(new PVector(int(x),int(y),-1));
       }
       if(aGS1DS(gBBreakCommand,aGS(wU,x,y)) != null){
-        tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
+        //tryCommand(StringReplaceAll(StringReplaceAll(aGS1DS(gBBreakCommand,aGS(wU,x,y)),"_x_",str(int(x))),"_y_",str(int(y))),"");//aGS1DS(gBBreakCommand,wUP[i][j])
       }
       color tempC = aGS1DC(gBColor,aGS(wU,x,y));
       aSS(wU,x,y,aGS1D(gBBreakType,aGS(wU,x,y)));

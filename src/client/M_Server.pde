@@ -13,6 +13,7 @@ void updateEntities(){
     Mimic tempM = (Mimic) mimics.get(i);
     tempM.update();
   }
+  println("updating entities");
 }
 void drawEntities(){
   for (int i = 0; i < mimics.size(); i++) {
@@ -57,6 +58,7 @@ class Mimic {
     img = loadImage("D/player.png");
   }
   void update(){
+    
     
     if(type.equals("otherPlayer")){
       if(MimicDess.size() > 0){
@@ -121,21 +123,27 @@ class Mimic {
         imp = 1;
       }
       float[] inputs = { imp,des,imp2,fireDes };
-      snap = snap.simulate(1,inputs,true);
-      
-      
-      movePackets.add(new SnapInput(imp,des,imp2,fireDes));
-      connData += "[\"MOVE\",";
-      SnapInput pack;
-      for (int i = movePackets.size() - 1; i >= 0; i--) {
-        pack = (SnapInput) movePackets.get(i);
-        if(pack.id > movePacketResponseId){
-          connData += "["+pack.id+","+pack.val[0]+","+pack.val[1]+","+pack.val[2]+","+pack.val[3]+"],";
-        } else {
-          movePackets.remove(i);
+      println(movePackets.size());
+      println(movePacketResponseId-movePacketId);
+      if(conn == 5 && movePacketId-movePacketResponseId < 100){
+        snap = snap.simulate(1,inputs,true);
+        
+        
+        movePackets.add(new SnapInput(imp,des,imp2,fireDes));
+        
+        connData += "[\"MOVE\",";
+        SnapInput pack;
+        for (int i = movePackets.size() - 1; i >= 0; i--) {
+          pack = (SnapInput) movePackets.get(i);
+          if(pack.id > movePacketResponseId){
+            connData += "["+pack.id+","+pack.val[0]+","+pack.val[1]+","+pack.val[2]+","+pack.val[3]+"],";
+          } else {
+            movePackets.remove(i);
+          }
         }
+        connData = connData.substring(0,connData.length()-1)+"],";
       }
-      connData = connData.substring(0,connData.length()-1)+"],";
+      
       
     }
   }

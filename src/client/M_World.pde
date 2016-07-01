@@ -167,6 +167,7 @@ void refreshWorld(){
   gridBufferPos = new PVector(wViewCenter.x,wViewCenter.y);
   
   updateSpecialBlocks();
+  updateMinimap();
   
 }
 

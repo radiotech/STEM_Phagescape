@@ -1,6 +1,8 @@
 /* @pjs font=/D/monofonto.ttf; */
 
 //Entity testEntity;
+
+
 int lLevel = 0;
 PVector lCheckPoint = new PVector(0,0);
 PVector lCheckPoint2 = new PVector(0,0);
@@ -15,8 +17,8 @@ int pid = -1;
 int server = -1;
 int conn = 0;
 String connData = "";
-int movePacketId = 0;
-int movePacketResponseId = -1;
+int movePacketId = 1;
+int movePacketResponseId = -5;
 ArrayList<SnapInput> movePackets = new ArrayList();
 String mobSyncs;
 
@@ -64,11 +66,10 @@ boolean showChat = true;
   
   //addHUDItem(new HUDItem(width/2,height/2,width/4,height/4,10));
   //addHUDItem(new HUDItem(width/3,height/3,width/4,height/4,100));
-  aj.hud("add","#hud","hid");
-  aj.hud("css","#hid","color","blue","opacity","0.5");
   
   aj.hud("setupChat");
   
+  splash("http://atextures.com/wp-content/uploads/2014/08/Nature-Leaves-Background-4-625x468.jpg","Loading","",0,0,0,0,1000,0,true);
   //String ajx = aj.hud("add","#chat","inputBox");
   //aj.hud("class",ajx,"chat");
   //aj.hud("input",ajx);
@@ -76,6 +77,8 @@ boolean showChat = true;
   
   
   scaleView(10); //scale the view to fit the entire map
+  
+  
   
   shadows = false;
   centerView(player.snap.v.x,player.snap.v.y); //center the view in the middle of the world
@@ -110,9 +113,21 @@ void processServerOutput(){
       u = updates[itt];
       String[] parts = split(u,":");
       if(parts[0].equals("NOCONN")){
+        splash(getBG(),"Connection Lost","Trying to reconnect to the server...",0,0,0,200,2000,4000,true);
         conn = 0;
+        pid = -1;
+        mimics.clear();
+        mimics.add(player);
+        maxMimicID = -1;
+        mimicIDs = new Mimic[0];
+        println("CONN IS NOW 0");
+        connData = "";
+        movePackets.clear();
+        movePacketId = 1;
+        movePacketResponseId = -5;
       } else if(parts[0].equals("CONN")){
         conn = 1;
+        println("CONN IS NOW 1");
       } else if(parts[0].equals("WORLD")){
         int skips = 0;
         int tempInt = 0;
@@ -136,8 +151,9 @@ void processServerOutput(){
         if(conn == 0){conn++;}
       } else if(parts[0].equals("READY")){
         conn = 5;
+        println("CONN IS NOW 5");
       } else if(parts[0].equals("MOB")){
-        println(parts[1]);
+        //println(parts[1]);
         Mimic mob = getMimic(int(parts[1]));
         if(mob.isNew){
           mob.isNew = false;
@@ -170,7 +186,7 @@ void processServerOutput(){
             }
             MimicDes Msource;
             if(mob.MimicDess.size() == 0){
-              println("ERROR!!");
+              //println("ERROR!!");
               Msource = new MimicDes(-1,mob.snap.v.x,mob.snap.v.y,mob.snap.dir,mob.snap.health);
             } else {
               Msource = mob.MimicDess.get(0);
@@ -220,6 +236,13 @@ void processServerOutput(){
           gBStrength[int(parts[i*6+1])] = int(parts[i*6+6]);
           //println(int(parts[i*6+1]));
         }
+      } else if(parts[0].equals("TIPS")){
+        int limit = floor((parts.length-1)/5);
+        tips = new Tip[limit];
+        for(int i = 0; i < limit; i++){
+          tips[i] = new Tip(float(parts[i*5+1]),float(parts[i*5+2]),float(parts[i*5+3]),parts[i*5+4],float(parts[i*5+5]));
+          //println(int(parts[i*6+1]));
+        }
       } else if(parts[0].equals("PID")){
         pid = int(parts[1]);
       } else if(parts[0].equals("BHITM")){
@@ -239,7 +262,7 @@ void processServerOutput(){
         Mimic mob = getMimic(int(parts[1]));
         if(mob.MimicDess.size() > 0 && ((MimicDes)mob.MimicDess.get(0)).id >= int(parts[2])){
           updates = append(updates,parts[3].replaceAll("%%%",":")+";");
-          println(parts[3].replaceAll("%%%",":"));
+          //println(parts[3].replaceAll("%%%",":"));
         } else {
           mobSyncs += "MOBSYNC:"+parts[1]+":"+parts[2]+":"+parts[3]+";";
         }
@@ -276,13 +299,14 @@ void processServerOutput(){
         }
         particleEffect(int(parts[1]),int(parts[2]),float(parts[3]),float(parts[4]),float(parts[5]),float(parts[6]),cols,sizes,speeds,shapes,lifespans);
       } else if(parts[0].equals("PROPS")){
-        println("Recieved Props");
+        noSplash(true);
+        //println("Recieved Props");
         String[] components;
         for(int i = 1; i < parts.length; i++){
           components = split(parts[i],"=");
           if(components.length > 1){
             if(int(components[0]) < 100){
-              println("Proper Format");
+              //println("Proper Format");
               switch(int(components[0])){
                 case 0: scaleView(float(components[1])); break;
                 case 1: fillOnLoad = boolean(int(components[1])); break;
@@ -302,7 +326,7 @@ void processServerOutput(){
       } else if(parts[0].equals("MOB_DIE")){
         killMimic(int(parts[1]));
       } else if(parts[0].equals("RESET")){
-        println("REVIEVED RESET");
+        //println("REVIEVED RESET");
         wUDamage = new int[wSize][wSize];
         gBColor = new color[256];
         gBIsSolid = new boolean[256];
@@ -312,8 +336,8 @@ void processServerOutput(){
         maxMimicID = -1;
         mimics.add(player);
       } else if(parts[0].equals("MOVED")){
-        
         if(int(parts[1]) >= movePacketResponseId){
+          println("updated response id to "+parts[1]);
           float wasX = player.snap.v.x;
           float wasY = player.snap.v.y;
           
@@ -330,7 +354,7 @@ void processServerOutput(){
             }
           }
           player.snap.health = int(parts[8]);
-          println(u);
+          //println(u);
           player.snap.hSteps = int(parts[9]);
           player.snap.fireCoolDown = float(parts[10]);
           player.snap.bullets = new SnapBullet[0];
@@ -362,6 +386,9 @@ void processServerOutput(){
 }
 
 /*LOCK*/void safeAsync(){ //called 25 times each second with an increasing number, n (things that need to be timed correctly, like moveing something over time)
+  
+  
+  
   try{
     aj.forceUpdateServer();
   }catch(Throwable e){}
@@ -392,24 +419,24 @@ void processServerOutput(){
       }
     }
   }
-
-  if(fn%10 == 0){
-    
-  }
   
   if(fn%25 == 0){ //every second (the % means remainder, so if n is divisible by 25, do the following... since n goes up by 25 each second, it is divisible by 25 once each second)
     //println(frameRate); //display the game FPS
-    aj.hud("act","#hid","700","left",str(mouseX)+"px");
-    if(mouseY > height-50){
-      //aj.hud("act","#hid","700","background-color","rgba(0,0,0,0)");
-      aj.hud("del","#hid","700");
-    }
   }
   if(fn%100 == 0){
-    
+    if(random(100) < 10){
+      splash(getBG(),"Hiii!!!!","This is an anoying popup!",0,0,0,1000,1000,1000,false);
+    } else {
+      noSplash(false);
+    }
+  
     //println("Beat");
     
   } //every ten seconds (similar idea applies here)
+}
+
+String getBG(){
+  return "http://www.hdwallpaperbackgrounds.net/wp-content/uploads/2016/06/Cool-Background-"+str(floor(random(15)+1))+".jpg";
 }
 
 /*LOCK*/void safeUpdate(){ //called before anything has been drawn to the screen (update the world before it is drawn)

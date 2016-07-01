@@ -98,7 +98,6 @@ void M_Setup(){
   textSize(20);
   safePreSetup();
   
-  setupHUD();
   setupWorld();
   setupDebug();
   setupMimics();
@@ -167,21 +166,22 @@ void keyPressed(){
     isI = true;
   }
   
-  if(key == 'F' || key == 'f') {
-    
-  }
-  
   if(key == '+') {
-    if(miniMapZoomSmall < 20){
-      miniMapZoomSmall++;
+    if(miniMapZoom < 20){
+      miniMapZoom++;
     }
-    miniMapZoomLarge = 4;
+    updateMinimap();
   }
   if(key == '-') {
-    if(miniMapZoomSmall > 0){
-      miniMapZoomSmall--;
+    if(miniMapZoom > 0){
+      miniMapZoom--;
     }
-    miniMapZoomLarge = 0;
+    updateMinimap();
+  }
+  if(key == 'M' || key == 'm'){
+    miniMapScale = 6;
+    updateMinimap();
+    aj.hud("mapScale","1");
   }
   
   safeKeyPressed();
@@ -192,6 +192,11 @@ void keyReleased(){
   safeKeyReleased();
   if(key == 'i' || key == 'I'){
     isI = false;
+  }
+  if(key == 'M' || key == 'm'){
+    miniMapScale = 2;
+    updateMinimap();
+    aj.hud("mapScale","0");
   }
   
 }
@@ -212,10 +217,10 @@ void mouseReleased(){
   
   if(mouseButton == RIGHT){
     isRight = false;
-    println("Right");
+    //println("Right");
   } else if(mouseButton == LEFT){
     isLeft = false;
-    println("Left");
+    //println("Left");
   }
   
   safeMouseReleased();
@@ -431,6 +436,7 @@ void manageAsync(){
     updateWorld();
     updateEntities();
     updateSound();
+    updateTips();
     if(fn % 13 == 0){
       updateSpawners();
     }
