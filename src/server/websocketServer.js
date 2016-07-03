@@ -3,7 +3,8 @@ var express = require('express');
 var app = express();  
 var server = require('http').Server(app);  
 var io = require('socket.io')(server);
-var o = require("./D/coreJS/tabs.js")
+var o = require("./D/coreJS/tabs.js");
+var request = require("request");
 
 o.tabs.forEach(function(tab){
 	o = require("./D/coreJS/"+tab+".js")(o);
@@ -16,8 +17,19 @@ var e = -1;
 app.use(express.static(__dirname));
 
 e = o.createEnv();
+e.getConfig = function(callback){
+	request({
+		url: "https://spreadsheets.google.com/feeds/list/170ikQITKF3bz-EGAPZjS6gun3FVdCyLRcEVtblLWx4Y/od6/public/full?alt=json",
+		json: true
+	}, function (error, response, body) {
+		if (!error && response.statusCode === 200) {
+			callback(JSON.parse(body.feed.entry[0].title.$t));
+		}
+	})
+}
 e._intervalId = setInterval(e.run, 0);
 console.log("Started Environment Loop");
+
 
 
 server.listen(8001);

@@ -55,7 +55,7 @@ class Mimic {
     snap.v.y = 50;
 
     id = tId;
-    img = loadImage("D/player.png");
+    img = loadImage(aj.D()+"general/entities/player.png");
   }
   void update(){
     

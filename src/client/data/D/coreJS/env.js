@@ -3,6 +3,10 @@ module.exports = function(o) {
 	o.createEnv = function () {
 		var e = new o.Env();
 		e.fps = 25;
+		e.config = undefined;
+		e.getConfig = function(a){
+			console.log("error: called getConfig before it was re-defined in env.js");
+		}
 		e.run = (function () {
 			var loops, skipTicks, maxFrameSkip, nextGameTick;
 			loops = 0;
@@ -18,6 +22,8 @@ module.exports = function(o) {
 				}
 			};
 		}());
+		e.GCWRAP = function(){e.getConfig(function(a){e.config = a;});};
+		setTimeout((e.GCWRAP), 1);
 		return e;
 	};
 	

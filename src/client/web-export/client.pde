@@ -1,4 +1,4 @@
-/* @pjs font=/D/monofonto.ttf; */
+/* @ DISABLED pjs font=/D/monofonto.ttf; */
 
 //Entity testEntity;
 
@@ -424,7 +424,7 @@ void processServerOutput(){
     //println(frameRate); //display the game FPS
   }
   if(fn%100 == 0){
-    if(random(100) < 10){
+    if(random(100) < .1){
       splash(getBG(),"Hiii!!!!","This is an anoying popup!",0,0,0,1000,1000,1000,false);
     } else {
       noSplash(false);
@@ -861,8 +861,6 @@ PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter = new PVector(50,50);
-PFont fontNorm;
-PFont fontBold;
 int[][] distanceMatrix = new int[300][300];
 boolean shadows = false; //are there shadows?
 int lightStrength = 10;
@@ -884,10 +882,8 @@ void M_Setup(){
     aj.Setup(dataPath("")+"\\D\\");
     println("DONE WITH SETUP!");
   }catch(Throwable e){}
-  fontNorm = createFont(aj.D()+"monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
-  fontBold = createFont(aj.D()+"monofonto.ttf",18);//"Monospaced.bold-23.vlw"
-  HUDImage = loadImage(aj.D()+"shadowHUD.png");
-  arrowImg = loadImage(aj.D()+"arrow.png");
+  HUDImage = loadImage(aj.D()+"general/effects/shadowHUD.png");
+  arrowImg = loadImage(aj.D()+"general/effects/arrow.png");
   frameRate(frameRateGoal);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);
@@ -1631,7 +1627,7 @@ class Tip{
   Tip(float x, float y, float tr, String ttext, float tfade) {
     v = new PVector(x,y);
     r = tr; text = ttext; fade = tfade;
-    MID_SCREEN = new PVector(width/2,height/2);
+    MID_SCREEN = new PVector(width/2,-height*10);
   }
   void display(){
     sv = pos2Screen(new PVector(v.x,v.y));
@@ -1700,7 +1696,7 @@ class Mimic {
     snap.v.y = 50;
 
     id = tId;
-    img = loadImage("D/player.png");
+    img = loadImage(aj.D()+"general/entities/player.png");
   }
   void update(){
     

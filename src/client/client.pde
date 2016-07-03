@@ -1,4 +1,4 @@
-/* @pjs font=/D/monofonto.ttf; */
+/* @ DISABLED pjs font=/D/monofonto.ttf; */
 
 //Entity testEntity;
 
@@ -424,7 +424,7 @@ void processServerOutput(){
     //println(frameRate); //display the game FPS
   }
   if(fn%100 == 0){
-    if(random(100) < 10){
+    if(random(100) < .1){
       splash(getBG(),"Hiii!!!!","This is an anoying popup!",0,0,0,1000,1000,1000,false);
     } else {
       noSplash(false);

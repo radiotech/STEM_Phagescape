@@ -83,7 +83,7 @@ module.exports = function(o) {
 		o.genCircle(w, x + rounding, y + h - rounding, rounding, b);
 		o.genCircle(w, x + wi - rounding, y + h - rounding, rounding, b);
 	}
-	o.genRandomProb = function(w, from, to, prob) {
+	o.genRandomProb = function(w, fromb, to, prob) {
 		var totProb, tRand, k, i, j;
 		totProb = 0;
 		for (i = 0; i < prob.length; i++) {
@@ -91,7 +91,7 @@ module.exports = function(o) {
 		}
 		for (i = 0; i < w.wSize; i++) {
 			for (j = 0; j < w.wSize; j++) {
-				if (w.wU[i][j] == from) {
+				if (w.wU[i][j] == fromb) {
 					tRand = Math.random() * totProb;
 					k = 0;
 					while (tRand > 0) {
@@ -123,12 +123,24 @@ module.exports = function(o) {
 			}
 		}
 	}
-	o.genReplace = function(w, from, to) {
+	o.genReplace = function(w, fromb, to) {
 		var i, j;
 		for (i = 0; i < w.wSize; i++) {
 			for (j = 0; j < w.wSize; j++) {
-				if (w.wU[i][j] == from) {
+				if (w.wU[i][j] == fromb) {
 					w.wU[i][j] = to;
+				}
+			}
+		}
+	}
+	o.genReplaceNear = function(w, fromb, to, x, y, r) {
+		var i, j;
+		for (i = 0; i < w.wSize; i++) {
+			for (j = 0; j < w.wSize; j++) {
+				if (w.wU[i][j] == fromb) {
+					if(o.pointDistance(x,y,i+0.5,j+0.5) <= r){
+						w.wU[i][j] = to;
+					}
 				}
 			}
 		}
@@ -186,7 +198,7 @@ module.exports = function(o) {
 				}
 			});
 		} catch (ex) {
-			o.println(ex.stack);
+			console.log(ex.stack);
 		}
 		return true;
 	}
@@ -222,6 +234,39 @@ module.exports = function(o) {
 				}
 			}
 		}
+	}
+	
+	o.genGetBlockSpots = function(w, block){
+		var i, j;
+		var out = [];
+		for (i = 0; i < w.wSize; i++) {
+			for (j = 0; j < w.wSize; j++) {
+				if(w.wU[i][j] == block){
+					out.push([i,j]);
+				}
+			}
+		}
+		return out;
+	}
+	
+	o.genPairSpots = function(spots){
+		var i, j, pairNum, index, value, pairs, tempVal;
+		pairs = [];
+		pairNum = Math.floor(spots.length/2);
+		for(i = 0; i < pairNum; i++){
+			index = -1;
+			value = Infinity;
+			for(j = (i*2)+1; j < spots.length; j++){
+				tempVal = o.pointDistance(spots[i*2][0],spots[i*2][1],spots[j][0],spots[j][1]);
+				if(tempVal < value){
+					value = tempVal;
+					index = j;
+				}
+			}
+			pairs.push([(spots[i*2][0]+spots[index][0])/2,(spots[i*2][1]+spots[index][1])/2]);
+			spots[index] = spots[i*2+1];
+		}
+		return pairs;
 	}
 	
 	return o;

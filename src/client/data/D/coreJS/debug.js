@@ -15,7 +15,7 @@ module.exports = function(o) {
 				console.log(str);
 			}
 		} catch (ex) {
-			// java output methods
+			console.log(ex.stack);
 		}
 	}
 	

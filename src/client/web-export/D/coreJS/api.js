@@ -20,7 +20,7 @@ module.exports = function(o) {
 		try {
 			return tMat[Math.max(0, Math.min(tMat.length - 1, Math.floor(tA)))][Math.max(0, Math.min(tMat[0].length - 1, Math.floor(tB)))];
 		} catch (ex) {
-			// o.println(ex.stack);
+			console.log(ex.stack);
 		}
 	}
 	o.aGS1DB = function(tMat, tA) { // array get safe
@@ -220,11 +220,17 @@ module.exports = function(o) {
 		return hitMobL;
 	}
 	
-		o.addGeneralBlock = function(w, i, col, solid, hard) {
+	o.addGeneralBlock = function(w, i, col, solid, hard) {
 		w.gb.isSolid[i] = solid;
 		w.gb.color[i] = col;
 		w.gb.strength[i] = hard;
 	}
-	
+	o.fixConfigName = function(name){
+		if(name.indexOf('.') != -1){
+			name = name.substring(name.indexOf('.')+1);
+			name = name.substring(name.indexOf('.')+1);
+		}
+		return name.replace(/_/g, " ");;
+	}
 	return o;
 }

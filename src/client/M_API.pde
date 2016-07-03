@@ -65,8 +65,6 @@ PVector moveToAnimateStart;
 PVector moveToAnimateEnd;
 PVector moveToAnimateTime = new PVector(0,0);
 PVector wViewCenter = new PVector(50,50);
-PFont fontNorm;
-PFont fontBold;
 int[][] distanceMatrix = new int[300][300];
 boolean shadows = false; //are there shadows?
 int lightStrength = 10;
@@ -88,10 +86,8 @@ void M_Setup(){
     aj.Setup(dataPath("")+"\\D\\");
     println("DONE WITH SETUP!");
   }catch(Throwable e){}
-  fontNorm = createFont(aj.D()+"monofontolight.ttf",18);//"Monospaced.norm-23.vlw"
-  fontBold = createFont(aj.D()+"monofonto.ttf",18);//"Monospaced.bold-23.vlw"
-  HUDImage = loadImage(aj.D()+"shadowHUD.png");
-  arrowImg = loadImage(aj.D()+"arrow.png");
+  HUDImage = loadImage(aj.D()+"general/effects/shadowHUD.png");
+  arrowImg = loadImage(aj.D()+"general/effects/arrow.png");
   frameRate(frameRateGoal);
   strokeCap(SQUARE);
   textAlign(LEFT,CENTER);

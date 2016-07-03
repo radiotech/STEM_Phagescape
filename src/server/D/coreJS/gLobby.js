@@ -45,7 +45,7 @@ module.exports = function(o) {
 		o.addGeneralBlock(w, 104, [ 0, 200, 50 ], false, 0); // game 4
 		o.addGeneralBlock(w, 105, [ 0, 250, 0 ], false, 0); // game 5
 		
-		o.addTip(w, 46.5, 46.5, 10, "This is a server-hosted popup box!", 0.5);
+		//o.addTip(w, 46.5, 46.5, 10, "This is a server-hosted popup box!", 0.5);
 
 		g.setupLobby(w);
 		o.genRandomProb(w, 15, [ 4, 6, 15, 5, 10 ], [ 8, 4, 200, 1, 1 ]);
@@ -124,11 +124,29 @@ module.exports = function(o) {
 		}
 	};
 	o.game[0].setupLobby = function (w) {
+		var i, dir, flip, width, space, shift;
 		if (w.level == 0) {
 			o.genLoadMap(w, o.mapLobbyDimension[0]);
+			for(i = 0; i < 8; i++){
+				dir = i*Math.PI/4;
+				o.addTip(w,50+Math.cos(dir)*15,50+Math.sin(dir)*15,15.1,(w.parent.config[0][i] || {"-1":"Store"})[-1],0.5);
+			}
 		} else if (w.level == 1) {
 			o.genLoadMap(w, o.mapLobbyWing[w.wing % 2]);
 			o.genRotateMap(w, Math.floor(w.wing / 2));
+			
+			dir = w.wing*Math.PI/4;
+			width = 8;
+			space = 13;
+			shift = 2;
+			for(i = 0; i < 14; i++){
+				flip = Math.PI/2*((i%2)*2-1);
+				itt = Math.floor(i/2)
+				//if(w.parent.config[0][w.wing][i*2] != undefined){
+					o.addTip(w,50+Math.cos(dir)*(space*(i-3)-shift)+Math.cos(dir+flip)*width,50+Math.sin(dir)*(space*(i-3)-shift)+Math.sin(dir+flip)*width,space+2,(w.parent.config[0][w.wing][i] || {"-1":"LOCKED "+i})[-1],0.5);
+				//}
+				
+			}
 		} else if (w.level == 2) {
 			o.genLoadMap(w, o.mapLobbyHall[w.wing % 2 + w.hall % 2 * 2]);
 			o.genRotateMap(w, Math.floor(w.wing / 2));

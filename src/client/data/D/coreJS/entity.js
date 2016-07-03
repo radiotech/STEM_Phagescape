@@ -238,7 +238,11 @@ module.exports = function(o) {
 				if (mob.listJumps.length > 0) {
 					s = mob.snap;
 					mob.listJumps.forEach(function (jump) {
-						eval(jump);
+						try{
+							jump();
+						} catch(ex){
+							console.log("Error!: "+ex.name+" "+ex.message);
+						}
 					});
 					if (mob.src != undefined) {
 						w = w.parent[mob.src.worldID];

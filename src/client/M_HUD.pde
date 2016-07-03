@@ -151,7 +151,7 @@ class Tip{
   Tip(float x, float y, float tr, String ttext, float tfade) {
     v = new PVector(x,y);
     r = tr; text = ttext; fade = tfade;
-    MID_SCREEN = new PVector(width/2,height/2);
+    MID_SCREEN = new PVector(width/2,-height*10);
   }
   void display(){
     sv = pos2Screen(new PVector(v.x,v.y));
