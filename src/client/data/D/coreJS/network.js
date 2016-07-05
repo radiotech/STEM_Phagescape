@@ -110,7 +110,7 @@ module.exports = function(o) {
 				e = w;
 				if (src.userId == undefined) {
 					o.output("New User!");
-					src.userId = Math.floor(Math.random() * 10000);
+					src.userId = "User_"+Math.floor(Math.random() * 10000);
 					src.updates = "";
 					src.worldID = item[1];
 					e.users[src.userId] = src;
@@ -136,6 +136,12 @@ module.exports = function(o) {
 					o.out(o.outWorldMobs(e[src.worldID], src.playerE.id), src, -1);
 					o.out("PID:" + src.playerE.id + ";", src, -1);
 				}
+			} else if (item[0] == "CHAT") {
+				item[1] = "CHAT:<font color=\"yellow\">&lt\\b"+src.userId+"&gt</font>\ "+item[1]+";";
+				console.log(item[1]);
+				w.users.forEach(function (username) {
+					w.parent.users[username].updates += item[1];
+				});
 			} else if (item[0] == "DISCONN") {
 				e = w;
 				if (src.playerE != undefined) {

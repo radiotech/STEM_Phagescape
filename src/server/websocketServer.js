@@ -18,14 +18,23 @@ app.use(express.static(__dirname));
 
 e = o.createEnv();
 e.getConfig = function(callback){
+	console.log("Attempting to download config data...");
+	function resultFun(error, response, body) {
+		if (!error && response.statusCode === 200) {
+			callback(JSON.parse(body.feed.entry[0].title.$t));
+			console.log("Config data loaded!");
+		} else {
+			console.log("Error getting config data, trying again...");
+			request({
+				url: "https://spreadsheets.google.com/feeds/list/170ikQITKF3bz-EGAPZjS6gun3FVdCyLRcEVtblLWx4Y/od6/public/full?alt=json",
+				json: true
+			}, resultFun)
+		}
+	}
 	request({
 		url: "https://spreadsheets.google.com/feeds/list/170ikQITKF3bz-EGAPZjS6gun3FVdCyLRcEVtblLWx4Y/od6/public/full?alt=json",
 		json: true
-	}, function (error, response, body) {
-		if (!error && response.statusCode === 200) {
-			callback(JSON.parse(body.feed.entry[0].title.$t));
-		}
-	})
+	}, resultFun)
 }
 e._intervalId = setInterval(e.run, 0);
 console.log("Started Environment Loop");

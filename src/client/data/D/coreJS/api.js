@@ -230,7 +230,7 @@ module.exports = function(o) {
 			name = name.substring(name.indexOf('.')+1);
 			name = name.substring(name.indexOf('.')+1);
 		}
-		return name.replace(/_/g, " ");;
+		return name.replace(/_/g, " ");
 	}
 	return o;
 }

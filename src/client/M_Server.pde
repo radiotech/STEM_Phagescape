@@ -13,7 +13,7 @@ void updateEntities(){
     Mimic tempM = (Mimic) mimics.get(i);
     tempM.update();
   }
-  println("updating entities");
+  //println("updating entities");
 }
 void drawEntities(){
   for (int i = 0; i < mimics.size(); i++) {
@@ -123,8 +123,8 @@ class Mimic {
         imp = 1;
       }
       float[] inputs = { imp,des,imp2,fireDes };
-      println(movePackets.size());
-      println(movePacketResponseId-movePacketId);
+      //println(movePackets.size());
+      //println(movePacketResponseId-movePacketId);
       if(conn == 5 && movePacketId-movePacketResponseId < 100){
         snap = snap.simulate(1,inputs,true);
         

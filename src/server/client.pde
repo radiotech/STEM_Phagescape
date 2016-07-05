@@ -128,6 +128,15 @@ void processServerOutput(){
       } else if(parts[0].equals("CONN")){
         conn = 1;
         println("CONN IS NOW 1");
+      } else if(parts[0].equals("MYCHAT")){
+        println("CHAT: "+parts[1]);
+        connData = connData + "[\"CHAT\",\""+parts[1]+"\"],";
+      } else if(parts[0].equals("CHAT")){
+        println("CHAT: "+parts[1]);
+        parts[1] = parts[1].replaceAll("\\\\a",":");
+        parts[1] = parts[1].replaceAll("\\\\b",";");
+        parts[1] = parts[1].replaceAll("\\\\\\\\","\\");
+        aj.hud("chat",parts[1]);
       } else if(parts[0].equals("WORLD")){
         int skips = 0;
         int tempInt = 0;
@@ -337,7 +346,7 @@ void processServerOutput(){
         mimics.add(player);
       } else if(parts[0].equals("MOVED")){
         if(int(parts[1]) >= movePacketResponseId){
-          println("updated response id to "+parts[1]);
+          //println("updated response id to "+parts[1]);
           float wasX = player.snap.v.x;
           float wasY = player.snap.v.y;
           
@@ -1654,7 +1663,7 @@ void updateEntities(){
     Mimic tempM = (Mimic) mimics.get(i);
     tempM.update();
   }
-  println("updating entities");
+  //println("updating entities");
 }
 void drawEntities(){
   for (int i = 0; i < mimics.size(); i++) {
@@ -1764,8 +1773,8 @@ class Mimic {
         imp = 1;
       }
       float[] inputs = { imp,des,imp2,fireDes };
-      println(movePackets.size());
-      println(movePacketResponseId-movePacketId);
+      //println(movePackets.size());
+      //println(movePacketResponseId-movePacketId);
       if(conn == 5 && movePacketId-movePacketResponseId < 100){
         snap = snap.simulate(1,inputs,true);
         

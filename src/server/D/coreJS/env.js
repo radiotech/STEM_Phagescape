@@ -22,7 +22,8 @@ module.exports = function(o) {
 				}
 			};
 		}());
-		setTimeout(e.getConfig(function(a){e.config = a;}), 1);
+		e.GCWRAP = function(){e.getConfig(function(a){e.config = a;});};
+		setTimeout((e.GCWRAP), 1);
 		return e;
 	};
 	

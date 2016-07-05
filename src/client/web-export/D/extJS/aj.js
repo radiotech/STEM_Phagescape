@@ -37,7 +37,7 @@ var getConfig = function(callback){
 function AJ() {
 	
 	this.MP = function () {
-		return false;
+		return true;
 	};
 	this.isWeb = function () {
 		return true;
@@ -52,7 +52,7 @@ function AJ() {
 		$("#hudBody").html(html);
 	};
 	this.hud = function recurse() {
-		var i, j, k, size, a, ctx, props, proplen, args, $box, $div, $div2, $div3, $divId, $div2Id, $div3Id, $tip, $leaf, lastx, lasty, x, y, rx, ry, w, h, dir, dis, intervalId, intervalCount, intervalLeafId, interval;
+		var i, j, k, size, a, ctx, props, proplen, args, $box, $div, $div2, $div3, $divId, $div2Id, $div3Id, $tip, $leaf, lastx, lasty, x, y, rx, ry, w, h, dir, dis, intervalId, intervalCount, intervalLeafId, interval, minWid, $all, newId;
 		//document.getElementById("moveMe2").style.left = rnd+'px';
 		//document.getElementById("hudBody").innerHTML = html;
 		args = arguments;
@@ -98,86 +98,122 @@ function AJ() {
 			});
 			$("#chat").data("push",true);
 			break;
+		case "chat":
+			$box = $("#fakeInputBox");
+			$box.children("span").html(args[1]);
+			
+			minWid = $box.width() + 1;
+			$all = $("#inputBox").children(".chat");
+			if ($all.length === 0) {
+				newId = "m0";
+			} else {
+				newId = "m" + (parseInt(($all.attr('id')).substring(1), 10) + 1);
+			}
+			$("#inputBox").append("<div id='" + newId + "' class='hudDiv chat'><span class='hudSpan'>" + $box.children("span").html() + "</span></div>");
+			$box.children("span").html("");
+			$("#" + newId).append($all);
+			$("#" + newId).prop('contenteditable', false);
+			$("#" + newId).css("min-width", minWid);
+			setTimeout(function () {
+				$("#"+newId).addClass("chat-old");
+				if($("#chat").data("push") == false){
+					if($(".chat-old").length-$(".chat").length == -2){
+						$("#inputBox").animate({opacity:"0"},{
+							duration : 500,
+							queue : false
+						});
+					}
+					$("#"+newId).animate({opacity: "0"},{
+						duration : 500,
+						queue : false
+					});
+					
+				}
+				
+			}, 5000);
+			if($("#chat").data("push") == false){
+				$("#inputBox").animate({opacity:".4"},{
+					duration : 500,
+					queue : false
+				});
+			}
+			//$box.css("bottom", "-"+($box.height()+20-2)+"px");
+			//$("#hud").css("pointer-events", "none");
+			//$(".chat-old").stop();
+			//$(".chat-old").animate({opacity: "0"},500);
+			//$box.animate({
+			//	opacity: ".4"
+			//}, {
+			//	duration : 500,
+			//	queue : false
+			//});
+			//$("#chatInputSpan").off('blur');
+			//$("canvas").focus();
+			//$all.remove();
+			//serverOutput += "MYCHAT:0;"
+			//$("#chat").data("push",false);
+			break;
 		case "setupChat":
 			recurse("add", "#chat", "inputBox");
-			$div = $("#inputBox");
-			$div.css("bottom","-101px");
-			$div.addClass("chat");
+			recurse("add", "#chat", "fakeInputBox");
+			$("#inputBox").addClass("chat").children("span").attr('id', 'chatInputSpan').prop('contenteditable', true).addClass('spanInput');
+			$("#fakeInputBox").addClass("chat").children("span").addClass('spanInput');
+			$div = $(".chat");
 			$div.addClass("chatInput");
-			$div.children("span").prop('contenteditable', true);
-			$div.children("span").attr('id', 'chatInputSpan');
-			$div.children("span").addClass('spanInput');
+			$div.css("opacity","0");
+			$("#inputBox").css("bottom","-"+($("#inputBox").height()+20-2)+"px");
+			$("#fakeInputBox").css("bottom","200%");
 			$("#chat").data("push",false);
-			//$("#chatInputSpan").focus();
+			
 			$div.on('keydown', function (e) {
-				var minWid, $all, newId, bott;
+				var minWid, $all, newId, bott, $box, text;
 				if($(".splash-bg").length > 0){
 					e.preventDefault();
 					return;
 				}
 				if (e.which == 13) {
 					if($(this).children("span").text().length > 0){
-						e.preventDefault();
-						minWid = $(this).width() + 1;
-						$all = $(this).children(".chat");
-						if ($all.length === 0) {
-							newId = "m0";
-						} else {
-							newId = "m" + (parseInt(($all.attr('id')).substring(1), 10) + 1);
-						}
-						$(this).append("<div id='" + newId + "' class='hudDiv chat'><span class='hudSpan'>" + $(this).children("span").text() + "</span></div>");
-						$(this).children("span").text("");
-						$("#" + newId).append($all);
-						$("#" + newId).prop('contenteditable', false);
-						$("#" + newId).css("min-width", minWid);
-						setTimeout(function () {
-							$("#"+newId).addClass("chat-old");
-							if($("#chat").data("push") == false){
-								if($(".chat-old").length-$(".chat").length == -1){
-									$("#inputBox").animate({opacity:"0"},500);
-								} else {
-									$("#"+newId).animate({opacity: "0"},500);
-								}
-							}
-							
-						}, 5000);
-						$(this).css("bottom", "-"+($(this).height()+20-2)+"px");
-						$("#hud").css("pointer-events", "none");
-						$(".chat-old").stop();
-						$(".chat-old").animate({opacity: "0"},500);
-						$(this).animate({
-							opacity: ".4"
-						}, 500);
-						$("#chatInputSpan").off('blur');
-						$("canvas").focus();
-						//$all.remove();
-						//serverOutput += "MYCHAT:0;"
-						$("#chat").data("push",false);
-					} else {
-						e.which = 27;
+						text = $(this).children("span").text();
+						
+						text = text.replace(/&/g, "&amp;");
+						text = text.replace(/ /g, "&nbsp;");
+						text = text.replace(/</g, "&lt;");
+						text = text.replace(/>/g, "&gt;");
+						
+						text = text.replace(/\\/g, "\\\\\\\\");
+						
+						text = text.replace(/:/g, "\\\\a");
+						text = text.replace(/;/g, "\\\\b");
+						
+						text = text.replace(/"/g, '\\"');
+						
+						serverOutput += "MYCHAT:"+ text + ";";
 					}
+					e.which = 27;
 				}
 				if (e.which == 27) {
 					e.preventDefault();
-					$all = $(this).children(".chat");
-					if ($all.length === 0) {
-						bott = "-101px";
-					} else {
-						bott = "-"+($(this).height()+20-2)+"px";
-					}
-					$(this).children("span").text("");
-					$(this).stop();
+					
+					$box = $(this);
+					$all = $box.children(".chat");
+					$box.children("span").text("");
+					bott = "-"+($box.height()+20-2)+"px";
+					
 					$(".chat-old").stop();
+					$box.stop();
+					
 					$(".chat-old").animate({opacity: "0"},500);
-					if($(".chat-old").length-$(".chat").length == -1){
+					if($(".chat-old").length-$(".chat").length == -2){
 						a = "0";
 					} else {
 						a = ".4";
 					}
-					$(this).animate({
+					
+					$box.animate({
 						bottom : bott,
 						opacity: a
 					}, 500);
+					
 					$("#hud").css("pointer-events", "none");
 					$("#chatInputSpan").off('blur');
 					$("canvas").focus();
